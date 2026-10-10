@@ -5,15 +5,25 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "bin": { "castra": "./dist/cli.js" },
-  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "castra": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@castra/mcp": "workspace:*",
     "castra": "workspace:*",
     "jsonc-parser": "3.3.1"
   },
@@ -21,6 +31,7 @@
     "wrangler": ">=4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20261010.1",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "vitest": "5.0.3",
