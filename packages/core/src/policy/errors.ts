@@ -38,7 +38,9 @@ export type PolicyErrorCode =
   | "unknown_column"
   | "readonly_column"
   | "hidden_column"
-  | "server_column";
+  | "server_column"
+  /** The guarded write's check failed against the stored row; the batch was rolled back (ADR 0050). */
+  | "write_check_failed";
 
 /**
  * A request rejected by the policy engine. `status` maps to the HTTP response; `explanation`

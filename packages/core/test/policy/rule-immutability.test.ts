@@ -38,7 +38,7 @@ describe("Rule constructor copies and freezes", () => {
 
   it("combinators keep frozen copies", () => {
     const r = role("admin").or(isPublic());
-    expect(Object.isFrozen((r.node as { children: unknown[] }).children)).toBe(true);
+    expect(Object.isFrozen((r.node as unknown as { children: unknown[] }).children)).toBe(true);
   });
 });
 

@@ -13,7 +13,7 @@ import { env } from "cloudflare:workers";
 import fc from "fast-check";
 import { sql } from "kysely";
 import { beforeAll, describe, expect, it } from "vitest";
-import { authenticated, createPolicyEngine, introspect, type Rule, type SchemaSnapshot } from "../../src/index.js";
+import { authenticated, createPolicyEngine, introspect, PolicyError, runGuardedWrite, type Rule, type SchemaSnapshot } from "../../src/index.js";
 import { testDb } from "./db.js";
 import { ROLES, user } from "./fixtures.js";
 
@@ -36,7 +36,7 @@ beforeAll(async () => {
   snapshot = await introspect(async (q, params = []) => (await env.DB.prepare(q).bind(...params).all()).results as Record<string, unknown>[]);
 });
 
-type Outcome = { check: boolean | "threw"; stored: boolean | "threw" };
+type Outcome = { check: boolean | "threw"; stored: boolean | "threw"; guarded: boolean | "threw"; reason: string };
 
 async function checkVsStored(tableName: string, rule: Rule, row: Record<string, unknown>): Promise<Outcome> {
   const engine = createPolicyEngine({
@@ -44,26 +44,67 @@ async function checkVsStored(tableName: string, rule: Rule, row: Record<string, 
     snapshot,
   });
   let check: Outcome["check"];
+  let reason = "";
   try {
-    check = (await engine.checkRow(db, tableName, "create", ctx, row)).allowed;
+    const d = await engine.checkRow(db, tableName, "create", ctx, row);
+    check = d.allowed;
+    reason = d.explanation.reason ?? "";
   } catch {
     check = "threw";
+  }
+  // Authoritative path (ADR 0050): the write and its guard in one D1 batch, on a fresh id.
+  const gid = nextId++;
+  let guarded: Outcome["guarded"];
+  try {
+    await runGuardedWrite(env.DB, db.insertInto(tableName).values({ id: gid, ...row }), engine.writeGuard(tableName, "create", ctx, { id: gid }));
+    guarded = true;
+  } catch (e) {
+    if (!(e instanceof PolicyError)) guarded = "threw";
+    else {
+      expect(e.status).toBe(403);
+      guarded = false;
+    }
+    // Atomicity: a rejected guarded insert leaves no row behind.
+    expect(await db.selectFrom(tableName).select("id").where("id", "=", gid).execute()).toEqual([]);
   }
   const id = nextId++;
   try {
     await db.insertInto(tableName).values({ id, ...row }).execute();
   } catch {
-    return { check, stored: "threw" };
+    return { check, stored: "threw", guarded, reason };
   }
   const f = engine.readFilter(tableName, "read", ctx);
   const got = await db.selectFrom(tableName).select("id").where("id", "=", id).where((eb) => f.apply(eb)).execute();
-  return { check, stored: got.length === 1 };
+  return { check, stored: got.length === 1, guarded, reason };
 }
 
-/** Never allow what storage denies; when the write itself fails there is nothing to compare. */
+/**
+ * Never allow what storage denies; when the write itself fails there is nothing to compare.
+ * Both the dry run (checkRow) and the authoritative guarded write must agree with storage.
+ */
 function expectAgreement(o: Outcome, label: Record<string, unknown>): void {
   if (o.stored === "threw") return;
-  expect({ ...label, check: o.check }).toEqual({ ...label, check: o.stored });
+  expect({ ...label, check: o.check, guarded: o.guarded }).toEqual({ ...label, check: o.stored, guarded: o.stored });
+}
+
+/**
+ * For storage effects the dry run cannot reproduce (ADR 0050): the AUTHORITATIVE guarded write must
+ * agree with storage. checkRow must either agree too, or flag its answer as approximate.
+ */
+function expectGuardedAgreement(o: Outcome, label: Record<string, unknown>): void {
+  if (o.stored === "threw") return;
+  expect({ ...label, guarded: o.guarded }).toEqual({ ...label, guarded: o.stored });
+  if (o.check !== o.stored) expect({ ...label, reason: o.reason }).toEqual({ ...label, reason: expect.stringMatching(/approximate/) });
+}
+
+/**
+ * Column collations are not in the snapshot, so the dry run cannot model them (ADR 0050). The
+ * security property, "a row the table treats as violating the rule is never written", is asserted
+ * on the authoritative guarded write: it must be denied (and leave no row, see checkVsStored).
+ */
+function expectGuardedOnly(o: Outcome): void {
+  expect(o.stored).toBe(false);
+  expect(o.guarded).toBe(false);
 }
 
 const show = (v: unknown) =>
@@ -127,6 +168,9 @@ describe("held: checkRow agrees with storage for numeric literals on every affin
 });
 
 describe("FINDING A: non-numeric text in a numeric-affinity column loses the column affinity in checkRow", () => {
+  // Fixed by ADR 0050: the guarded write is authoritative and must agree with storage; checkRow (a dry
+  // run that cannot give a bound value a column affinity without converting it) must agree or say
+  // "approximate". prepareWrite additionally rejects such values with 400 (see guarded-write.d1.test.ts).
   // Stored: '' sits in an INTEGER column, so the column's affinity converts the literal '100' to 100 and
   // TEXT > INTEGER makes `score <= '100'` false. In checkRow the candidate is bound without CAST, the
   // derived column has no affinity, '100' stays text, and '' <= '100' is true.
@@ -134,7 +178,7 @@ describe("FINDING A: non-numeric text in a numeric-affinity column loses the col
     for (const value of ["", "-", "0x10"]) {
       it(`${col} <= '100' with ${JSON.stringify(value)}`, async () => {
         const rule = authenticated().where((q) => q.eb(col, "<=", "100"));
-        expectAgreement(await checkVsStored("r2_aff", rule, { [col]: value }), { col, value });
+        expectGuardedAgreement(await checkVsStored("r2_aff", rule, { [col]: value }), { col, value });
       });
     }
   }
@@ -144,7 +188,7 @@ describe("FINDING A: non-numeric text in a numeric-affinity column loses the col
       fc.asyncProperty(fc.constantFrom(...NUMERIC_COLS), opArb, textArb, valueArb, async (col, op, lit, value) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rule = authenticated().where((q) => q.eb(col, op as any, lit));
-        expectAgreement(await checkVsStored("r2_aff", rule, { [col]: value }), { col, op, lit: show(lit), value: show(value) });
+        expectGuardedAgreement(await checkVsStored("r2_aff", rule, { [col]: value }), { col, op, lit: show(lit), value: show(value) });
       }),
       { numRuns: NUM_RUNS },
     );
@@ -188,6 +232,7 @@ describe("FINDING C: checkRow on create treats omitted columns as NULL, but the 
     const o = await checkVsStored("r2_dflt", rule, { title: "x" });
     expect(o.stored).toBe(false);
     expect(o.check).toBe(false);
+    expect(o.guarded).toBe(false);
   });
 
   it("false denial: create rule `status = 'published'` denies a row that is stored as published", async () => {
@@ -195,20 +240,22 @@ describe("FINDING C: checkRow on create treats omitted columns as NULL, but the 
     const o = await checkVsStored("r2_dflt", rule, { title: "x" });
     expect(o.stored).toBe(true);
     expect(o.check).toBe(true);
+    expect(o.guarded).toBe(true);
   });
 });
 
 describe("FINDING D: checkRow ignores column collation (COLLATE NOCASE)", () => {
+  // Fixed by ADR 0050: asserted on the authoritative guarded write (see expectGuardedOnly).
   // CREATE TABLE r2_coll (..., status TEXT COLLATE NOCASE). The snapshot has no collation, the derived
   // table compares with BINARY, the real table with NOCASE.
   it("bypass: create rule `status != 'published'` allows 'PUBLISHED', which the table treats as published", async () => {
     const rule = authenticated().where((q) => q.eb("status", "!=", "published"));
-    expectAgreement(await checkVsStored("r2_coll", rule, { status: "PUBLISHED" }), {});
+    expectGuardedOnly(await checkVsStored("r2_coll", rule, { status: "PUBLISHED" }));
   });
 
   it("bypass: `status NOT IN ('published', 'archived')` allows 'Archived'", async () => {
     const rule = authenticated().where((q) => q.eb("status", "not in", ["published", "archived"]));
-    expectAgreement(await checkVsStored("r2_coll", rule, { status: "Archived" }), {});
+    expectGuardedOnly(await checkVsStored("r2_coll", rule, { status: "Archived" }));
   });
 });
 

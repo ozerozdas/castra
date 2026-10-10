@@ -6,5 +6,5 @@ export { authenticated, custom, isPublic, isRule, owner, role, Rule } from "./ru
 export type { CustomPredicate, RuleNode, WhereArgs, WherePredicate } from "./rules.js";
 export { CastraConfigError, PolicyError } from "./errors.js";
 export type { Explanation, PolicyErrorCode, PolicyErrorStatus } from "./errors.js";
-export { createPolicyEngine } from "./engine.js";
-export type { Decision, Filter, PolicyEngine, PolicyEngineOptions, PreparedWrite } from "./engine.js";
+export { createPolicyEngine, WRITE_CHECK_MARKER } from "./engine.js";
+export type { Decision, Filter, PolicyEngine, PolicyEngineOptions, PreparedWrite, WriteGuard, WriteTarget } from "./engine.js";
