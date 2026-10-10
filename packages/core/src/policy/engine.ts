@@ -128,9 +128,16 @@ const PROBE_USER_ID = "__castra_probe_user__";
  */
 export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
   const config = defineConfig(options.config);
-  const snapshot = options.snapshot;
-  if (!snapshot || snapshot.version !== 1 || typeof snapshot.tables !== "object" || snapshot.tables === null) {
+  const given = options.snapshot;
+  if (!given || given.version !== 1 || typeof given.tables !== "object" || given.tables === null) {
     throw new CastraConfigError("snapshot must be a version 1 schema snapshot");
+  }
+  // Private, deep-frozen copy: mutating the caller's snapshot later cannot change identifiers or affinities.
+  let snapshot: SchemaSnapshot;
+  try {
+    snapshot = deepFreeze(structuredClone(given));
+  } catch (err) {
+    throw new CastraConfigError(`snapshot must be plain JSON data: ${(err as Error).message}`);
   }
 
   const tables = new Map<string, TableInfo>();
@@ -513,6 +520,14 @@ function validatePredicateReferences(
       throw new CastraConfigError(`tables.${table}.${op} ${label}: column "${col}" does not exist in the schema snapshot`);
     }
   }
+}
+
+function deepFreeze<T>(value: T): T {
+  if (typeof value === "object" && value !== null) {
+    for (const v of Object.values(value)) deepFreeze(v);
+    Object.freeze(value);
+  }
+  return value;
 }
 
 function isBindable(v: unknown): boolean {

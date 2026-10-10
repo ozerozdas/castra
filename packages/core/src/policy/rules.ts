@@ -45,9 +45,12 @@ export class Rule {
   /** The rule tree. */
   readonly node: RuleNode;
 
-  /** @internal Use the rule builders instead. */
+  /**
+   * @internal Use the rule builders instead. The node is validated, deep-copied and deep-frozen, so
+   * mutating the argument afterwards cannot change this rule (or a policy built from it).
+   */
   constructor(node: RuleNode) {
-    this.node = node;
+    this.node = freezeNode(node);
     Object.freeze(this);
   }
 
@@ -75,6 +78,53 @@ export class Rule {
   /** Human-readable rule tree, e.g. `or(and(public, where), owner(author_id), role(admin))`. */
   toString(): string {
     return describeRule(this.node);
+  }
+}
+
+/**
+ * Validates a rule tree and returns a deep-frozen copy. Predicate functions are kept by reference
+ * (they are code, not data); every array and node object is copied.
+ */
+function freezeNode(node: RuleNode, depth = 0): RuleNode {
+  if (typeof node !== "object" || node === null) throw new TypeError("rule node must be an object");
+  if (depth > 10_000) throw new TypeError("rule tree is nested too deeply");
+  const kind: unknown = (node as { kind?: unknown }).kind;
+  switch (kind) {
+    case "public":
+    case "authenticated":
+      return Object.freeze({ kind });
+    case "role": {
+      const roles: unknown = (node as { roles?: unknown }).roles;
+      if (!Array.isArray(roles) || roles.length === 0) throw new TypeError("role node needs a non-empty roles array");
+      const copy = [...(roles as unknown[])];
+      for (const r of copy) if (typeof r !== "string" || r.length === 0) throw new TypeError("role names must be non-empty strings");
+      return Object.freeze({ kind, roles: Object.freeze([...new Set(copy as string[])]) });
+    }
+    case "owner": {
+      const column: unknown = (node as { column?: unknown }).column;
+      if (typeof column !== "string" || column.length === 0) throw new TypeError("owner node needs a column name");
+      return Object.freeze({ kind, column });
+    }
+    case "custom": {
+      const { name, fn } = node as { name?: unknown; fn?: unknown };
+      if (typeof name !== "string" || name.length === 0) throw new TypeError("custom node needs a name");
+      if (typeof fn !== "function") throw new TypeError("custom node needs a predicate function");
+      return Object.freeze({ kind, name, fn: fn as CustomPredicate });
+    }
+    case "where": {
+      const fn: unknown = (node as { fn?: unknown }).fn;
+      if (typeof fn !== "function") throw new TypeError("where node needs a predicate function");
+      return Object.freeze({ kind, fn: fn as WherePredicate });
+    }
+    case "and":
+    case "or": {
+      const children: unknown = (node as { children?: unknown }).children;
+      if (!Array.isArray(children)) throw new TypeError(`${kind} node needs a children array`);
+      const copy = [...(children as RuleNode[])].map((c) => freezeNode(c, depth + 1));
+      return Object.freeze({ kind, children: Object.freeze(copy) });
+    }
+    default:
+      throw new TypeError(`unknown rule node kind "${String(kind)}"`);
   }
 }
 
