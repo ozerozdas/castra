@@ -66,6 +66,11 @@ export interface TableSnapshot {
   foreignKeys: ForeignKeySnapshot[];
   /** Indexes declared on this table. */
   indexes: IndexSnapshot[];
+  /**
+   * `true` for a `STRICT` table (values are type-checked, `ANY` columns store values verbatim).
+   * Omitted for ordinary tables, so snapshots of non-STRICT schemas are unchanged (ADR 0050).
+   */
+  strict?: true;
 }
 
 /**

@@ -74,6 +74,18 @@
     layer (M2 must call it for every filtered/sorted column).
   - `buildAuthOptions` rejects the `.dev.vars.example` placeholder and weak secrets.
   - Schema introspection uses `pragma_*()` table-valued functions with bound parameters (ADR 0009).
+- **Second security review findings A-F fixed** (2026-10-10, ADR 0050)
+  - Authoritative WITH CHECK is now `PolicyEngine.writeGuard(table, op, ctx, pk | "last_insert_rowid")` +
+    `runGuardedWrite(env.DB, write, guard)`: the guard runs on the stored row after the write in one atomic
+    D1 `batch()`; a violation raises `bad JSON path: 'castra_write_check_failed'` → 403 `write_check_failed`, the
+    write is rolled back. Other DB errors are rethrown unchanged. A missing row fails closed.
+  - `checkRow` is a documented dry run: literal column defaults on create (C), integral numbers as INTEGER (B),
+    STRICT `ANY` verbatim (E); flags `approximate` otherwise. Collations (D) are only enforced by the guard.
+  - `prepareWrite` rejects non-numeric text for numeric-affinity columns with 400 (A), except DATE/TIME types.
+  - `TableSnapshot.strict?: true` (additive) from `pragma_table_list`; `diffSnapshots` reports STRICT changes.
+  - `Rule` deep-copies and deep-freezes its node; `createPolicyEngine` keeps a frozen `structuredClone` of the
+    snapshot (F). `canFilter` is false for tables without an open `read`.
+  - M2 API layer must use `runGuardedWrite` for every create/update (see ADR 0050 Consequences).
 
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
@@ -104,6 +116,15 @@ Other decisions:
 - pnpm `onlyBuiltDependencies` allows `esbuild` and `workerd` postinstall scripts.
 
 ## Open issues
+- `custom()` / `where()` predicates may contain subqueries that read reserved tables (Better Auth, `_castra_*`).
+  The engine cannot see inside raw `sql` and only validates table names it can walk; reading such tables in a
+  predicate is the config author's responsibility. To be documented in `docs/SECURITY.md`.
+- Very deep rule nesting (~5000 alternating `and`/`or` levels) overflows the stack while the config is built
+  (rule copy, validation, compilation). Fails at startup, never at request time; accepted.
+- Column collations are not in the snapshot, so `checkRow` (dry run) compares with BINARY; only the guarded
+  write (ADR 0050) is exact. MCP `check_access` answers may differ from the real write for NOCASE/RTRIM columns.
+- `prepareWrite` does not reject primary-key changes on update; with `runGuardedWrite` the guard must be given the
+  new key, otherwise the write fails closed (403).
 - Contract types: `ColumnSnapshot.notNull` for INTEGER PRIMARY KEY columns follows `PRAGMA table_info`; Schema agent should confirm.
 - Re-verify npm availability of `castra` / `create-castra` before any publish (ADR 0004).
 - `pnpm install` emits no peer warnings, but two workerd versions are installed (wrangler vs the plugin's miniflare).

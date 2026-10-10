@@ -36,7 +36,10 @@ export {
   PolicyError,
   role,
   Rule,
+  WRITE_CHECK_MARKER,
 } from "./policy/index.js";
+export { isWriteCheckError, runGuardedWrite } from "./db/index.js";
+export type { D1DatabaseLike, D1ResultLike, D1StatementLike } from "./db/index.js";
 export type {
   CustomPredicate,
   Decision,
@@ -50,6 +53,8 @@ export type {
   RuleNode,
   WhereArgs,
   WherePredicate,
+  WriteGuard,
+  WriteTarget,
 } from "./policy/index.js";
 
 export * from "./api/index.js";

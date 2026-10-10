@@ -1,8 +1,19 @@
-import { expressionBuilder, sql, type Expression, type ExpressionBuilder, type Kysely, type RawBuilder, type SqlBool } from "kysely";
+import {
+  expressionBuilder,
+  sql,
+  type Compilable,
+  type CompiledQuery,
+  type Expression,
+  type ExpressionBuilder,
+  type Kysely,
+  type RawBuilder,
+  type SqlBool,
+} from "kysely";
 import { defineConfig, isReservedTable, OPERATIONS, type CastraConfig, type TableConfig } from "../config.js";
 import type { CastraContext, ColumnSnapshot, Operation, SchemaSnapshot, TableSnapshot } from "../types.js";
 import {
   compileExpression,
+  compileOnlyDb,
   describeResidual,
   effectiveRoles,
   hasUser,
@@ -49,6 +60,26 @@ export interface Decision {
   explanation: Explanation;
 }
 
+/**
+ * Identifies the row a {@link PolicyEngine.writeGuard} checks: the full primary key of the row as it
+ * is AFTER the write, or `"last_insert_rowid"` for an insert whose key the database assigns
+ * (rowid tables only).
+ */
+export type WriteTarget = Record<string, unknown> | "last_insert_rowid";
+
+/**
+ * The authoritative WITH CHECK for one write (ADR 0050). A Kysely-compiled `SELECT` that, run right
+ * after the write in the same D1 `batch()`, raises an SQL error unless the stored row identified by
+ * the target exists and satisfies the operation's rule. D1 batches are atomic, so the error rolls the
+ * write back. Run it with {@link runGuardedWrite}, which maps the error to a 403 {@link PolicyError}.
+ */
+export interface WriteGuard extends Compilable<unknown> {
+  /** The guard query (same as `compile()` on this object). */
+  readonly query: Compilable<unknown>;
+  /** Why the guard looks the way it does; attached to the 403 when it fires. */
+  readonly explanation: Explanation;
+}
+
 /** The policy engine. REST, MCP and custom routes all call this same object. */
 export interface PolicyEngine {
   /**
@@ -75,9 +106,28 @@ export interface PolicyEngine {
     existing?: Record<string, unknown>,
   ): PreparedWrite;
   /**
-   * WITH CHECK: evaluates the operation's rule against a candidate row in SQL, so `where` and
-   * `custom` predicates behave exactly as in a `WHERE`. Use for create, and for update on the
-   * existing row merged with the patch.
+   * Builds the AUTHORITATIVE write check (ADR 0050): a guard query to run after the write, in the
+   * same D1 batch, via {@link runGuardedWrite}. It evaluates the `op` rule (partially evaluated for
+   * `ctx`) against the row actually stored, so column defaults, affinity conversions, collations and
+   * STRICT typing are exactly what D1 applied. The row must exist after the write: a missing row
+   * (wrong key, primary key changed by the update, nothing written) fails closed.
+   *
+   * `target` is the complete primary key (every `primaryKey` column of the snapshot, non-null scalar
+   * values; for an update, the key AFTER the update) or `"last_insert_rowid"` for an insert into a
+   * rowid table without a client-supplied key.
+   *
+   * Throws {@link PolicyError} 404 when the operation is closed, 400 on a bad target.
+   */
+  writeGuard(table: string, op: "create" | "update", ctx: CastraContext, target: WriteTarget): WriteGuard;
+  /**
+   * Best-effort DRY RUN of the write check: evaluates the operation's rule in SQL against a candidate
+   * row that is never stored. **Not authoritative**: the candidate cannot reproduce every storage
+   * effect (column collations, non-numeric text in numeric columns, non-literal defaults, rowid
+   * assignment). The explanation's `reason` says "approximate" when one of those applies. Use it for
+   * MCP `check_access` and as an early pre-check; enforce writes with {@link writeGuard}.
+   *
+   * On create, omitted columns take their literal snapshot default (else NULL, marked approximate).
+   * Use it for create, and for update on the existing row merged with the patch.
    */
   checkRow(
     db: Kysely<any>, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -92,7 +142,7 @@ export interface PolicyEngine {
    */
   projectRow(table: string, ctx: CastraContext, row: Record<string, unknown>): Record<string, unknown>;
   /**
-   * May `ctx` filter (or sort) on `column` of `table`? True only when the table is exposed, the column
+   * May `ctx` filter (or sort) on `column` of `table`? True only when the table has an open `read`, the column
    * exists, is not `hidden`, is listed in `filterable` (when `filterable` is set; otherwise any visible
    * column qualifies) and is visible to the caller under `visibleTo`. A `visibleTo` column that is
    * visible only through `"self"` is never filterable: self is decided per row, so a filter on it
@@ -128,9 +178,16 @@ const PROBE_USER_ID = "__castra_probe_user__";
  */
 export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
   const config = defineConfig(options.config);
-  const snapshot = options.snapshot;
-  if (!snapshot || snapshot.version !== 1 || typeof snapshot.tables !== "object" || snapshot.tables === null) {
+  const given = options.snapshot;
+  if (!given || given.version !== 1 || typeof given.tables !== "object" || given.tables === null) {
     throw new CastraConfigError("snapshot must be a version 1 schema snapshot");
+  }
+  // Private, deep-frozen copy: mutating the caller's snapshot later cannot change identifiers or affinities.
+  let snapshot: SchemaSnapshot;
+  try {
+    snapshot = deepFreeze(structuredClone(given));
+  } catch (err) {
+    throw new CastraConfigError(`snapshot must be plain JSON data: ${(err as Error).message}`);
   }
 
   const tables = new Map<string, TableInfo>();
@@ -246,6 +303,9 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
       if (t.hiddenColumns.has(key)) reject(400, "hidden_column", `column "${key}" cannot be written`, table, op, ctx);
       if (t.readonlyColumns.has(key)) reject(400, "readonly_column", `column "${key}" is read-only`, table, op, ctx);
       if (!isBindable(value)) reject(400, "invalid_input", `column "${key}" has an unsupported value type`, table, op, ctx);
+      if (typeof value === "string" && requiresNumericText(t, t.columns.get(key)!) && !NUMERIC_TEXT.test(value)) {
+        reject(400, "invalid_input", `column "${key}" is numeric; a non-numeric text value is rejected`, table, op, ctx);
+      }
 
       if (t.serverColumns.has(key)) {
         if (!t.ownerColumns.has(key)) {
@@ -298,15 +358,37 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
 
     const residual = residualFor(t, rule, ctx);
     const explanation = explainResidual(t, op, ctx, residual);
+    // Storage effects the candidate cannot reproduce: reported, never silently ignored.
+    const approximate: string[] = [];
+    const strict = t.snapshot.strict === true;
+    const cells = t.snapshot.columns.map((c) => {
+      const given = Object.hasOwn(candidateRow, c.name);
+      const value = given ? candidateRow[c.name] : undefined;
+      if (given && typeof value === "string" && isNumericAffinity(t, c) && !NUMERIC_TEXT.test(value)) {
+        approximate.push(`non-numeric text in numeric column "${c.name}"`);
+      }
+      if (given || op !== "create") return castToAffinity(c, value ?? null, strict).as(c.name);
+      // Create with the column omitted: the database stores the column DEFAULT (ADR 0050).
+      const isRowidAlias = t.snapshot.primaryKey.length === 1 && c.primaryKeyPosition === 1 && c.type === "INTEGER";
+      if (isRowidAlias) {
+        approximate.push(`rowid column "${c.name}" is assigned by the database`);
+        return sql`${null}`.as(c.name);
+      }
+      const dflt = parseDefault(c.defaultValue);
+      if (dflt.kind === "expr") {
+        approximate.push(`non-literal default of "${c.name}"`);
+        return sql`${null}`.as(c.name);
+      }
+      if (dflt.kind === "numeric") return castNumericLiteral(c, dflt.text, strict).as(c.name);
+      return castToAffinity(c, dflt.value, strict).as(c.name);
+    });
     let allowed: boolean;
     if (residual.kind === "const") {
       allowed = residual.value;
     } else {
       // SELECT 1 FROM (SELECT CAST(? AS <affinity>) AS "c1", ...) AS "<table>" WHERE <rule>
       // Identifiers come from the snapshot only; values are bound parameters.
-      const candidate = db
-        .selectNoFrom(() => t.snapshot.columns.map((c) => castToAffinity(c, candidateRow[c.name] ?? null).as(c.name)))
-        .as(t.name);
+      const candidate = db.selectNoFrom(() => cells).as(t.name);
       const found = await db
         .selectFrom(candidate)
         .select(sql<number>`1`.as("ok"))
@@ -317,7 +399,63 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     }
     explanation.allowed = allowed;
     explanation.reason = `${allowed ? "row satisfies" : "row violates"} ${describeRule(rule)} (${explanation.reason ?? ""})`;
+    if (approximate.length > 0 && residual.kind !== "const") {
+      explanation.reason += `; approximate dry run: ${approximate.join(", ")}; the guarded write decides`;
+    }
     return { table, op, allowed, explanation };
+  }
+
+  function writeGuard(table: string, op: "create" | "update", ctx: CastraContext, target: WriteTarget): WriteGuard {
+    if (op !== "create" && op !== "update") throw new TypeError(`writeGuard: invalid op "${String(op)}"`);
+    const { t, rule } = requireOpen(table, op, ctx);
+    const residual = residualFor(t, rule, ctx);
+
+    let targetSql: RawBuilder<SqlBool>;
+    if (target === "last_insert_rowid") {
+      const alias = ["rowid", "_rowid_", "oid"].find((a) => !t.columns.has(a));
+      if (alias === undefined) reject(400, "invalid_input", `"${table}" shadows every rowid alias; pass its primary key`, table, op, ctx);
+      // Identifier parts: the snapshot table name and a fixed rowid alias.
+      targetSql = sql<SqlBool>`${sql.id(t.name, alias)} = last_insert_rowid()`;
+    } else {
+      if (typeof target !== "object" || target === null || Array.isArray(target)) {
+        reject(400, "invalid_input", "write target must be a primary key object or \"last_insert_rowid\"", table, op, ctx);
+      }
+      const pk = t.snapshot.primaryKey;
+      const keys = Object.keys(target);
+      if (pk.length === 0) reject(400, "invalid_input", `"${table}" has no primary key; use "last_insert_rowid"`, table, op, ctx);
+      if (keys.length !== pk.length || !pk.every((k) => Object.hasOwn(target, k))) {
+        reject(400, "invalid_input", `write target must name exactly the primary key (${pk.join(", ")})`, table, op, ctx);
+      }
+      const parts = pk.map((k) => {
+        const v = target[k];
+        if (v === null || v === undefined || !isBindable(v)) {
+          reject(400, "invalid_input", `primary key column "${k}" needs a non-null scalar value`, table, op, ctx);
+        }
+        return sql<SqlBool>`${sql.id(t.name, k)} = ${v}`;
+      });
+      targetSql = sql<SqlBool>`(${sql.join(parts, sql` AND `)})`;
+    }
+
+    const db = compileOnlyDb() as Kysely<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const stored = db
+      .selectFrom(t.name)
+      .select(sql<number>`1`.as("ok"))
+      .where(() => targetSql)
+      .where((eb) => residualToExpression(residual, eb));
+    // The fixed error-raising expression: json_extract() with an invalid path raises
+    // "bad JSON path: 'castra_write_check_failed'" (verified on local D1, ADR 0050). Nothing interpolated.
+    const query = db.selectNoFrom((eb) =>
+      sql<string>`json_extract('{}', CASE WHEN ${eb.exists(stored)} THEN '$' ELSE 'castra_write_check_failed' END)`.as(
+        "castra_write_guard",
+      ),
+    );
+    const explanation = explainResidual(t, op, ctx, residual);
+    explanation.reason = `guarded write: the stored row must satisfy ${describeRule(rule)} (${explanation.reason ?? ""})`;
+    return Object.freeze({
+      query,
+      explanation,
+      compile: (): CompiledQuery<unknown> => query.compile(),
+    });
   }
 
   function projectRow(table: string, ctx: CastraContext, row: Record<string, unknown>): Record<string, unknown> {
@@ -345,7 +483,7 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
 
   function canFilter(table: string, column: string, ctx: CastraContext): boolean {
     const t = info(table);
-    if (!t || typeof column !== "string" || !t.columns.has(column)) return false;
+    if (!t || !t.rules.read || typeof column !== "string" || !t.columns.has(column)) return false;
     if (t.hiddenColumns.has(column)) return false;
     if (t.config.filterable !== undefined && !t.config.filterable.includes(column)) return false;
     const visibleTo = t.visibleTo.get(column);
@@ -366,7 +504,7 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     };
   }
 
-  return Object.freeze({ isOpen, readFilter, prepareWrite, checkRow, projectRow, canFilter, explain });
+  return Object.freeze({ isOpen, readFilter, prepareWrite, writeGuard, checkRow, projectRow, canFilter, explain });
 }
 
 function buildTableInfo(
@@ -515,6 +653,14 @@ function validatePredicateReferences(
   }
 }
 
+function deepFreeze<T>(value: T): T {
+  if (typeof value === "object" && value !== null) {
+    for (const v of Object.values(value)) deepFreeze(v);
+    Object.freeze(value);
+  }
+  return value;
+}
+
 function isBindable(v: unknown): boolean {
   return (
     v === null ||
@@ -527,20 +673,52 @@ function isBindable(v: unknown): boolean {
   );
 }
 
+/**
+ * Marker in the SQL error raised by a {@link WriteGuard} that fails (ADR 0050). D1 reports it as
+ * `bad JSON path: 'castra_write_check_failed'`.
+ */
+export const WRITE_CHECK_MARKER = "castra_write_check_failed";
+
 // SQLite skips only ASCII whitespace (space, \t, \n, \v, \f, \r) around numeric text; JS `\s` also matches
 // U+00A0, U+2028, U+FEFF, U+3000 and friends, which SQLite treats as non-numeric (the text stays TEXT).
 const NUMERIC_TEXT = /^[ \t\n\v\f\r]*[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?[ \t\n\v\f\r]*$/;
+const INT_LITERAL = /^[+-]?\d+$/;
+const NUM_LITERAL = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
+const INT64_MIN = -(2n ** 63n);
+const INT64_MAX = 2n ** 63n - 1n;
+
+/** True when the column converts stored values with a numeric affinity (STRICT `ANY` columns do not). */
+function isNumericAffinity(t: TableInfo, col: ColumnSnapshot): boolean {
+  if (t.snapshot.strict === true && col.type === "ANY") return false;
+  return col.affinity === "INTEGER" || col.affinity === "REAL" || col.affinity === "NUMERIC";
+}
+
+/**
+ * Columns where `prepareWrite` rejects non-numeric text (finding A, ADR 0050): numeric affinity, except
+ * declared types naming DATE or TIME, which SQLite date conventions fill with ISO-8601 text.
+ */
+function requiresNumericText(t: TableInfo, col: ColumnSnapshot): boolean {
+  return isNumericAffinity(t, col) && !/DATE|TIME/.test(col.type);
+}
+
+/** A JS number SQLite would store as an INTEGER in an INTEGER/NUMERIC column (sqlite3VdbeIntegerAffinity). */
+function isExactInteger(v: unknown): boolean {
+  if (typeof v === "boolean") return true;
+  return typeof v === "number" && Number.isInteger(v) && v > -(2 ** 63) && v < 2 ** 63;
+}
 
 /**
  * Binds a candidate value so it compares like a value stored in a column of that affinity. A bound
  * parameter has no affinity, but a stored value does: SQLite converts on storage (TEXT columns store
- * numbers as text; numeric columns store well-formed numeric text as numbers) and applies the column
- * affinity to the other operand of a comparison. `CAST(x AS type)` carries the affinity of `type`, and
- * a derived-table column keeps the affinity of its expression, so we CAST wherever SQLite would have
- * converted. Non-numeric text in numeric columns and blobs are bound as-is, as SQLite stores them.
+ * numbers as text; numeric columns store well-formed numeric text as numbers, and integral REALs as
+ * INTEGERs in INTEGER/NUMERIC columns) and applies the column affinity to the other operand of a
+ * comparison. `CAST(x AS type)` carries the affinity of `type`, and a derived-table column keeps the
+ * affinity of its expression, so we CAST wherever SQLite would have converted. Non-numeric text in
+ * numeric columns, blobs and values of STRICT `ANY` columns are bound as-is, as SQLite stores them.
  */
-function castToAffinity(col: ColumnSnapshot, value: unknown): RawBuilder<unknown> {
+function castToAffinity(col: ColumnSnapshot, value: unknown, strict: boolean): RawBuilder<unknown> {
   if (value === null) return sql`${null}`;
+  if (strict && col.type === "ANY") return sql`${value}`;
   const isNumberLike = typeof value === "number" || typeof value === "bigint" || typeof value === "boolean";
   const isNumericText = typeof value === "string" && NUMERIC_TEXT.test(value);
   switch (col.affinity) {
@@ -548,10 +726,60 @@ function castToAffinity(col: ColumnSnapshot, value: unknown): RawBuilder<unknown
       return isNumberLike || typeof value === "string" ? sql`CAST(${value} AS TEXT)` : sql`${value}`;
     case "INTEGER":
     case "NUMERIC":
+      // D1 binds every JS number as REAL; storage turns an integral REAL into an INTEGER (finding B).
+      if (isExactInteger(value)) return sql`CAST(${value} AS INTEGER)`;
       return isNumberLike || isNumericText ? sql`CAST(${value} AS NUMERIC)` : sql`${value}`;
     case "REAL":
       return isNumberLike || isNumericText ? sql`CAST(${value} AS REAL)` : sql`${value}`;
     default:
       return sql`${value}`;
+  }
+}
+
+type ParsedDefault = { kind: "value"; value: unknown } | { kind: "numeric"; text: string } | { kind: "expr" };
+
+/**
+ * Parses a `PRAGMA table_info.dflt_value` that is a plain literal: NULL, a quoted string, a number,
+ * TRUE/FALSE or a blob. Anything else (CURRENT_TIMESTAMP, `(expr)`, hex integers, ...) is `expr`: the
+ * dry run cannot evaluate it without building SQL from schema text (CLAUDE.md rule 5).
+ */
+function parseDefault(d: string | null): ParsedDefault {
+  if (d === null) return { kind: "value", value: null };
+  const s = d.trim();
+  if (/^null$/i.test(s)) return { kind: "value", value: null };
+  const str = /^'((?:[^']|'')*)'$/.exec(s);
+  if (str) return { kind: "value", value: str[1]!.replace(/''/g, "'") };
+  if (NUM_LITERAL.test(s)) return { kind: "numeric", text: s };
+  if (/^true$/i.test(s)) return { kind: "numeric", text: "1" };
+  if (/^false$/i.test(s)) return { kind: "numeric", text: "0" };
+  const blob = /^[xX]'((?:[0-9a-fA-F]{2})*)'$/.exec(s);
+  if (blob) {
+    const hex = blob[1]!;
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    return { kind: "value", value: bytes };
+  }
+  return { kind: "expr" };
+}
+
+/**
+ * The value a numeric literal default is stored as. SQLite parses an integer literal that fits in 64
+ * bits as INTEGER, any other numeric literal as REAL, then applies the column affinity.
+ */
+function castNumericLiteral(col: ColumnSnapshot, text: string, strict: boolean): RawBuilder<unknown> {
+  const isInt = INT_LITERAL.test(text) && BigInt(text) >= INT64_MIN && BigInt(text) <= INT64_MAX;
+  // The literal itself, typed as SQLite's parser types it. `text` is bound, never spliced into SQL.
+  const literal = isInt ? sql`CAST(${text} AS INTEGER)` : sql`CAST(${text} AS REAL)`;
+  if (strict && col.type === "ANY") return literal;
+  switch (col.affinity) {
+    case "TEXT":
+      return sql`CAST(${literal} AS TEXT)`;
+    case "INTEGER":
+    case "NUMERIC":
+      return isInt || !isExactInteger(Number(text)) ? literal : sql`CAST(${Number(text)} AS INTEGER)`;
+    case "REAL":
+      return sql`CAST(${literal} AS REAL)`;
+    default:
+      return literal;
   }
 }
