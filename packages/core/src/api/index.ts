@@ -11,7 +11,7 @@ export { decodeCursor, encodeCursor, FILTER_OPERATORS, LIMITS, parseFilter, pars
 export type { FilterOperator, ListOptions, ParsedFilter, ParsedRequest, RawCursor, RequestInput, SortKey } from "./parse.js";
 export { executePlan, PARENT_KEYS, planRequest } from "./plan.js";
 export type { ApiResult, ExecuteOptions, Plan, PlannedStatement } from "./plan.js";
-export { ApiError, problemBody, problemResponse, toProblem } from "./problem.js";
+export { ApiError, notFound, problemBody, problemResponse, toProblem } from "./problem.js";
 export type { ApiErrorStatus, ProblemDetails } from "./problem.js";
 export { createRestRouter, DEFAULT_MAX_BODY_BYTES } from "./router.js";
 export type { RestRequestInfo, RestRouterOptions } from "./router.js";
