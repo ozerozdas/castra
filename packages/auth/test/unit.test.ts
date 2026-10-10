@@ -57,6 +57,20 @@ describe("buildAuthOptions", () => {
     expect(() => buildAuthOptions(env({ BETTER_AUTH_SECRET: "short" }), { roles: [] })).toThrow(/BETTER_AUTH_SECRET/);
   });
 
+  it("refuses placeholder and low-entropy secrets, accepts a generated one", () => {
+    for (const bad of [
+      "replace-me-with-at-least-32-random-characters",
+      "CHANGEME-CHANGEME-CHANGEME-CHANGEME-1234",
+      "this-is-an-Example-secret-0123456789abcdef",
+      "a".repeat(40),
+      "abababababababababababababababab",
+    ]) {
+      expect(() => buildAuthOptions(env({ BETTER_AUTH_SECRET: bad }), { roles: [] })).toThrow(/too weak.*openssl rand -base64 32/s);
+    }
+    const good = "q8Zr1xV0m3Kp9TgLw2YbN7cD5sHf4JuA+e6/Xo=";
+    expect(buildAuthOptions(env({ BETTER_AUTH_SECRET: good }), { roles: [] }).secret).toBe(good);
+  });
+
   it("installs the users mirror hooks unless disabled", () => {
     expect(buildAuthOptions(env(), { roles: [] }).databaseHooks?.user?.create?.after).toBeTypeOf("function");
     expect(buildAuthOptions(env(), { roles: [], mirrorUsers: false }).databaseHooks).toBeUndefined();
