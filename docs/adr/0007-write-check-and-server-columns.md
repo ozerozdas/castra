@@ -36,3 +36,13 @@ blobs are bound as-is, as SQLite stores them.
   For create: `prepareWrite` → `checkRow("create")` → insert.
 - `readonly` columns that need an initial client value are not supported; use `setBy: "server"` or a DB default.
 - User ids should be TEXT (Better Auth ids are), given the REAL binding behaviour above.
+
+## Amendment (2026-10-10, security review)
+ARCHITECTURE §3 says owner columns are set by the server and a different client value is rejected. The first
+implementation enforced that only when the column also carried `setBy: "server"`, so the natural config
+`update: owner("author_id")` let a client create rows owned by someone else. Default-closed fix: **every column
+named by an `owner()` rule anywhere in a table's policies (read, create, update or delete) is implicitly
+`setBy: "server"`.** On create it is filled from `ctx.user.id` (anonymous: 401); a different client value is 403, the
+same value is accepted; on update it is never written, a different value is 403 (compared with the stored row when
+`existing` is passed). Declaring `setBy: "server"` explicitly remains allowed and has the same effect. A column that
+must be client-writable cannot be an `owner()` column; use `where()`/`custom()` for such a rule.

@@ -32,8 +32,9 @@ export function isInternalTable(name: string): boolean {
 }
 
 /**
- * Quote an identifier for use in a `PRAGMA` statement: wrap in double quotes and double any embedded
- * double quote. NUL characters cannot be represented safely and are rejected.
+ * Quote an identifier for use in SQL text: wrap in double quotes and double any embedded double quote.
+ * NUL characters cannot be represented safely and are rejected. Introspection no longer needs this
+ * (it binds names to `pragma_*()` table-valued functions, ADR 0009); kept as a public helper.
  */
 export function quoteIdentifier(name: string): string {
   if (name.includes("\0")) throw new Error("Invalid identifier: contains a NUL character");
@@ -62,8 +63,8 @@ interface RawForeignKey {
 /**
  * Build a {@link SchemaSnapshot} from a live SQLite/D1 database.
  *
- * Sources: `sqlite_master` (tables), `PRAGMA table_info`, `PRAGMA foreign_key_list`,
- * `PRAGMA index_list` and `PRAGMA index_info`. Views and the tables matched by {@link isInternalTable}
+ * Sources: `sqlite_master` (tables) and the table-valued functions `pragma_table_info`,
+ * `pragma_foreign_key_list`, `pragma_index_list` and `pragma_index_info`, called with bound parameters (ADR 0009). Views and the tables matched by {@link isInternalTable}
  * are skipped. Output is deterministic: tables sorted by name, columns in declaration order, foreign
  * keys sorted by (column, table, referenced column), indexes sorted by name.
  *
@@ -116,9 +117,7 @@ async function introspectTable(
   query: QueryFn,
   name: string,
 ): Promise<{ table: TableSnapshot; foreignKeys: RawForeignKey[] }> {
-  const q = quoteIdentifier(name);
-
-  const infoRows = await query(`PRAGMA table_info(${q})`);
+  const infoRows = await query("SELECT * FROM pragma_table_info(?)", [name]);
   const ordered = [...infoRows].sort((a, b) => num(a.cid) - num(b.cid));
   const pkColumnCount = ordered.filter((r) => num(r.pk) > 0).length;
 
@@ -141,7 +140,7 @@ async function introspectTable(
     .sort((a, b) => a.primaryKeyPosition - b.primaryKeyPosition)
     .map((c) => c.name);
 
-  const fkRows = await query(`PRAGMA foreign_key_list(${q})`);
+  const fkRows = await query("SELECT * FROM pragma_foreign_key_list(?)", [name]);
   const foreignKeys: RawForeignKey[] = fkRows.map((r) => ({
     column: str(r.from),
     referencesTable: str(r.table),
@@ -151,12 +150,12 @@ async function introspectTable(
     onUpdate: str(r.on_update),
   }));
 
-  const indexRows = await query(`PRAGMA index_list(${q})`);
+  const indexRows = await query("SELECT * FROM pragma_index_list(?)", [name]);
   const indexes: IndexSnapshot[] = [];
   for (const idx of indexRows) {
     if (str(idx.origin) === "pk" || num(idx.partial) === 1) continue;
     const indexName = str(idx.name);
-    const cols = await query(`PRAGMA index_info(${quoteIdentifier(indexName)})`);
+    const cols = await query("SELECT * FROM pragma_index_info(?)", [indexName]);
     const inOrder = [...cols].sort((a, b) => num(a.seqno) - num(b.seqno));
     // Expression indexes report a NULL column name (cid -2); the contract cannot represent them.
     if (inOrder.some((c) => c.name === null || c.name === undefined)) continue;

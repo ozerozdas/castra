@@ -125,10 +125,10 @@ describe("introspect (real D1)", () => {
 
 describe("introspect (stubbed query)", () => {
   /** A stub database that only answers the statements introspect issues. */
-  function stub(tables: string[], pragma: (sql: string) => Record<string, unknown>[] = () => []): QueryFn {
-    return async (sql) => {
+  function stub(tables: string[], pragma: (sql: string, params: unknown[]) => Record<string, unknown>[] = () => []): QueryFn {
+    return async (sql, params = []) => {
       if (sql.startsWith("SELECT name FROM sqlite_master")) return tables.map((name) => ({ name }));
-      return pragma(sql);
+      return pragma(sql, params);
     };
   }
 
@@ -142,20 +142,20 @@ describe("introspect (stubbed query)", () => {
 
   it("resolves implicit composite foreign key columns by position", async () => {
     const s = await introspect(
-      stub(["parent", "child"], (sql) => {
-        if (sql === 'PRAGMA table_info("parent")') {
+      stub(["parent", "child"], (sql, params) => {
+        if (sql === "SELECT * FROM pragma_table_info(?)" && params[0] === "parent") {
           return [
             { cid: 0, name: "a", type: "TEXT", notnull: 1, dflt_value: null, pk: 1 },
             { cid: 1, name: "b", type: "TEXT", notnull: 1, dflt_value: null, pk: 2 },
           ];
         }
-        if (sql === 'PRAGMA table_info("child")') {
+        if (sql === "SELECT * FROM pragma_table_info(?)" && params[0] === "child") {
           return [
             { cid: 0, name: "pa", type: "TEXT", notnull: 0, dflt_value: null, pk: 0 },
             { cid: 1, name: "pb", type: "TEXT", notnull: 0, dflt_value: null, pk: 0 },
           ];
         }
-        if (sql === 'PRAGMA foreign_key_list("child")') {
+        if (sql === "SELECT * FROM pragma_foreign_key_list(?)" && params[0] === "child") {
           return [
             { id: 0, seq: 0, table: "parent", from: "pa", to: null, on_update: "NO ACTION", on_delete: "NO ACTION" },
             { id: 0, seq: 1, table: "parent", from: "pb", to: null, on_update: "NO ACTION", on_delete: "NO ACTION" },
@@ -167,15 +167,17 @@ describe("introspect (stubbed query)", () => {
     expect(s.tables.child?.foreignKeys.map((f) => `${f.column}->${f.referencesColumn}`)).toEqual(["pa->a", "pb->b"]);
   });
 
-  it("quotes table names in PRAGMA statements", async () => {
-    const seen: string[] = [];
+  it("binds table names as parameters instead of building PRAGMA text", async () => {
+    const evil = 'x") ; DROP TABLE users; --';
+    const seen: Array<{ sql: string; params: unknown[] }> = [];
     await introspect(
-      stub(['x") ; DROP TABLE users; --'], (sql) => {
-        seen.push(sql);
+      stub([evil], (sql, params) => {
+        seen.push({ sql, params });
         return [];
       }),
     );
-    expect(seen).toContain('PRAGMA table_info("x"") ; DROP TABLE users; --")');
+    expect(seen).toContainEqual({ sql: "SELECT * FROM pragma_table_info(?)", params: [evil] });
+    expect(seen.every((c) => !c.sql.includes("DROP") && !/\bPRAGMA\b/i.test(c.sql))).toBe(true);
   });
 });
 

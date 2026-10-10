@@ -12,9 +12,9 @@ import { readD1Target } from "../src/wrangler-config.js";
 
 /** Minimal fake database answering exactly the statements `introspect` issues. */
 function fakeDb(extraColumn = false): QueryFn {
-  return async (sql) => {
+  return async (sql, params = []) => {
     if (sql.startsWith("SELECT name FROM sqlite_master")) return [{ name: "notes" }, { name: "_cf_METADATA" }];
-    if (sql === 'PRAGMA table_info("notes")') {
+    if (sql === "SELECT * FROM pragma_table_info(?)" && params[0] === "notes") {
       return [
         { cid: 0, name: "id", type: "TEXT", notnull: 1, dflt_value: null, pk: 1 },
         { cid: 1, name: "body", type: "TEXT", notnull: 0, dflt_value: null, pk: 0 },

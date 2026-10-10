@@ -11,6 +11,7 @@ export interface FieldConfig {
   /**
    * Value is set by the server, never taken from input. Owner columns (used in an `owner()` rule of
    * the table) are filled from `ctx.user.id` on create. A client value that differs is rejected.
+   * Owner columns are implicitly `setBy: "server"`; declaring it is optional (ADR 0007, amendment).
    */
   setBy?: "server";
   /** Returned only to callers holding one of these roles. `"self"` matches the caller's own row. */
@@ -24,7 +25,7 @@ export interface TableConfig {
   update?: Rule;
   delete?: Rule;
   fields?: Record<string, FieldConfig>;
-  /** Columns clients may filter on. Must exist in the schema snapshot. */
+  /** Columns clients may filter on. Must exist in the schema snapshot and must not be `hidden`. */
   filterable?: string[];
   /**
    * Column compared with `ctx.user.id` for the `"self"` pseudo-role. Defaults to `"id"` for a table
@@ -147,6 +148,10 @@ export function defineConfig(config: CastraConfig): CastraConfig {
     if (tc.filterable !== undefined) {
       if (!Array.isArray(tc.filterable) || tc.filterable.some((c) => typeof c !== "string" || c.length === 0)) {
         fail(`tables.${table}.filterable must be an array of column names`);
+      }
+      for (const col of tc.filterable) {
+        const fields = tc.fields as Record<string, FieldConfig> | undefined;
+        if (fields !== undefined && Object.hasOwn(fields, col) && fields[col]?.hidden) fail(`tables.${table}.filterable: column "${col}" is hidden; filtering on it would leak its value`);
       }
     }
     if (tc.selfColumn !== undefined && (typeof tc.selfColumn !== "string" || tc.selfColumn.length === 0)) {

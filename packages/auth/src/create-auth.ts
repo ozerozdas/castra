@@ -33,6 +33,17 @@ export interface CastraAuthOptions {
 /** Default mount path for the Better Auth handler. */
 export const DEFAULT_AUTH_BASE_PATH = "/api/auth";
 const MIN_SECRET_LENGTH = 32;
+const MIN_DISTINCT_CHARS = 10;
+const PLACEHOLDER_MARKERS = ["replace-me", "replaceme", "changeme", "change-me", "example", "your-secret", "yoursecret"];
+
+/** Returns why `secret` is unacceptable, or `undefined` when it looks like real key material. */
+function weakSecretReason(secret: string): string | undefined {
+  const lower = secret.toLowerCase();
+  const marker = PLACEHOLDER_MARKERS.find((m) => lower.includes(m));
+  if (marker) return `it looks like a placeholder (contains "${marker}")`;
+  if (new Set(secret).size < MIN_DISTINCT_CHARS) return `it has fewer than ${MIN_DISTINCT_CHARS} distinct characters`;
+  return undefined;
+}
 
 /**
  * Builds the Better Auth options Castra uses. Exposed so schema generation and tests use exactly the
@@ -43,6 +54,12 @@ export function buildAuthOptions(env: AuthEnv, options: CastraAuthOptions): Bett
   if (typeof secret !== "string" || secret.length < MIN_SECRET_LENGTH) {
     throw new Error(
       `BETTER_AUTH_SECRET must be set (Worker secret, at least ${MIN_SECRET_LENGTH} characters).`,
+    );
+  }
+  const weak = weakSecretReason(secret);
+  if (weak) {
+    throw new Error(
+      `BETTER_AUTH_SECRET is too weak: ${weak}. Generate one with \`openssl rand -base64 32\` and set it as a Worker secret.`,
     );
   }
   const github =
