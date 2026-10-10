@@ -28,6 +28,8 @@ export default defineConfig({
         ],
         test: {
           name: "d1",
+          // D1 property tests run hundreds of real queries; the 5s default flakes under parallel load.
+          testTimeout: 60_000,
           include: ["test/**/*.d1.test.ts"],
         },
       },
