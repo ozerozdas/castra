@@ -13,7 +13,16 @@
   - GitHub Actions CI, ADRs 0001-0004, README stub.
 
 ## In progress
-- Nothing.
+- **M3 auth (pending review)**
+  - `@castra/auth`: `createAuth` (Better Auth 1.7.7, native D1, email+password, GitHub when env set,
+    bearer plugin), `resolveContext` (session / API key / anonymous), roles helpers, API keys
+    (`_castra_api_keys`, SHA-256 hashed), Hono `authRoutes`, `castraContext`, `requireRole`.
+  - `examples/blog`: `0002_auth.sql` (generated Better Auth tables + `_castra_roles` + `_castra_api_keys`),
+    `/api/auth/*`, `/me`, `GET /admin/ping` (admin only), `.dev.vars.example`.
+  - Sessions checked against D1 every request, no KV/cookie cache. ADRs 0020-0023.
+  - Tests: 15 unit (auth), 24 integration against local D1 (blog).
+  - Not done: GitHub OAuth flow only unit-tested (no network); no HTTP endpoints for API key management;
+    no `users` mirror repair command.
 
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
