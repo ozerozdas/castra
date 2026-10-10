@@ -1,4 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["src", "test", "tsup.config.ts"]
+  "compilerOptions": {
+    "paths": { "castra": ["../core/src/index.ts"] }
+  },
+  "include": ["src", "test", "tsup.config.ts", "vitest.config.ts"]
 }

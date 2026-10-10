@@ -56,9 +56,16 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.3
-        version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7))
 
   packages/cli:
+    dependencies:
+      castra:
+        specifier: workspace:*
+        version: link:../core
+      jsonc-parser:
+        specifier: 3.3.1
+        version: 3.3.1
     devDependencies:
       tsup:
         specifier: 8.5.1
@@ -69,12 +76,15 @@ importers:
       vitest:
         specifier: 5.0.3
         version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+      wrangler:
+        specifier: 4.149.0
+        version: 4.149.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)
 
   packages/core:
     devDependencies:
       '@cloudflare/vitest-plugin':
         specifier: 1.4.0
-        version: 1.4.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)))
+        version: 1.4.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
       '@cloudflare/workers-types':
         specifier: 5.20261010.1
         version: 5.20261010.1
@@ -86,7 +96,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.3
-        version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7))
+        version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
 
   packages/create-castra:
     devDependencies:
@@ -1339,6 +1349,9 @@ packages:
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
 
+  jsonc-parser@3.3.1:
+    resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
+
   keyv@5.6.0:
     resolution: {integrity: sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw==}
 
@@ -1860,20 +1873,6 @@ snapshots:
       unenv: 2.0.0-rc.24
     optionalDependencies:
       workerd: 1.20261006.1
-
-  '@cloudflare/vitest-plugin@1.4.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)))':
-    dependencies:
-      cjs-module-lexer: 1.2.3
-      esbuild: 0.28.2
-      miniflare: 5.20261006.1-alpha(@types/node@22.20.5)
-      vitest: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7))
-      wrangler: 4.149.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)
-      zod: 4.6.5
-    transitivePeerDependencies:
-      - '@cloudflare/workers-types'
-      - '@types/node'
-      - bufferutil
-      - utf-8-validate
 
   '@cloudflare/vitest-plugin@1.4.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))':
     dependencies:
@@ -2798,6 +2797,8 @@ snapshots:
   json-schema-traverse@0.4.1: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
+
+  jsonc-parser@3.3.1: {}
 
   keyv@5.6.0:
     dependencies:

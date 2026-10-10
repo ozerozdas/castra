@@ -6,16 +6,24 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "bin": { "castra": "./dist/index.js" },
+  "bin": { "castra": "./dist/cli.js" },
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "castra": "workspace:*",
+    "jsonc-parser": "3.3.1"
+  },
+  "peerDependencies": {
+    "wrangler": ">=4"
+  },
   "devDependencies": {
     "tsup": "8.5.1",
     "typescript": "6.0.3",
-    "vitest": "5.0.3"
+    "vitest": "5.0.3",
+    "wrangler": "4.149.0"
   }
 }
