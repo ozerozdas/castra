@@ -7,5 +7,5 @@
       "castra": ["../../packages/core/src/index.ts"]
     }
   },
-  "include": ["src", "test", "env.d.ts", "vitest.config.ts"]
+  "include": ["src", "test", "env.d.ts", "vitest.config.ts", "castra.config.ts"]
 }

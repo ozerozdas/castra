@@ -13,7 +13,10 @@
   },
   "dependencies": {
     "@castra/auth": "workspace:*",
-    "hono": "4.13.13"
+    "castra": "workspace:*",
+    "hono": "4.13.13",
+    "kysely": "0.29.6",
+    "kysely-d1": "0.4.0"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.4.0",
