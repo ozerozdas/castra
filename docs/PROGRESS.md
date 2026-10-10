@@ -45,6 +45,15 @@
     `@cloudflare/vitest-plugin` 1.4.0, `@cloudflare/workers-types` 5.20261010.1.
   - Open: snapshot in policy tests is a hand-written fixture until the Schema agent's generator lands.
 
+- **M1/M3 security review findings fixed** (2026-10-10)
+  - `checkRow` numeric-text detection is ASCII-whitespace only, as SQLite (Unicode whitespace stayed TEXT while the
+    check CAST it to a number: WITH CHECK bypass).
+  - `owner()` columns are implicitly `setBy: "server"` (ADR 0007 amendment).
+  - `hidden` columns in `filterable` are a config error; new `PolicyEngine.canFilter(table, column, ctx)` for the API
+    layer (M2 must call it for every filtered/sorted column).
+  - `buildAuthOptions` rejects the `.dev.vars.example` placeholder and weak secrets.
+  - Schema introspection uses `pragma_*()` table-valued functions with bound parameters (ADR 0009).
+
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
 
@@ -77,3 +86,6 @@ Other decisions:
 - Contract types: `ColumnSnapshot.notNull` for INTEGER PRIMARY KEY columns follows `PRAGMA table_info`; Schema agent should confirm.
 - Re-verify npm availability of `castra` / `create-castra` before any publish (ADR 0004).
 - `pnpm install` emits no peer warnings, but two workerd versions are installed (wrangler vs the plugin's miniflare).
+- `isReservedTable` hard-codes the four Better Auth tables (`user`, `session`, `account`, `verification`). A Better Auth
+  plugin that adds tables must also add them to `AUTH_TABLES`, or the policy engine could expose them. v0.1 uses only the
+  `bearer` plugin, which adds no tables.
