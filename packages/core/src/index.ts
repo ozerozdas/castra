@@ -51,3 +51,5 @@ export type {
   WhereArgs,
   WherePredicate,
 } from "./policy/index.js";
+
+export * from "./api/index.js";
