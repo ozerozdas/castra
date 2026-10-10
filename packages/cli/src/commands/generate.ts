@@ -17,6 +17,8 @@ export interface GenerateOptions {
   check: boolean;
   /** D1 binding to introspect; required if the config has several. */
   binding?: string;
+  /** Label of the database in messages. Default `local database`. */
+  source?: string;
 }
 
 /** Side effects of `castra generate`, injectable for tests. */
@@ -97,7 +99,7 @@ export async function generate(options: GenerateOptions, deps: GenerateDeps): Pr
       drift.push(`${typesPath} is ${typesText === null ? "missing" : "out of date"} for the committed snapshot`);
     }
     if (drift.length > 0) {
-      deps.error(`Schema drift between ${schemaPath} and the local database "${target.binding}":`);
+      deps.error(`Schema drift between ${schemaPath} and the ${options.source ?? "local database"} "${target.binding}":`);
       for (const line of drift) deps.error(`  - ${line}`);
       deps.error("Run `castra generate` to update the snapshot.");
       return 1;
