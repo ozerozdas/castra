@@ -14,9 +14,9 @@ forbidRealNetwork();
 /** Answers the statements `introspect` issues for a one-table schema. */
 const schemaRows =
   (extraColumn: boolean) =>
-  (sql: string): Record<string, unknown>[] => {
+  (sql: string, params: unknown[]): Record<string, unknown>[] => {
     if (sql.startsWith("SELECT name FROM sqlite_master")) return [{ name: "posts" }];
-    if (sql === 'PRAGMA table_info("posts")') {
+    if (sql.includes("pragma_table_info(?)") && params[0] === "posts") {
       return [
         { cid: 0, name: "id", type: "TEXT", notnull: 1, dflt_value: null, pk: 1 },
         { cid: 1, name: "title", type: "TEXT", notnull: 1, dflt_value: null, pk: 0 },
@@ -85,7 +85,7 @@ async function castraDeploy(
 /** Commit a snapshot that matches `schemaRows(false)`. */
 async function commitSnapshot() {
   const rows = schemaRows(false);
-  const query: QueryFn = async (sql) => rows(sql);
+  const query: QueryFn = async (sql, params = []) => rows(sql, params);
   const code = await run(["generate"], {
     cwd: dir,
     log: () => {},

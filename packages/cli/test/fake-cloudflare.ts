@@ -35,7 +35,7 @@ export class FakeCloudflare {
   secrets = new Map<string, string[]>();
   subdomain = "testsub";
   /** Rows returned for D1 HTTP queries, keyed by SQL. */
-  d1Query: (sql: string) => Record<string, unknown>[] = () => [];
+  d1Query: (sql: string, params: unknown[]) => Record<string, unknown>[] = () => [];
   private seq = 0;
 
   get posts(): Call[] {
@@ -103,7 +103,7 @@ export class FakeCloudflare {
       }
     }
     if (/^\/accounts\/[^/]+\/d1\/database\/[^/]+\/query$/.test(path) && method === "POST") {
-      return this.deny("d1") ?? this.ok([{ results: this.d1Query(String(body?.sql)), success: true }]);
+      return this.deny("d1") ?? this.ok([{ results: this.d1Query(String(body?.sql), (body?.params as unknown[] | undefined) ?? []), success: true }]);
     }
     if (/^\/accounts\/[^/]+\/storage\/kv\/namespaces$/.test(path)) {
       const denied = this.deny("kv");
