@@ -1,0 +1,260 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-10T12:18:04.505Z",
+  "tables": {
+    "audit_logs": {
+      "name": "audit_logs",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "action",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "indexes": []
+    },
+    "comments": {
+      "name": "comments",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "post_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "user_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "body",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "post_id",
+          "referencesTable": "posts",
+          "referencesColumn": "id",
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION"
+        },
+        {
+          "column": "user_id",
+          "referencesTable": "users",
+          "referencesColumn": "id",
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_comments_post_id",
+          "unique": false,
+          "columns": [
+            "post_id"
+          ]
+        },
+        {
+          "name": "idx_comments_user_id",
+          "unique": false,
+          "columns": [
+            "user_id"
+          ]
+        }
+      ]
+    },
+    "posts": {
+      "name": "posts",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "author_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "body",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "''",
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "'draft'",
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "internal_notes",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "author_id",
+          "referencesTable": "users",
+          "referencesColumn": "id",
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_posts_author_id",
+          "unique": false,
+          "columns": [
+            "author_id"
+          ]
+        },
+        {
+          "name": "idx_posts_status_created_at",
+          "unique": false,
+          "columns": [
+            "status",
+            "created_at"
+          ]
+        }
+      ]
+    },
+    "users": {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_users_2",
+          "unique": true,
+          "columns": [
+            "email"
+          ]
+        }
+      ]
+    }
+  }
+}
