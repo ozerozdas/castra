@@ -13,6 +13,14 @@
   - GitHub Actions CI, ADRs 0001-0004, README stub.
 
 ## In progress
+- **M2 REST API (pending review)**
+  - `castra` core `src/api`: `parseRequest` → `planRequest` (compiled SQL + explanations, no execution) →
+    `executePlan`; `createRestRouter` (Hono, problem+json, `beforeRequest` hook), `generateOpenApi` (3.1),
+    `d1Batch`. ADRs 0040–0044.
+  - Creates/updates run as one D1 batch [write, guard, re-read]. `engine.writeGuard` is not merged yet:
+    `TODO(M1 writeGuard)` in `plan.ts`; until it lands every create/update fails closed (500, nothing written).
+    Core D1 tests use a test-only guard stand-in; blog success-path write tests are `skipIf(!writeGuard)`.
+  - `examples/blog`: `castra.config.ts` (§7), REST routes mounted, snapshot regenerated with auth tables.
 - **M1 schema snapshot (pending review)**
   - `castra` core: `introspect(query)`, `generateKyselyTypes(snapshot)`, `diffSnapshots(a, b)` in
     `packages/core/src/schema`, tested against a real miniflare D1 (core now runs its tests in the Workers pool).
