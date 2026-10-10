@@ -56,6 +56,10 @@ function diffTable(left: TableSnapshot, right: TableSnapshot, out: string[]): vo
     out.push(`${scope}column order changed from [${sharedA.join(", ")}] to [${sharedB.join(", ")}]`);
   }
 
+  if ((left.strict === true) !== (right.strict === true)) {
+    out.push(`${scope}STRICT changed from ${left.strict === true} to ${right.strict === true}`);
+  }
+
   if (left.primaryKey.join("\0") !== right.primaryKey.join("\0")) {
     out.push(`${scope}primary key changed from (${left.primaryKey.join(", ")}) to (${right.primaryKey.join(", ")})`);
   }

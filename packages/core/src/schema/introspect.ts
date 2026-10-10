@@ -64,7 +64,7 @@ interface RawForeignKey {
  * Build a {@link SchemaSnapshot} from a live SQLite/D1 database.
  *
  * Sources: `sqlite_master` (tables) and the table-valued functions `pragma_table_info`,
- * `pragma_foreign_key_list`, `pragma_index_list` and `pragma_index_info`, called with bound parameters (ADR 0009). Views and the tables matched by {@link isInternalTable}
+ * `pragma_foreign_key_list`, `pragma_index_list`, `pragma_index_info` and `pragma_table_list` (STRICT flag), called with bound parameters (ADR 0009). Views and the tables matched by {@link isInternalTable}
  * are skipped. Output is deterministic: tables sorted by name, columns in declaration order, foreign
  * keys sorted by (column, table, referenced column), indexes sorted by name.
  *
@@ -163,5 +163,10 @@ async function introspectTable(
   }
   indexes.sort((a, b) => compare(a.name, b.name));
 
-  return { table: { name, columns, primaryKey, foreignKeys: [], indexes }, foreignKeys };
+  const listRows = await query("SELECT * FROM pragma_table_list(?) WHERE schema = 'main'", [name]);
+  const strict = listRows.some((r) => num(r.strict) === 1);
+
+  const table: TableSnapshot = { name, columns, primaryKey, foreignKeys: [], indexes };
+  if (strict) table.strict = true;
+  return { table, foreignKeys };
 }

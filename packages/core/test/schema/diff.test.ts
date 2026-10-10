@@ -28,6 +28,13 @@ describe("diffSnapshots", () => {
     expect(diffSnapshots(base(), b)).toEqual([]);
   });
 
+  it("reports a STRICT change and treats an absent flag as non-STRICT", () => {
+    const b = base();
+    b.tables.posts!.strict = true;
+    expect(diffSnapshots(base(), b)).toEqual(['table "posts": STRICT changed from false to true']);
+    expect(diffSnapshots(b, structuredClone(b))).toEqual([]);
+  });
+
   it("reports missing and extra tables", () => {
     const b = base();
     b.tables.extra = { name: "extra", columns: [], primaryKey: [], foreignKeys: [], indexes: [] };
