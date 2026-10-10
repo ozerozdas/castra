@@ -6,7 +6,7 @@ import {
   type CastraAuthOptions,
   type CastraAuthVariables,
 } from "@castra/auth";
-import { createPolicyEngine, createRestRouter, type PolicyEngine, type SchemaSnapshot } from "castra";
+import { createPolicyEngine, createRestRouter, withProblemHandlers, type PolicyEngine, type SchemaSnapshot } from "castra";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
@@ -45,7 +45,8 @@ function kyselyFor(d1: D1Database): Kysely<any> {
 
 /** Builds the blog Worker. Tests pass their own engine; production uses {@link engine}. */
 export function createApp(options: { engine?: PolicyEngine } = {}) {
-  const app = new Hono<AppEnv>();
+  // Hono's route() does not carry notFound/onError over: set the problem+json fallbacks on the root app.
+  const app = withProblemHandlers(new Hono<AppEnv>());
 
   app.get("/health", (c) => c.json({ ok: true }));
 

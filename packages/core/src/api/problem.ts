@@ -1,3 +1,5 @@
+import type { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { PolicyError } from "../policy/errors.js";
 
 /** RFC 9457 problem details body. Every REST error is rendered as `application/problem+json`. */
@@ -81,5 +83,28 @@ export function toProblem(err: unknown): ProblemDetails {
     }
     return problemBody(err.status, err.message, err.code);
   }
+  // D1/SQLite refuses LIKE patterns it considers too complex: the client sent a bad filter.
+  if (err instanceof Error && /LIKE or GLOB pattern too complex/i.test(err.message)) {
+    return problemBody(400, "filter: like pattern is too complex", "invalid_filter");
+  }
   return problemBody(500, "An unexpected error occurred.", "internal");
+}
+
+/**
+ * Mounts problem+json fallbacks on a Hono app: unmatched routes answer 404 and uncaught exceptions
+ * answer a generic 500, both as `application/problem+json` with no internals. `app.route()` does not
+ * carry `notFound`/`onError` of a sub-app over, so call this on the root app (the REST router calls
+ * it on itself too). Usage: `const app = withProblemHandlers(new Hono())`.
+ */
+export function withProblemHandlers<T extends Hono<any>>(app: T): T { // eslint-disable-line @typescript-eslint/no-explicit-any
+  app.notFound(() => problemResponse(404, notFound().message, "not_found"));
+  app.onError((err) => {
+    if (err instanceof HTTPException && err.status < 500) {
+      return problemResponse(err.status, TITLES[err.status] ?? "Request failed");
+    }
+    const p = toProblem(err);
+    if (p.status >= 500) console.error("castra: request failed", err);
+    return new Response(JSON.stringify(p), { status: p.status, headers: { "content-type": "application/problem+json" } });
+  });
+  return app;
 }

@@ -26,3 +26,10 @@ SQLite affinity is loose, so the type guarantee must come from the API layer (AR
 ## Consequences
 - NUMERIC columns that hold text dates must be filtered with numbers or declared TEXT.
 - Booleans in JSON are not accepted for INTEGER columns; clients send 0/1.
+
+## Amendment (2026-10-10, third security review)
+`like` patterns are capped at 256 characters and 10 `*` wildcards (`400 invalid_filter`); SQLite refuses
+"complex" patterns with an error that D1 surfaces as a 500. As a backstop `toProblem` maps that specific error
+("LIKE or GLOB pattern too complex") to 400. Unmatched routes and uncaught exceptions under the app are
+`application/problem+json` via `withProblemHandlers(app)` (`notFound` + `onError`); Hono's `route()` does not carry
+them over, so the root app must call it (the REST router and the blog app do).

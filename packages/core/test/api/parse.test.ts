@@ -17,6 +17,21 @@ function status(fn: () => unknown): number {
   return 0;
 }
 
+describe("parseFilter: like pattern caps", () => {
+  it("allows up to 10 wildcards and 256 characters", () => {
+    expect(parseFilter("c", `like.${"*a".repeat(10)}`)).toMatchObject({ op: "like" });
+    expect(parseFilter("c", `like.${"a".repeat(256)}`)).toMatchObject({ op: "like" });
+  });
+  it("rejects more than 10 wildcards and more than 256 characters with 400", () => {
+    expect(status(() => parseFilter("c", `like.${"*a".repeat(11)}`))).toBe(400);
+    expect(status(() => parseFilter("c", `like.${"*a".repeat(120)}b`))).toBe(400);
+    expect(status(() => parseFilter("c", `like.${"a".repeat(257)}`))).toBe(400);
+  });
+  it("does not count literal % and _ as wildcards", () => {
+    expect(parseFilter("c", `like.${"%_".repeat(10)}*`)).toMatchObject({ op: "like" });
+  });
+});
+
 describe("parseRequest: routing", () => {
   const q = new URLSearchParams();
   it.each<[string, string | undefined, unknown, ParsedRequest["kind"]]>([

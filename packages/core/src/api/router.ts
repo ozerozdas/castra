@@ -9,7 +9,7 @@ import { apiModel } from "./model.js";
 import { generateOpenApi, type JsonObject } from "./openapi.js";
 import { parseRequest } from "./parse.js";
 import { executePlan, planRequest } from "./plan.js";
-import { ApiError, notFound, problemResponse, toProblem } from "./problem.js";
+import { ApiError, notFound, problemResponse, toProblem, withProblemHandlers } from "./problem.js";
 
 /** Default request body limit: 1 MiB. */
 export const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
@@ -75,7 +75,7 @@ export function createRestRouter<E extends Env = Env>(options: RestRouterOptions
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
   let openapi: JsonObject | undefined;
 
-  const app = new Hono<E>();
+  const app = withProblemHandlers(new Hono<E>());
 
   app.get("/openapi.json", (c) => {
     openapi ??= generateOpenApi({ config, snapshot, engine, basePath, ...options.openapi });

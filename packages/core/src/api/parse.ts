@@ -16,6 +16,8 @@ export const LIMITS = Object.freeze({
   includes: 10,
   cursorLength: 2048,
   maxOffset: 100_000,
+  likeWildcards: 10,
+  likeLength: 256,
 });
 
 /** One `?column=op.value` filter, syntactically parsed. Columns are checked later, by `planRequest`. */
@@ -191,8 +193,15 @@ export function parseFilter(column: string, expr: string): ParsedFilter {
     case "gte":
     case "lt":
     case "lte":
-    case "like":
       return { column, op, value };
+    case "like": {
+      // SQLite rejects complex LIKE patterns ("LIKE or GLOB pattern too complex"); cap them up front.
+      const wildcards = value.split("*").length - 1;
+      if (value.length > LIMITS.likeLength || wildcards > LIMITS.likeWildcards) {
+        throw bad(`filter "${column}": like pattern is too long or has too many wildcards`, "invalid_filter");
+      }
+      return { column, op, value };
+    }
     case "is":
       if (value === "null" || value === "true" || value === "false") return { column, op, value };
       throw bad(`filter "${column}": is accepts null, true or false`, "invalid_filter");
