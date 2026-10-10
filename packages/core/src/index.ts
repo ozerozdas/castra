@@ -12,3 +12,13 @@ export type {
   SqliteAffinity,
   TableSnapshot,
 } from "./types.js";
+
+export {
+  affinityOf,
+  diffSnapshots,
+  generateKyselyTypes,
+  introspect,
+  isInternalTable,
+  quoteIdentifier,
+} from "./schema/index.js";
+export type { IntrospectOptions, QueryFn } from "./schema/index.js";
