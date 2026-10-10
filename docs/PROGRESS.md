@@ -13,14 +13,14 @@
   - GitHub Actions CI, ADRs 0001-0004, README stub.
 
 ## In progress
-- **M2 REST API (pending review)**
+- **M2 REST API (signed off by review 3, findings fixed)**
   - `castra` core `src/api`: `parseRequest` → `planRequest` (compiled SQL + explanations, no execution) →
     `executePlan`; `createRestRouter` (Hono, problem+json, `beforeRequest` hook), `generateOpenApi` (3.1),
     ADRs 0040–0044.
   - Creates/updates use `engine.writeGuard` + `runGuardedWrite` (ADR 0050): one atomic [write, guard] D1 batch,
     then a re-read under the read policy. No D1 binding → 500, nothing written.
   - `examples/blog`: `castra.config.ts` (§7), REST routes mounted, snapshot regenerated with auth tables.
-- **M1 schema snapshot (pending review)**
+- **M1 schema snapshot (signed off by review 3)**
   - `castra` core: `introspect(query)`, `generateKyselyTypes(snapshot)`, `diffSnapshots(a, b)` in
     `packages/core/src/schema`, tested against a real miniflare D1 (core now runs its tests in the Workers pool).
   - `@castra/cli`: `castra generate [--local] [--config] [--out] [--binding] [--check]`; other subcommands print
@@ -40,7 +40,7 @@
   - Tests: 15 unit (auth), 24 integration against local D1 (blog).
   - Not done: GitHub OAuth flow only unit-tested (no network); no HTTP endpoints for API key management;
     no `users` mirror repair command.
-- **M1 policy engine (pending review)**
+- **M1 policy engine (signed off by review 3)**
   - `packages/core/src/policy/` (rules, compiler, engine, errors) + `src/config.ts` (`defineConfig`).
     Exports: `defineConfig`, `isPublic`, `authenticated`, `role`, `owner`, `custom`, `Rule`
     (`.and/.or/.where`), `createPolicyEngine` (`isOpen`, `readFilter`, `prepareWrite`, `checkRow`,
@@ -86,6 +86,15 @@
     snapshot (F). `canFilter` is false for tables without an open `read`.
   - M2 API layer must use `runGuardedWrite` for every create/update (see ADR 0050 Consequences).
 
+- **Third security review findings fixed** (2026-10-10; M1 + M2 signed off)
+  - Unmatched paths/methods and uncaught exceptions are `application/problem+json` (404 / generic 500):
+    `withProblemHandlers(app)` (core, exported) is used by `createRestRouter` and the blog root app.
+  - `like` filters capped at 256 chars / 10 wildcards (400); D1 "LIKE or GLOB pattern too complex" maps to 400.
+  - Field write permission (ADR 0007 amendment 2): a `visibleTo` field is writable only by a ctx that could read it.
+  - Item routes (`GET/PATCH/DELETE /:id`) are 404 for ctxs that cannot read the primary key
+    (`PolicyEngine.canReadColumn`).
+  - `d1_migrations` is a reserved table.
+
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
 
@@ -130,3 +139,11 @@ Other decisions:
 - `isReservedTable` hard-codes the four Better Auth tables (`user`, `session`, `account`, `verification`). A Better Auth
   plugin that adds tables must also add them to `AUTH_TABLES`, or the policy engine could expose them. v0.1 uses only the
   `bearer` plugin, which adds no tables.
+- Constraint 409s act as existence oracles: unique constraints on client-chosen values and FK children blocking a
+  delete reveal that a row exists even if the caller cannot read it. For `docs/SECURITY.md`.
+- The keyset cursor always compares on the primary key even when the PK is not in `filterable`. The PK is visible
+  to anyone who can open item routes (they are 404 otherwise), so nothing leaks.
+- The example config makes `comments` public, including comments on draft posts (intended, ARCHITECTURE §7).
+- Better Auth `/api/auth/*` errors are not `application/problem+json`.
+- One-to-many includes are truncated at 25 rows per parent and the response does not signal it.
+- Writing a `visibleTo` column without the role answers 403, which reveals the column exists (ADR 0007 amendment 2).
