@@ -1,7 +1,7 @@
 # 0007. Write check and server-set columns
 
 ## Status
-Accepted (2026-10-10)
+Accepted (2026-10-10). Row check enforcement superseded by ADR 0050 (guarded batch); `checkRow` is now a dry run.
 
 ## Context
 ARCHITECTURE §3 requires Postgres `WITH CHECK` semantics on create/update and server-set owner columns.
