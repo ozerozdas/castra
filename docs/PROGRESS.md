@@ -13,7 +13,16 @@
   - GitHub Actions CI, ADRs 0001-0004, README stub.
 
 ## In progress
-- Nothing.
+- **M1 schema snapshot (pending review)**
+  - `castra` core: `introspect(query)`, `generateKyselyTypes(snapshot)`, `diffSnapshots(a, b)` in
+    `packages/core/src/schema`, tested against a real miniflare D1 (core now runs its tests in the Workers pool).
+  - `@castra/cli`: `castra generate [--local] [--config] [--out] [--binding] [--check]`; other subcommands print
+    "not implemented yet" and exit 2. Reads local D1 through wrangler `getPlatformProxy` (ADR 0011).
+  - `examples/blog/castra/schema.json` + `db.d.ts` generated from the local blog D1.
+  - Mapping decisions (INTEGER PRIMARY KEY `notNull`, index/FK rules) in ADR 0010; `SchemaSnapshot` unchanged.
+  - D1 PRAGMAs verified: `table_list`, `table_info`, `table_xinfo`, `foreign_key_list`, `index_list`, `index_info`,
+    `index_xinfo`, `foreign_keys` work; `user_version`, `schema_version`, `compile_options` are rejected;
+    D1 refuses to create `_cf_*` tables (the filter is covered with a stubbed query).
 
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
