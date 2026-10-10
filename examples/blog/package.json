@@ -12,6 +12,7 @@
     "db:seed:local": "wrangler d1 execute castra-blog --local --file=./seed.sql"
   },
   "dependencies": {
+    "@castra/auth": "workspace:*",
     "hono": "4.13.13"
   },
   "devDependencies": {

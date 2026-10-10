@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-plugin/types"]
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-plugin/types"],
+    "paths": {
+      "@castra/auth": ["../../packages/auth/src/index.ts"],
+      "castra": ["../../packages/core/src/index.ts"]
+    }
   },
   "include": ["src", "test", "env.d.ts", "vitest.config.ts"]
 }

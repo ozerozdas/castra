@@ -1,0 +1,9 @@
+# Copy to .dev.vars for `wrangler dev`. .dev.vars is gitignored; never commit real values.
+# Generate a secret with: openssl rand -hex 32
+# In production set it as a Worker secret: wrangler secret put BETTER_AUTH_SECRET
+BETTER_AUTH_SECRET=replace-me-with-at-least-32-random-characters
+BETTER_AUTH_URL=http://localhost:8787
+
+# Optional: GitHub sign-in is enabled only when both are set.
+# GITHUB_CLIENT_ID=
+# GITHUB_CLIENT_SECRET=
