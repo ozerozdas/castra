@@ -4,6 +4,7 @@
     "types": ["@cloudflare/workers-types", "@cloudflare/vitest-plugin/types"],
     "paths": {
       "@castra/auth": ["../../packages/auth/src/index.ts"],
+      "@castra/mcp": ["../../packages/mcp/src/index.ts"],
       "castra": ["../../packages/core/src/index.ts"]
     }
   },

@@ -6,6 +6,7 @@ import {
   type CastraAuthOptions,
   type CastraAuthVariables,
 } from "@castra/auth";
+import { createMcpRoute } from "@castra/mcp";
 import { createPolicyEngine, createRestRouter, type PolicyEngine, type SchemaSnapshot } from "castra";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
@@ -27,7 +28,7 @@ export const authOptions: CastraAuthOptions = {
 /** The committed schema snapshot (`castra generate`). */
 export const snapshot = schema as unknown as SchemaSnapshot;
 
-/** The policy engine shared by REST (and, later, MCP). */
+/** The policy engine shared by REST and MCP. */
 export const engine: PolicyEngine = createPolicyEngine({ config, snapshot });
 
 // One Kysely instance per D1 binding object.
@@ -48,6 +49,10 @@ export function createApp(options: { engine?: PolicyEngine } = {}) {
   const app = new Hono<AppEnv>();
 
   app.get("/health", (c) => c.json({ ok: true }));
+
+  // Remote MCP (read-only tools, MCP tokens only, every call audited). Mounted before the session /
+  // API-key middleware: /mcp never accepts sessions or API keys.
+  app.route("/", createMcpRoute<AppEnv>({ config, snapshot, engine: options.engine ?? engine, getD1: (c) => c.env.DB }));
 
   authRoutes(app, authOptions);
   app.use("*", castraContext(authOptions));

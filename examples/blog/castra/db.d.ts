@@ -12,6 +12,28 @@ export interface CastraApiKeysTable {
   created_at: Generated<string>;
 }
 
+export interface CastraAuditTable {
+  id: string;
+  at: Generated<string>;
+  token_id: string | null;
+  user_id: string | null;
+  tool: string | null;
+  arguments: string | null;
+  outcome: string;
+  status: number;
+}
+
+export interface CastraMcpTokensTable {
+  id: string;
+  user_id: string;
+  name: string | null;
+  token_hash: string;
+  scopes: string;
+  created_at: Generated<string>;
+  expires_at: string | null;
+  revoked_at: string | null;
+}
+
 export interface CastraRolesTable {
   user_id: string;
   role: string;
@@ -97,6 +119,8 @@ export interface VerificationTable {
 
 export interface DB {
   _castra_api_keys: CastraApiKeysTable;
+  _castra_audit: CastraAuditTable;
+  _castra_mcp_tokens: CastraMcpTokensTable;
   _castra_roles: CastraRolesTable;
   account: AccountTable;
   audit_logs: AuditLogsTable;
