@@ -1,11 +1,36 @@
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 
-// Tests run in the Workers runtime so schema/policy/query code is exercised against a real (miniflare) D1.
+// Two projects:
+// - "unit": plain Node, everything except `*.d1.test.ts`.
+// - "d1": runs `*.d1.test.ts` inside workerd with a real local D1 binding `DB`, so compiled policy
+//   SQL is executed by the same SQLite engine that runs in production.
 export default defineConfig({
-  plugins: [
-    cloudflareTest({
-      miniflare: { compatibilityDate: "2026-10-01", d1Databases: ["DB"] },
-    }),
-  ],
+  test: {
+    projects: [
+      {
+        test: {
+          name: "unit",
+          include: ["test/**/*.test.ts"],
+          exclude: ["test/**/*.d1.test.ts"],
+          environment: "node",
+        },
+      },
+      {
+        plugins: [
+          cloudflareTest({
+            miniflare: {
+              compatibilityDate: "2026-10-01",
+              compatibilityFlags: ["nodejs_compat"],
+              d1Databases: ["DB"],
+            },
+          }),
+        ],
+        test: {
+          name: "d1",
+          include: ["test/**/*.d1.test.ts"],
+        },
+      },
+    ],
+  },
 });

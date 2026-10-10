@@ -33,6 +33,17 @@
   - Tests: 15 unit (auth), 24 integration against local D1 (blog).
   - Not done: GitHub OAuth flow only unit-tested (no network); no HTTP endpoints for API key management;
     no `users` mirror repair command.
+- **M1 policy engine (pending review)**
+  - `packages/core/src/policy/` (rules, compiler, engine, errors) + `src/config.ts` (`defineConfig`).
+    Exports: `defineConfig`, `isPublic`, `authenticated`, `role`, `owner`, `custom`, `Rule`
+    (`.and/.or/.where`), `createPolicyEngine` (`isOpen`, `readFilter`, `prepareWrite`, `checkRow`,
+    `projectRow`, `explain`), `PolicyError`, `CastraConfigError`.
+  - Tests in `packages/core/test/policy/`: Node unit tests + `*.d1.test.ts` on real local D1 (workerd),
+    allow/deny per rule type × op, spoofing, field rules, explain, fast-check properties (300 runs each)
+    against a JS oracle. ADRs 0005–0008.
+  - Deps: `kysely` 0.29.6 (core dep); dev: `kysely-d1` 0.4.0, `fast-check` 4.10.2,
+    `@cloudflare/vitest-plugin` 1.4.0, `@cloudflare/workers-types` 5.20261010.1.
+  - Open: snapshot in policy tests is a hand-written fixture until the Schema agent's generator lands.
 
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
