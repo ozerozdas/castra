@@ -1,7 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "paths": { "castra": ["../core/src/index.ts"] }
+    // Workers types only so @castra/mcp and @castra/auth sources (D1Database) typecheck before a build.
+    "types": ["node", "@cloudflare/workers-types"],
+    "paths": {
+      "castra": ["../core/src/index.ts"],
+      "@castra/auth": ["../auth/src/index.ts"],
+      "@castra/mcp": ["../mcp/src/index.ts"],
+      "@castra/mcp/stdio": ["../mcp/src/stdio.ts"]
+    }
   },
   "include": ["src", "test", "tsup.config.ts", "vitest.config.ts"]
 }

@@ -5,15 +5,28 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./stdio": { "types": "./dist/stdio.d.ts", "import": "./dist/stdio.js" }
+  },
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@castra/auth": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "castra": "workspace:*",
+    "hono": "4.13.13",
+    "kysely": "0.29.6",
+    "kysely-d1": "0.4.0",
+    "zod": "4.6.5"
+  },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.4.0",
+    "@cloudflare/workers-types": "5.20261010.1",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "vitest": "5.0.3"

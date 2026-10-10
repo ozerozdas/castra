@@ -133,7 +133,7 @@ describe("castra generate", () => {
 });
 
 describe("castra dispatch", () => {
-  it.each(["init", "test", "mcp"])(
+  it.each(["init", "test"])(
     "%s is not implemented yet and exits 2",
     async (cmd) => {
       expect(await exec([cmd], opener(fakeDb()))).toBe(2);

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-10T12:44:59.037Z",
+  "generatedAt": "2026-10-10T14:59:46.876Z",
   "tables": {
     "_castra_api_keys": {
       "name": "_castra_api_keys",
@@ -95,6 +95,192 @@
           "unique": true,
           "columns": [
             "key_hash"
+          ]
+        }
+      ]
+    },
+    "_castra_audit": {
+      "name": "_castra_audit",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "token_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "user_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "tool",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "arguments",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "outcome",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "status",
+          "type": "INTEGER",
+          "affinity": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "name": "idx_castra_audit_at",
+          "unique": false,
+          "columns": [
+            "at"
+          ]
+        },
+        {
+          "name": "idx_castra_audit_token_id",
+          "unique": false,
+          "columns": [
+            "token_id"
+          ]
+        }
+      ]
+    },
+    "_castra_mcp_tokens": {
+      "name": "_castra_mcp_tokens",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "user_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "token_hash",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "scopes",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "revoked_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "user_id",
+          "referencesTable": "user",
+          "referencesColumn": "id",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_castra_mcp_tokens_user_id",
+          "unique": false,
+          "columns": [
+            "user_id"
+          ]
+        },
+        {
+          "name": "sqlite_autoindex__castra_mcp_tokens_2",
+          "unique": true,
+          "columns": [
+            "token_hash"
           ]
         }
       ]

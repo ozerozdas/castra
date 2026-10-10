@@ -14,6 +14,25 @@
 
 ## In progress
 - **M2 REST API (signed off by review 3, findings fixed)**
+- **M4 MCP (pending review)**
+  - `@castra/mcp`: four read-only tools (`describe_schema`, `check_access`, `explain_query`, `query_data`) defined
+    once and served by both transports. They run on the same engine and REST pipeline (ADR 0060).
+    `query_data` ≡ REST, asserted for 5 identities × 10 requests.
+  - Remote: `createMcpRoute` / `handleMcpRequest`, stateless Streamable HTTP with JSON responses (SDK 1.32.1,
+    ADR 0062). It accepts `castra_mcp_` tokens only (`_castra_mcp_tokens`, SHA-256 hashed, constant-time).
+    Scopes are `schema:read`, `access:check`, `data:read` and `data:read:any_user` (ADR 0061).
+  - Audit: a fail-closed `_castra_audit` row per message (ADR 0063).
+  - `explain_query` explains writes without executing them (ADR 0064).
+  - CLI:
+    - `castra mcp`: stdio against the local D1, `as` impersonates anyone (ADR 0065).
+    - `castra mcp token create|revoke [--local|--remote]`.
+  - `examples/blog`: `0003_mcp.sql`, `/mcp` mounted before the session/API-key middleware, snapshot regenerated
+    (new tables present, unexposed).
+  - Not done:
+    - Stdio MCP against the remote D1 via the API token (ARCHITECTURE §5 "Local").
+    - Audit retention.
+    - A `castra mcp token list` command.
+- **M2 REST API (pending review)**
   - `castra` core `src/api`: `parseRequest` → `planRequest` (compiled SQL + explanations, no execution) →
     `executePlan`; `createRestRouter` (Hono, problem+json, `beforeRequest` hook), `generateOpenApi` (3.1),
     ADRs 0040–0044.

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@castra/auth": "workspace:*",
+    "@castra/mcp": "workspace:*",
     "castra": "workspace:*",
     "hono": "4.13.13",
     "kysely": "0.29.6",

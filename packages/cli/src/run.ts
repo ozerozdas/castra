@@ -5,17 +5,21 @@ import type { CloudflareEnv } from "./cloudflare/connect.js";
 import { deploy } from "./commands/deploy.js";
 import { doctor } from "./commands/doctor.js";
 import { generate } from "./commands/generate.js";
+import { createMcpTokenCommand, revokeMcpTokenCommand } from "./commands/mcp-token.js";
+import { mcp } from "./commands/mcp.js";
 import { migrate } from "./commands/migrate.js";
 import { provision } from "./commands/provision.js";
 import { spawnExec } from "./exec.js";
 import type { ExecFn } from "./exec.js";
+import { connect } from "./cloudflare/connect.js";
 import { openLocalD1 } from "./local-d1.js";
 import type { OpenDatabaseFn } from "./local-d1.js";
 import { ProblemError } from "./problems.js";
+import { remoteD1Opener } from "./remote-d1.js";
 import { CliError } from "./wrangler-config.js";
 
 /** Commands that are planned (ARCHITECTURE section 6) but not built yet. */
-const PLANNED = ["init", "test", "mcp"] as const;
+const PLANNED = ["init", "test"] as const;
 
 const USAGE = `castra - Cloudflare-native, agent-safe BaaS toolkit
 
@@ -27,6 +31,7 @@ Commands:
   migrate    Apply migrations with wrangler (--local by default, or --remote)
   doctor     Check the API token, its permissions, bindings and schema drift
   deploy     provision -> migrate --remote -> drift check -> secrets -> wrangler deploy
+  mcp        Serve the read-only MCP tools over stdio against the local D1; \`mcp token\` manages /mcp tokens
   ${PLANNED.join(", ")}   (not implemented yet)
 
 Environment: CLOUDFLARE_API_TOKEN (required for provision/doctor/deploy/migrate --remote),
@@ -87,6 +92,27 @@ Options:
   --binding <name>     D1 binding when the config declares several
   --out <dir>          Snapshot directory (default: castra)`;
 
+const MCP_USAGE = `Usage: castra mcp [options]
+       castra mcp token create --user <id> --scopes "<scopes>" [--name <n>] [--expires-in <days>] [--local | --remote]
+       castra mcp token revoke <id> [--local | --remote]
+
+castra mcp serves describe_schema, check_access, explain_query and query_data over stdio against the LOCAL D1
+database. It is a developer tool: \`as\` may impersonate ANY user or role, with no token and no audit log.
+Never expose it over a network; the deployed Worker's /mcp route uses scoped tokens instead.
+
+Options (serve):
+  --config <path>      Castra config (default: castra.config.ts; .ts needs Node >= 22.18)
+  --wrangler <path>    Wrangler config (default: wrangler.jsonc)
+  --binding <name>     D1 binding when the wrangler config declares several
+  --out <dir>          Snapshot directory holding schema.json (default: castra)
+
+Options (token):
+  --config <path>      Wrangler config (default: wrangler.jsonc)
+  --scopes "<list>"    schema:read access:check data:read data:read:any_user (space or comma separated)
+  --local              Write to the local D1 database (default)
+  --remote             Write to the Cloudflare database (needs CLOUDFLARE_API_TOKEN)
+  --account-id <id>    Cloudflare account for --remote`;
+
 /** I/O seams of {@link run}; defaults use the real process. */
 export interface RunEnv {
   cwd: string;
@@ -140,6 +166,8 @@ export async function run(argv: string[], overrides: Partial<RunEnv> = {}): Prom
         return await runDoctor(rest, env);
       case "deploy":
         return await runDeploy(rest, env);
+      case "mcp":
+        return await runMcp(rest, env);
     }
 
     if ((PLANNED as readonly string[]).includes(command)) {
@@ -293,4 +321,80 @@ async function runDeploy(args: string[], env: RunEnv): Promise<number> {
     env,
   );
   return result.code;
+}
+
+async function runMcp(args: string[], env: RunEnv): Promise<number> {
+  if (args[0] === "token") return runMcpToken(args.slice(1), env);
+  const values = parse(
+    args,
+    {
+      config: { type: "string", default: "castra.config.ts" },
+      wrangler: { type: "string", default: "wrangler.jsonc" },
+      binding: { type: "string" },
+      out: { type: "string", default: "castra" },
+      help: { type: "boolean", short: "h", default: false },
+    },
+    MCP_USAGE,
+  );
+  if (values.help) {
+    env.log(MCP_USAGE);
+    return 0;
+  }
+  // stdout carries the protocol; anything else that logs (wrangler, user config) goes to stderr.
+  console.log = console.info = console.debug = (...a: unknown[]) => console.error(...a);
+  return mcp({ cwd: env.cwd, config: values.config, wrangler: values.wrangler, binding: values.binding, out: values.out });
+}
+
+async function runMcpToken(args: string[], env: RunEnv): Promise<number> {
+  const [action, ...rest] = args;
+  if (action !== "create" && action !== "revoke") throw new CliError(`Expected \`mcp token create\` or \`mcp token revoke <id>\`.\n\n${MCP_USAGE}`);
+  let parsed;
+  try {
+    parsed = parseArgs({
+      args: rest,
+      strict: true,
+      allowPositionals: action === "revoke",
+      options: {
+        ...COMMON,
+        binding: { type: "string" },
+        local: { type: "boolean", default: false },
+        remote: { type: "boolean", default: false },
+        "account-id": { type: "string" },
+        user: { type: "string" },
+        scopes: { type: "string" },
+        name: { type: "string" },
+        "expires-in": { type: "string" },
+      },
+    });
+  } catch (e) {
+    throw new CliError(`${e instanceof Error ? e.message : String(e)}\n\n${MCP_USAGE}`);
+  }
+  const { values, positionals } = parsed;
+  if (values.help) {
+    env.log(MCP_USAGE);
+    return 0;
+  }
+  if (values.local && values.remote) throw new CliError(`Pass either --local or --remote, not both.\n\n${MCP_USAGE}`);
+  let openDatabase = env.openDatabase;
+  if (values.remote) {
+    const session = await connect({ env: env.env, fetch: env.fetch, accountId: values["account-id"] });
+    openDatabase = remoteD1Opener(session.api, session.accountId);
+  }
+  const target = { cwd: env.cwd, config: values.config, binding: values.binding };
+  const deps = { openDatabase, log: env.log, error: env.error };
+  if (action === "revoke") {
+    if (positionals.length !== 1) throw new CliError(`Usage: castra mcp token revoke <id>\n\n${MCP_USAGE}`);
+    return revokeMcpTokenCommand({ ...target, id: positionals[0]! }, deps);
+  }
+  if (!values.user || !values.scopes) throw new CliError(`--user and --scopes are required.\n\n${MCP_USAGE}`);
+  return createMcpTokenCommand(
+    {
+      ...target,
+      user: values.user,
+      scopes: values.scopes,
+      name: values.name,
+      expiresInDays: values["expires-in"] === undefined ? undefined : Number(values["expires-in"]),
+    },
+    deps,
+  );
 }

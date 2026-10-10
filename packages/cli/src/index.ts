@@ -20,6 +20,10 @@ export { doctor, formatTable, PERMISSIONS } from "./commands/doctor.js";
 export type { CheckStatus, DoctorCheck, DoctorDeps, DoctorOptions, PermissionSpec } from "./commands/doctor.js";
 export { deploy, parseDeployedUrl, AUTH_SECRET_NAME } from "./commands/deploy.js";
 export type { DeployDeps, DeployOptions, DeployResult } from "./commands/deploy.js";
+export { mcp, loadCastraConfig } from "./commands/mcp.js";
+export type { McpOptions } from "./commands/mcp.js";
+export { createMcpTokenCommand, revokeMcpTokenCommand } from "./commands/mcp-token.js";
+export type { CreateMcpTokenOptions, McpTokenDeps, McpTokenTarget } from "./commands/mcp-token.js";
 
 // Cloudflare API client and session.
 export { CloudflareApi, CloudflareApiError, CLOUDFLARE_API_BASE } from "./cloudflare/api.js";
