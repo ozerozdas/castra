@@ -44,6 +44,19 @@
   - Deps: `kysely` 0.29.6 (core dep); dev: `kysely-d1` 0.4.0, `fast-check` 4.10.2,
     `@cloudflare/vitest-plugin` 1.4.0, `@cloudflare/workers-types` 5.20261010.1.
   - Open: snapshot in policy tests is a hand-written fixture until the Schema agent's generator lands.
+- **M5 CLI provision/doctor/migrate/deploy (pending review)**
+  - `@castra/cli`: `castra provision [--config] [--account-id] [--storage]`, `castra doctor`,
+    `castra migrate [--local|--remote]`, `castra deploy`. Cloudflare REST client behind injectable `fetch`,
+    wrangler behind injectable `exec`; all exported from `packages/cli/src/index.ts` for `create-castra`.
+  - Provision is find-by-name then create; ids written with `jsonc-parser` edits (comments preserved); second run
+    makes 0 POSTs. KV `CACHE` added when missing; R2 only with `--storage` or existing `r2_buckets` (ADR 0031).
+  - Deploy: provision → `migrate --remote` → drift check against remote D1 via D1 HTTP query → `BETTER_AUTH_SECRET`
+    (32 random bytes, stdin only, only if missing) → `wrangler deploy` → prints API, `/openapi.json`, `/mcp`.
+  - Doctor: read-only probes (+ token policies if "API Tokens Read"), binding and local drift checks (ADR 0033).
+  - Minimum token permissions with sources: `docs/cloudflare-token.md`. ADRs 0030–0034.
+  - Tests: fake Cloudflare API + fake wrangler; global `fetch` stubbed to fail. Nothing run against a real account.
+  - Not done: real-account deploy (human), `env.*` overrides in wrangler.jsonc, `castra init`, `--persist-to`,
+    custom domains/routes in the printed URL beyond what wrangler prints.
 
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
