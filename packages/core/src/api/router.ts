@@ -4,7 +4,7 @@ import type { Kysely } from "kysely";
 import type { CastraConfig } from "../config.js";
 import { createPolicyEngine, type PolicyEngine } from "../policy/engine.js";
 import type { CastraContext, Operation, SchemaSnapshot } from "../types.js";
-import type { BatchRunner } from "./batch.js";
+import type { D1DatabaseLike } from "../db/guarded-write.js";
 import { apiModel } from "./model.js";
 import { generateOpenApi, type JsonObject } from "./openapi.js";
 import { parseRequest } from "./parse.js";
@@ -34,10 +34,10 @@ export interface RestRouterOptions<E extends Env = Env> {
   /** The request's identity, e.g. `(c) => c.get("ctx")` after `castraContext()`. */
   getContext: (c: Context<E>) => CastraContext;
   /**
-   * Atomic batch runner for creates and updates, e.g. `(c) => d1Batch(c.env.DB)`. Without it,
-   * creates and updates fail closed (500) and nothing is written.
+   * The D1 binding for creates and updates, e.g. `(c) => c.env.DB`: they run as one atomic
+   * [write, guard] batch (ADR 0050). Without it, creates and updates fail closed (500).
    */
-  getBatch?: (c: Context<E>) => BatchRunner;
+  getD1?: (c: Context<E>) => D1DatabaseLike;
   /** Prefix of the table routes. Default `/api`. */
   basePath?: string;
   /** Max request body in bytes (413 above). Default 1 MiB. */
@@ -111,7 +111,7 @@ export function createRestRouter<E extends Env = Env>(options: RestRouterOptions
       }
       const parsed = parseRequest({ method, table, id, query: new URL(c.req.url).searchParams, body });
       const plan = planRequest(engine, snapshot, config, parsed, options.getContext(c));
-      const result = await executePlan(options.getDb(c), plan, { batch: options.getBatch?.(c) });
+      const result = await executePlan(options.getDb(c), plan, { d1: options.getD1?.(c) });
       if (result.status === 204) return c.body(null, 204);
       return c.json(result.body as JsonObject, result.status);
     } catch (err) {

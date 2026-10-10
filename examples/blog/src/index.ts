@@ -6,7 +6,7 @@ import {
   type CastraAuthOptions,
   type CastraAuthVariables,
 } from "@castra/auth";
-import { createPolicyEngine, createRestRouter, d1Batch, type PolicyEngine, type SchemaSnapshot } from "castra";
+import { createPolicyEngine, createRestRouter, type PolicyEngine, type SchemaSnapshot } from "castra";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
@@ -68,7 +68,7 @@ export function createApp(options: { engine?: PolicyEngine } = {}) {
       snapshot,
       engine: options.engine ?? engine,
       getDb: (c) => kyselyFor(c.env.DB),
-      getBatch: (c) => d1Batch(c.env.DB),
+      getD1: (c) => c.env.DB,
       getContext: (c) => c.get("ctx"),
       openapi: { title: "Castra blog example" },
     }),

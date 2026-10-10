@@ -16,10 +16,9 @@
 - **M2 REST API (pending review)**
   - `castra` core `src/api`: `parseRequest` → `planRequest` (compiled SQL + explanations, no execution) →
     `executePlan`; `createRestRouter` (Hono, problem+json, `beforeRequest` hook), `generateOpenApi` (3.1),
-    `d1Batch`. ADRs 0040–0044.
-  - Creates/updates run as one D1 batch [write, guard, re-read]. `engine.writeGuard` is not merged yet:
-    `TODO(M1 writeGuard)` in `plan.ts`; until it lands every create/update fails closed (500, nothing written).
-    Core D1 tests use a test-only guard stand-in; blog success-path write tests are `skipIf(!writeGuard)`.
+    ADRs 0040–0044.
+  - Creates/updates use `engine.writeGuard` + `runGuardedWrite` (ADR 0050): one atomic [write, guard] D1 batch,
+    then a re-read under the read policy. No D1 binding → 500, nothing written.
   - `examples/blog`: `castra.config.ts` (§7), REST routes mounted, snapshot regenerated with auth tables.
 - **M1 schema snapshot (pending review)**
   - `castra` core: `introspect(query)`, `generateKyselyTypes(snapshot)`, `diffSnapshots(a, b)` in

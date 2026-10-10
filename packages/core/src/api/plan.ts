@@ -11,7 +11,7 @@ import {
   type SqlBool,
 } from "kysely";
 import type { CastraConfig } from "../config.js";
-import type { Filter, PolicyEngine } from "../policy/engine.js";
+import type { Filter, PolicyEngine, WriteGuard } from "../policy/engine.js";
 import { PolicyError, type Explanation } from "../policy/errors.js";
 import { hasUser } from "../policy/compile.js";
 import type { CastraContext, Operation, SchemaSnapshot } from "../types.js";
@@ -31,7 +31,7 @@ import {
   type TableModel,
 } from "./model.js";
 import { encodeCursor, type ParsedFilter, type ParsedRequest, type SortKey } from "./parse.js";
-import type { BatchRunner } from "./batch.js";
+import { runGuardedWrite, type D1DatabaseLike } from "../db/guarded-write.js";
 import { ApiError, notFound } from "./problem.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -165,16 +165,16 @@ export function planRequest(
 /** Options of {@link executePlan}. */
 export interface ExecuteOptions {
   /**
-   * Atomic batch runner for creates and updates: [write, write guard, re-read] commit or roll back
-   * together (ADR 0043). Use `d1Batch(env.DB)`. Without it, creates and updates fail closed.
+   * The D1 binding (`env.DB`). Creates and updates run through `runGuardedWrite` as one atomic
+   * `batch()` of [write, write guard] (ADR 0050). Without it, creates and updates fail closed (500).
    */
-  batch?: BatchRunner;
+  d1?: D1DatabaseLike;
 }
 
 /**
  * Runs a plan built by {@link planRequest}. Reads go through `db` (Kysely on D1); creates and
- * updates run as one atomic `options.batch` of [write, guard, re-read]. Every returned row, base or
- * included, passes through `engine.projectRow`.
+ * updates run as one atomic [write, guard] batch on `options.d1`, then the row is re-read under the
+ * read policy. Every returned row, base or included, passes through `engine.projectRow`.
  */
 export async function executePlan(db: AnyDb, plan: Plan, options: ExecuteOptions = {}): Promise<ApiResult> {
   const run = plan[RUN];
@@ -496,55 +496,20 @@ async function runReferenceChecks(db: AnyDb, checks: ReferenceCheck[], values: R
   }
 }
 
-type GuardResult = { compile(): CompiledQuery } | CompiledQuery;
-type WriteGuardFn = (table: string, op: "create" | "update", ctx: CastraContext, pk: Record<string, unknown>) => GuardResult;
-
-/** Thrown at execution when no write guard is available: writes fail closed. */
-function guardUnavailable(): ApiError {
-  return new ApiError(500, "write_guard_unavailable", "Writes are disabled: the policy engine provides no write guard.");
+function d1Unavailable(): ApiError {
+  return new ApiError(500, "write_unavailable", "Writes are disabled: no D1 binding is configured.");
 }
 
-/**
- * Compiles the engine's write guard (ADR 0043): a statement that selects the written row by primary
- * key under the operation's rule and raises an SQL error when the row violates it. It runs in the
- * same D1 batch as the write, so a violating write is rolled back. Returns `undefined` when the
- * engine has no guard.
- *
- * TODO(M1 writeGuard): `PolicyEngine.writeGuard(table, op, ctx, pk)` is being added by the policy
- * agent. Until it is merged, this returns `undefined` and every create/update fails closed
- * (500 `write_guard_unavailable`; no write statement is sent).
- */
-function compileGuard(
-  engine: PolicyEngine,
-  table: string,
-  op: "create" | "update",
-  ctx: CastraContext,
-  pk: Record<string, unknown>,
-): CompiledQuery | undefined {
-  const fn = (engine as PolicyEngine & { writeGuard?: WriteGuardFn }).writeGuard;
-  if (typeof fn !== "function") return undefined;
-  const g = fn(table, op, ctx, pk);
-  return typeof (g as { compile?: unknown }).compile === "function" ? (g as { compile(): CompiledQuery }).compile() : (g as CompiledQuery);
+/** A compiled query as a Kysely `Compilable` (what `runGuardedWrite` takes). */
+function compilable(q: CompiledQuery) {
+  return { compile: () => q };
 }
 
-/**
- * True when a batch failed because the write guard raised. The guard aborts with an SQL error that
- * names it (or, for a `json('…')`-style raise, a malformed-JSON error). Write statements built here
- * never call json() on their values, so this is not confused with a failing write.
- */
-export function isGuardFailure(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return /castra[_ ]?write[_ ]?guard|malformed JSON/i.test(msg);
-}
-
-async function runWrite<T>(fn: () => Promise<T>, op: "create" | "update" | "delete"): Promise<T> {
+async function runWrite<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err) {
     if (err instanceof ApiError || err instanceof PolicyError) throw err;
-    if (op !== "delete" && isGuardFailure(err)) {
-      throw new ApiError(403, "forbidden", `The ${op === "create" ? "new" : "updated"} row would violate the ${op} policy.`);
-    }
     const msg = err instanceof Error ? err.message : String(err);
     if (/constraint/i.test(msg)) throw new ApiError(409, "constraint", "The write violates a database constraint.");
     throw err;
@@ -581,13 +546,6 @@ function rereadBody(
   return { [t.pk!.name]: typeof id === "bigint" ? Number(id) : id };
 }
 
-const GUARD_UNAVAILABLE: PlannedStatement = {
-  name: "guard",
-  sql: "",
-  parameters: [],
-  note: "unavailable: the policy engine provides no write guard, so the write fails closed",
-};
-
 function planCreate(engine: PolicyEngine, model: ApiModel, t: TableModel, body: Record<string, unknown>, ctx: CastraContext): Plan {
   const prepared = engine.prepareWrite(t.name, "create", ctx, body);
   const values = { ...prepared.values };
@@ -619,43 +577,43 @@ function planCreate(engine: PolicyEngine, model: ApiModel, t: TableModel, body: 
   }
 
   const rowid = t.pkStrategy === "rowid";
-  // A rowid key is only known inside the batch: last_insert_rowid() on the same connection.
-  const idExpr: unknown = rowid ? sql`last_insert_rowid()` : values[pk.name];
-  const insertQ = builder.insertInto(t.name).values(values).compile();
-  const guardQ = compileGuard(engine, t.name, "create", ctx, { [pk.name]: idExpr });
+  // A rowid key is assigned by SQLite: the guard targets last_insert_rowid() inside the batch and
+  // the insert RETURNs the key for the re-read.
+  const insertQ = builder.insertInto(t.name).values(values).returning(colRef(t.name, pk.name).as(pk.name)).compile();
+  const guard: WriteGuard = engine.writeGuard(t.name, "create", ctx, rowid ? "last_insert_rowid" : { [pk.name]: values[pk.name] });
   const refs = referenceChecks(engine, model, t, ctx);
   const rr = rereadPlan(engine, t, ctx);
-  const rereadQ = rr.build?.(idExpr);
+  const rereadQ = rowid ? undefined : rr.build?.(values[pk.name]);
 
   const statements: PlannedStatement[] = [
     ...refs
       .filter((r) => Object.hasOwn(values, r.column) && values[r.column] !== null)
       .map((r) => show(`reference:${r.column}`, r.build(values[r.column]))),
     show("insert", insertQ, "batch statement 1; sent only after the early write check (engine.checkRow) passes"),
-    guardQ ? show("guard", guardQ, "batch statement 2: aborts the batch, rolling back the insert, when the stored row violates the create policy") : GUARD_UNAVAILABLE,
+    show("guard", guard.compile(), "batch statement 2: raises and rolls back the insert when the stored row violates the create policy"),
   ];
-  if (rereadQ) statements.push(show("reread", rereadQ, "batch statement 3"));
+  if (rr.build) statements.push(show("reread", rereadQ ?? rr.build("$insertedId"), "after the batch, under the read policy"));
 
   return {
     kind: "create",
     table: t.name,
     op: "create",
     statements,
-    explanations: [...refs.map((r) => r.explanation), ...(rr.explanation ? [rr.explanation] : [])],
+    explanations: [guard.explanation, ...refs.map((r) => r.explanation), ...(rr.explanation ? [rr.explanation] : [])],
     includes: [],
     [RUN]: async (db, options) =>
       runWrite(async () => {
         await runReferenceChecks(db, refs, values);
         const decision = await engine.checkRow(db, t.name, "create", ctx, candidate);
         if (!decision.allowed) throw new ApiError(403, "forbidden", "The new row would violate the create policy.");
-        // Fail closed: nothing is written without the guard and an atomic batch (ADR 0043).
-        if (!guardQ) throw guardUnavailable();
-        if (!options.batch) throw new ApiError(500, "batch_unavailable", "Writes are disabled: no atomic batch runner is configured.");
-        const results = await options.batch(rereadQ ? [insertQ, guardQ, rereadQ] : [insertQ, guardQ]);
-        const rows = results[2]?.rows;
-        const id = rowid ? (rows?.[0]?.[pk.name] ?? null) : values[pk.name];
+        // Fail closed: nothing is written without an atomic [write, guard] batch (ADR 0050).
+        if (!options.d1) throw d1Unavailable();
+        const written = await runGuardedWrite<Record<string, unknown>>(options.d1, compilable(insertQ), guard);
+        const id = rowid ? (written.results[0]?.[pk.name] ?? null) : values[pk.name];
+        const reread = rr.build && id !== null ? (rereadQ ?? rr.build(id)) : undefined;
+        const rows = reread ? (await db.executeQuery<Record<string, unknown>>(reread)).rows : undefined;
         return { status: 201, body: rereadBody(engine, t, ctx, rows, id) };
-      }, "create"),
+      }),
   };
 }
 
@@ -679,7 +637,8 @@ function planUpdate(
   const refs = referenceChecks(engine, model, t, ctx);
   const rr = rereadPlan(engine, t, ctx);
   const rereadQ = rr.build?.(id);
-  const guardQ = compileGuard(engine, t.name, "update", ctx, { [pk.name]: id });
+  // The key cannot change (checked before the write), so the guard targets the same key.
+  const guard: WriteGuard = engine.writeGuard(t.name, "update", ctx, { [pk.name]: id });
   // USING: the UPDATE re-applies the update policy, so a row that stopped matching is not touched.
   const buildUpdate = (values: Record<string, unknown>): CompiledQuery => builder.updateTable(t.name).set(values).where(byPk).compile();
 
@@ -697,17 +656,15 @@ function planUpdate(
       ),
     );
   }
-  statements.push(
-    guardQ ? show("guard", guardQ, "batch statement 2: aborts the batch, rolling back the update, when the stored row violates the update policy") : GUARD_UNAVAILABLE,
-  );
-  if (rereadQ) statements.push(show("reread", rereadQ, "batch statement 3"));
+  statements.push(show("guard", guard.compile(), "batch statement 2: raises and rolls back the update when the stored row violates the update policy"));
+  if (rereadQ) statements.push(show("reread", rereadQ, "after the batch, under the read policy"));
 
   return {
     kind: "update",
     table: t.name,
     op: "update",
     statements,
-    explanations: [engine.explain(policy), ...refs.map((r) => r.explanation), ...(rr.explanation ? [rr.explanation] : [])],
+    explanations: [engine.explain(policy), guard.explanation, ...refs.map((r) => r.explanation), ...(rr.explanation ? [rr.explanation] : [])],
     includes: [],
     [RUN]: async (db, options) =>
       runWrite(async () => {
@@ -728,16 +685,15 @@ function planUpdate(
         await runReferenceChecks(db, refs, values);
         const decision = await engine.checkRow(db, t.name, "update", ctx, { ...existing, ...values });
         if (!decision.allowed) throw new ApiError(403, "forbidden", "The updated row would violate the update policy.");
-        // Fail closed: nothing is written without the guard and an atomic batch (ADR 0043).
-        if (!guardQ) throw guardUnavailable();
-        if (!options.batch) throw new ApiError(500, "batch_unavailable", "Writes are disabled: no atomic batch runner is configured.");
-        const updateQ = buildUpdate(values);
-        const results = await options.batch(rereadQ ? [updateQ, guardQ, rereadQ] : [updateQ, guardQ]);
-        if (!results[0] || results[0].changes === 0) {
+        // Fail closed: nothing is written without an atomic [write, guard] batch (ADR 0050).
+        if (!options.d1) throw d1Unavailable();
+        const written = await runGuardedWrite(options.d1, compilable(buildUpdate(values)), guard);
+        if (Number(written.meta.changes ?? 0) === 0) {
           throw new ApiError(409, "conflict", "The row changed while it was being updated; retry the request.");
         }
-        return { status: 200, body: rereadBody(engine, t, ctx, results[2]?.rows, id) };
-      }, "update"),
+        const rows = rereadQ ? (await db.executeQuery<Record<string, unknown>>(rereadQ)).rows : undefined;
+        return { status: 200, body: rereadBody(engine, t, ctx, rows, id) };
+      }),
   };
 }
 
@@ -762,6 +718,6 @@ function planDelete(engine: PolicyEngine, t: TableModel, rawId: string, ctx: Cas
         const res = await db.executeQuery(q);
         if (!res.numAffectedRows) throw notFound();
         return { status: 204, body: null };
-      }, "delete"),
+      }),
   };
 }

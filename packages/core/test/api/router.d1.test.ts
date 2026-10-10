@@ -1,14 +1,13 @@
 /**
  * REST router against a real local D1: allow + deny per route, pagination under policy, include
- * leaks, atomic [write, guard] batches. The write guard is a TEST-ONLY stand-in (fixtures.ts) until
- * the policy engine's `writeGuard` is merged; without it writes must fail closed.
+ * leaks, atomic [write, guard] batches (ADR 0050).
  */
 import { env } from "cloudflare:workers";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   createRestRouter,
-  d1Batch,
   defineConfig,
+  authenticated,
   owner,
   isPublic,
   createPolicyEngine,
@@ -16,7 +15,7 @@ import {
   type PolicyEngine,
 } from "../../src/index.js";
 import { createTables, testDb } from "../policy/db.js";
-import { anon, config, makeEngine, snapshot, user, withTestWriteGuard } from "./fixtures.js";
+import { anon, config, makeEngine, snapshot, user } from "./fixtures.js";
 
 const db = testDb();
 const SECRET = "SECRET_NOTE_7f3a";
@@ -31,14 +30,14 @@ function ctxFrom(h: Headers): CastraContext {
   return id ? user(id, roles) : anon();
 }
 
-function router(engine: PolicyEngine = withTestWriteGuard(makeEngine()), withBatch = true) {
+function router(engine: PolicyEngine = makeEngine(), withD1 = true) {
   return createRestRouter({
     config,
     snapshot,
     engine,
     getDb: () => db,
     getContext: (c) => ctxFrom(c.req.raw.headers),
-    ...(withBatch ? { getBatch: () => d1Batch(env.DB) } : {}),
+    ...(withD1 ? { getD1: () => env.DB } : {}),
   });
 }
 
@@ -285,8 +284,8 @@ describe("update", () => {
       ...config,
       tables: { ...config.tables, posts: { ...config.tables.posts!, update: owner("author_id").and(isPublic().where((q) => q.eb("status", "=", "draft"))) } },
     });
-    const engine = withTestWriteGuard(createPolicyEngine({ config: cfg, snapshot }), cfg);
-    const via = createRestRouter({ config: cfg, snapshot, engine, getDb: () => db, getContext: (c) => ctxFrom(c.req.raw.headers), getBatch: () => d1Batch(env.DB) });
+    const engine = createPolicyEngine({ config: cfg, snapshot });
+    const via = createRestRouter({ config: cfg, snapshot, engine, getDb: () => db, getContext: (c) => ctxFrom(c.req.raw.headers), getD1: () => env.DB });
     expect((await call("PATCH", "/api/posts/p15", { as: "u1", body: { title: "ok" }, via })).status).toBe(200);
     expect((await call("PATCH", "/api/posts/p15", { as: "u1", body: { status: "published" }, via })).status).toBe(403);
     const row = await db.selectFrom("posts").select(["status", "title"]).where("id", "=", "p15").executeTakeFirstOrThrow();
@@ -298,9 +297,9 @@ describe("update", () => {
       ...config,
       tables: { ...config.tables, posts: { ...config.tables.posts!, update: owner("author_id").and(isPublic().where((q) => q.eb("status", "=", "draft"))) } },
     });
-    const real = withTestWriteGuard(createPolicyEngine({ config: cfg, snapshot }), cfg);
+    const real = createPolicyEngine({ config: cfg, snapshot });
     const engine = { ...real, checkRow: async () => ({ allowed: true }) } as unknown as PolicyEngine;
-    const via = createRestRouter({ config: cfg, snapshot, engine, getDb: () => db, getContext: (c) => ctxFrom(c.req.raw.headers), getBatch: () => d1Batch(env.DB) });
+    const via = createRestRouter({ config: cfg, snapshot, engine, getDb: () => db, getContext: (c) => ctxFrom(c.req.raw.headers), getD1: () => env.DB });
     const r = await call("PATCH", "/api/posts/p15", { as: "u1", body: { status: "published", title: "sneaky" }, via });
     expect(r.status).toBe(403);
     const row = await db.selectFrom("posts").select(["status", "title"]).where("id", "=", "p15").executeTakeFirstOrThrow();
@@ -308,12 +307,28 @@ describe("update", () => {
   });
 });
 
-describe("fail closed without a write guard or batch", () => {
-  it.each([
-    ["no writeGuard", () => router(makeEngine())],
-    ["no batch runner", () => router(withTestWriteGuard(makeEngine()), false)],
-  ])("%s: create and update are 500 and nothing is written", async (_n, mk) => {
-    const via = mk();
+describe("guard is authoritative on create (pre-check bypassed)", () => {
+  it("a denied create leaves no row (403); an allowed one is written", async () => {
+    const cfg = defineConfig({
+      ...config,
+      tables: { ...config.tables, posts: { ...config.tables.posts!, create: authenticated().and(isPublic().where((q) => q.eb("status", "=", "draft"))) } },
+    });
+    const real = createPolicyEngine({ config: cfg, snapshot });
+    const engine = { ...real, checkRow: async () => ({ allowed: true }) } as unknown as PolicyEngine;
+    const via = createRestRouter({ config: cfg, snapshot, engine, getDb: () => db, getContext: (c) => ctxFrom(c.req.raw.headers), getD1: () => env.DB });
+    const count = async () => Number((await db.selectFrom("posts").select(db.fn.countAll().as("n")).executeTakeFirstOrThrow()).n);
+    const bad = await call("POST", "/api/posts", { as: "u1", body: { title: "x", body: "b", status: "published", created_at: "t" }, via });
+    expect(bad.status).toBe(403);
+    expect(await count()).toBe(57);
+    const ok = await call("POST", "/api/posts", { as: "u1", body: { title: "x", body: "b", status: "draft", created_at: "t" }, via });
+    expect(ok.status).toBe(201);
+    expect(await count()).toBe(58);
+  });
+});
+
+describe("fail closed without a D1 binding", () => {
+  it("create and update are 500 and nothing is written", async () => {
+    const via = router(makeEngine(), false);
     const c = await call("POST", "/api/posts", { as: "u1", body: { title: "x", body: "b", status: "draft", created_at: "t" }, via });
     const u = await call("PATCH", "/api/posts/p15", { as: "u1", body: { title: "x" }, via });
     expect([c.status, u.status]).toEqual([500, 500]);

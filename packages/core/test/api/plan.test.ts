@@ -10,7 +10,7 @@ import {
   type PolicyEngine,
   toProblem,
 } from "../../src/index.js";
-import { anon, config, makeEngine, snapshot, user, withTestWriteGuard } from "./fixtures.js";
+import { anon, config, makeEngine, snapshot, user } from "./fixtures.js";
 
 const engine = makeEngine();
 
@@ -161,15 +161,13 @@ describe("writes", () => {
     expect(hidden).toEqual({ status: 400, message: 'unknown column "views"' });
     expect(unknown).toEqual({ status: 400, message: 'unknown column "nope"' });
   });
-  it("without a write guard the plan shows the guard as unavailable (fail closed)", () => {
-    expect(stmt(plan("POST", "posts", "", user("u1"), undefined, body), "guard").note).toMatch(/fails closed/);
-  });
-  it("with a write guard the guard statement is in the plan", () => {
-    const p = plan("PATCH", "posts", "", user("u1"), "p1", { title: "x" }, withTestWriteGuard(engine));
+  it("update plan: load, update (USING), guard, re-read", () => {
+    const p = plan("PATCH", "posts", "", user("u1"), "p1", { title: "x" });
     expect(p.statements.map((s) => s.name)).toEqual(["load", "update", "guard", "reread"]);
     expect(stmt(p, "update").sql).toMatch(/^update "posts" set "title" = \? where/);
     expect(stmt(p, "update").sql).toContain('"posts"."author_id" = ?');
-    expect(stmt(p, "guard").sql).toContain("castra_write_guard");
+    expect(stmt(p, "guard").sql).toContain("castra_write_check_failed");
+    expect(stmt(p, "guard").parameters).toContain("p1");
   });
   it("delete compiles the delete filter and the PK", () => {
     const s = stmt(plan("DELETE", "posts", "", user("a", ["admin"]), "p1"), "delete");

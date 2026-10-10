@@ -1,16 +1,14 @@
 /**
  * REST API end to end on the blog Worker: real Better Auth sessions, real D1, the example config.
- * The policy engine's writeGuard is not merged yet (ADR 0043): until it is, creates/updates must fail
- * closed; the success paths are skipped and switch on automatically once `engine.writeGuard` exists.
+ * Creates and updates run as atomic [write, guard] D1 batches (ADR 0050).
  */
 import { assignRole } from "@castra/auth";
 import { env } from "cloudflare:test";
 import { exports } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
-import { authOptions, engine } from "../src/index";
+import { authOptions } from "../src/index";
 
 const BASE = "http://localhost";
-const hasWriteGuard = typeof (engine as { writeGuard?: unknown }).writeGuard === "function";
 const seen: string[] = [];
 
 interface Who {
@@ -156,17 +154,7 @@ describe("writes", () => {
     expect(await count()).toBe(before);
   });
 
-  it.skipIf(hasWriteGuard)("fail closed while engine.writeGuard is missing: 500, nothing written", async () => {
-    const before = await count();
-    const c = await call("POST", "/api/posts", alice, { title: "x" });
-    const u = await call("PATCH", `/api/posts/${ids.published}`, alice, { title: "changed" });
-    expect([c.status, u.status]).toEqual([500, 500]);
-    expect(await count()).toBe(before);
-    const row = await env.DB.prepare("SELECT title FROM posts WHERE id = ?").bind(ids.published).first<{ title: string }>();
-    expect(row!.title).toBe("Published");
-  });
-
-  it.skipIf(!hasWriteGuard)("allow: create 201 (server id, server author), owner and editor update", async () => {
+  it("allow: create 201 (server id, server author), owner and editor update", async () => {
     const c = await call("POST", "/api/posts", alice, { title: "new" });
     expect(c.status).toBe(201);
     expect(c.body).toMatchObject({ title: "new", author_id: alice.id, status: "draft" });
