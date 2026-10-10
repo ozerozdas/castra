@@ -46,3 +46,16 @@ named by an `owner()` rule anywhere in a table's policies (read, create, update 
 same value is accepted; on update it is never written, a different value is 403 (compared with the stored row when
 `existing` is passed). Declaring `setBy: "server"` explicitly remains allowed and has the same effect. A column that
 must be client-writable cannot be an `owner()` column; use `where()`/`custom()` for such a rule.
+
+## Amendment 2 (2026-10-10, third security review)
+A client could write a `visibleTo` column it could never read (the post author setting `internal_notes`, which only
+`admin` reads). **A `visibleTo` field may only be written (create or update) by a ctx that could read it**: it holds a
+listed real role, or `"self"` is listed and the row matches self (`selfColumn`; the stored row on update, the
+candidate row on create, where owner columns are already filled from `ctx.user.id`). Otherwise `prepareWrite`
+rejects with 403 `forbidden` and the message `column "x" cannot be written by this user` (no rule detail). An
+update without the `existing` row cannot prove self and is denied for self-only fields. Consequence: unlike reads
+and filters, which answer for such a column exactly like an unknown column, this 403 does reveal that the column
+exists; accepted, the alternative (400 unknown column) would contradict the documented field model for writers.
+`PolicyEngine.canReadColumn(table, column, ctx)` is the row-independent read check (ignores `read` and
+`filterable`; `self` does not count) used for primary keys of item routes (ADR 0040: `GET/PATCH/DELETE /:id`
+answer 404 when the ctx cannot read the table's primary key).

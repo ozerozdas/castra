@@ -150,6 +150,13 @@ export interface PolicyEngine {
    * The API layer must call this for every column named in a filter expression.
    */
   canFilter(table: string, column: string, ctx: CastraContext): boolean;
+  /**
+   * May `ctx` read `column` of `table` regardless of the row? Unlike {@link canFilter} it ignores the
+   * table's `read` rule and `filterable`: it is false for unknown and `hidden` columns and for `visibleTo`
+   * columns unless a listed real role is held (`"self"` is per row, so it does not count). The API layer
+   * uses it for the primary key of item routes.
+   */
+  canReadColumn(table: string, column: string, ctx: CastraContext): boolean;
   /** The explanation of a decision or filter. */
   explain(decision: Decision | Filter): Explanation;
 }
@@ -278,6 +285,17 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     });
   }
 
+  /** Could `ctx` read `key` on `row`? Mirrors {@link projectRow} for a single column. */
+  function canSeeField(t: TableInfo, key: string, ctx: CastraContext, row: Record<string, unknown>): boolean {
+    const visibleTo = t.visibleTo.get(key);
+    if (!visibleTo) return true;
+    const roles = effectiveRoles(ctx);
+    if (visibleTo.some((r) => r !== "self" && roles.includes(r))) return true;
+    if (!visibleTo.includes("self") || t.selfColumn === undefined || !hasUser(ctx)) return false;
+    const v = row[t.selfColumn];
+    return v !== null && v !== undefined && v === ctx.user.id;
+  }
+
   function prepareWrite(
     table: string,
     op: "create" | "update",
@@ -328,6 +346,15 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
         if (!t.ownerColumns.has(col)) continue;
         if (!hasUser(ctx)) reject(401, "unauthenticated", `column "${col}" requires an authenticated user`, table, op, ctx);
         values[col] = ctx.user.id;
+      }
+    }
+
+    // A visibleTo field may only be written by a ctx that could read it (ADR 0007 amendment 2).
+    // Self is decided on the row: the stored one on update, the candidate on create.
+    const candidate = op === "update" && existing !== undefined ? { ...existing, ...values } : values;
+    for (const key of Object.keys(values)) {
+      if (!canSeeField(t, key, ctx, candidate)) {
+        reject(403, "forbidden", `column "${key}" cannot be written by this user`, table, op, ctx);
       }
     }
     return { values };
@@ -494,6 +521,15 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     return true;
   }
 
+  function canReadColumn(table: string, column: string, ctx: CastraContext): boolean {
+    const t = info(table);
+    if (!t || typeof column !== "string" || !t.columns.has(column) || t.hiddenColumns.has(column)) return false;
+    const visibleTo = t.visibleTo.get(column);
+    if (!visibleTo) return true;
+    const roles = effectiveRoles(ctx);
+    return visibleTo.some((r) => r !== "self" && roles.includes(r));
+  }
+
   function explain(decision: Decision | Filter): Explanation {
     const e = decision.explanation;
     return {
@@ -504,7 +540,7 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     };
   }
 
-  return Object.freeze({ isOpen, readFilter, prepareWrite, writeGuard, checkRow, projectRow, canFilter, explain });
+  return Object.freeze({ isOpen, readFilter, prepareWrite, writeGuard, checkRow, projectRow, canFilter, canReadColumn, explain });
 }
 
 function buildTableInfo(

@@ -162,6 +162,21 @@ describe("writes", () => {
     expect((await call("PATCH", `/api/posts/${c.body.id}`, editor, { title: "edited" })).status).toBe(200);
   });
 
+  it("field write permission: only a ctx that could read internal_notes (admin) may write it", async () => {
+    const mark = `fw-${crypto.randomUUID()}`;
+    const before = await count();
+    expect((await call("POST", "/api/posts", alice, { title: "x", internal_notes: mark })).status).toBe(403);
+    expect((await call("PATCH", `/api/posts/${ids.published}`, alice, { internal_notes: mark })).status).toBe(403);
+    expect((await call("PATCH", `/api/posts/${ids.published}`, editor, { internal_notes: mark })).status).toBe(403);
+    expect(await count()).toBe(before);
+    const row = await env.DB.prepare("SELECT internal_notes FROM posts WHERE id = ?").bind(ids.published).first<{ internal_notes: string }>();
+    expect(row!.internal_notes).toBe(NOTE);
+    const c = await call("POST", "/api/posts", admin, { title: "admin post", internal_notes: mark });
+    expect(c.status).toBe(201);
+    expect(c.body.internal_notes).toBe(mark);
+    expect((await call("PATCH", `/api/posts/${ids.bobPost}`, admin, { internal_notes: mark })).body.internal_notes).toBe(mark);
+  });
+
   it("delete: admin 204 then 404; member 403; comment owner only", async () => {
     const victim = crypto.randomUUID();
     await env.DB.prepare("INSERT INTO posts (id, author_id, title, status) VALUES (?, ?, 'v', 'published')").bind(victim, bob.id).run();

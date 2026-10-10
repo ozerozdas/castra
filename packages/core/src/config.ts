@@ -60,12 +60,12 @@ export const AUTH_TABLES: readonly string[] = Object.freeze(["user", "session", 
 export const OPERATIONS: readonly Operation[] = Object.freeze(["read", "create", "update", "delete"]);
 
 /**
- * True for tables Castra never exposes: Better Auth tables, `_castra_*` internal tables and SQLite
- * internal tables. Compared case-insensitively, because SQLite identifiers are case-insensitive.
+ * True for tables Castra never exposes: Better Auth tables, `_castra_*` internal tables, SQLite
+ * internal tables and the wrangler migration ledger (`d1_migrations`). Compared case-insensitively, because SQLite identifiers are case-insensitive.
  */
 export function isReservedTable(name: string): boolean {
   const n = name.toLowerCase();
-  return AUTH_TABLES.includes(n) || n.startsWith("_castra_") || n.startsWith("sqlite_") || n.startsWith("_cf_");
+  return AUTH_TABLES.includes(n) || n.startsWith("_castra_") || n.startsWith("sqlite_") || n.startsWith("_cf_") || n === "d1_migrations";
 }
 
 const TABLE_KEYS = new Set(["read", "create", "update", "delete", "fields", "filterable", "selfColumn"]);

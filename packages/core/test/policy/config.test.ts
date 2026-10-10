@@ -58,7 +58,7 @@ describe("defineConfig", () => {
     expect(() => defineConfig(cfg({ [t]: { read: isPublic() } }))).toThrow(CastraConfigError);
   });
 
-  it.each(["_castra_roles", "_castra_audit", "_CASTRA_x", "sqlite_master", "_cf_KV"])("rejects internal table %s", (t) => {
+  it.each(["_castra_roles", "_castra_audit", "_CASTRA_x", "sqlite_master", "_cf_KV", "d1_migrations", "D1_Migrations"])("rejects internal table %s", (t) => {
     expect(() => defineConfig(cfg({ [t]: { read: isPublic() } }))).toThrow(/reserved/);
   });
 

@@ -148,6 +148,11 @@ export function planRequest(
   const t = model.tables.get(parsed.table);
   if (!t || !engine.isOpen(parsed.table, op)) throw notFound();
   if (parsed.kind !== "list" && parsed.kind !== "create" && !t.pk) throw notFound();
+  // Item routes address rows by primary key: refuse them for callers who cannot read the key, so
+  // `/:id` is not a probe of a hidden or role-gated key column. Answers like a closed route.
+  if ((parsed.kind === "get" || parsed.kind === "update" || parsed.kind === "delete") && !engine.canReadColumn(t.name, t.pk!.name, ctx)) {
+    throw notFound();
+  }
 
   switch (parsed.kind) {
     case "list":
