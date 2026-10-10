@@ -91,6 +91,15 @@ export interface PolicyEngine {
    * fields unless the caller holds a listed role or `"self"` matches, and columns not in the snapshot.
    */
   projectRow(table: string, ctx: CastraContext, row: Record<string, unknown>): Record<string, unknown>;
+  /**
+   * May `ctx` filter (or sort) on `column` of `table`? True only when the table is exposed, the column
+   * exists, is not `hidden`, is listed in `filterable` (when `filterable` is set; otherwise any visible
+   * column qualifies) and is visible to the caller under `visibleTo`. A `visibleTo` column that is
+   * visible only through `"self"` is never filterable: self is decided per row, so a filter on it
+   * would be a membership oracle over other users' values. Only a listed real role grants it.
+   * The API layer must call this for every column named in a filter expression.
+   */
+  canFilter(table: string, column: string, ctx: CastraContext): boolean;
   /** The explanation of a decision or filter. */
   explain(decision: Decision | Filter): Explanation;
 }
@@ -334,6 +343,19 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     return out;
   }
 
+  function canFilter(table: string, column: string, ctx: CastraContext): boolean {
+    const t = info(table);
+    if (!t || typeof column !== "string" || !t.columns.has(column)) return false;
+    if (t.hiddenColumns.has(column)) return false;
+    if (t.config.filterable !== undefined && !t.config.filterable.includes(column)) return false;
+    const visibleTo = t.visibleTo.get(column);
+    if (visibleTo) {
+      const roles = effectiveRoles(ctx);
+      return visibleTo.some((r) => r !== "self" && roles.includes(r));
+    }
+    return true;
+  }
+
   function explain(decision: Decision | Filter): Explanation {
     const e = decision.explanation;
     return {
@@ -344,7 +366,7 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     };
   }
 
-  return Object.freeze({ isOpen, readFilter, prepareWrite, checkRow, projectRow, explain });
+  return Object.freeze({ isOpen, readFilter, prepareWrite, checkRow, projectRow, canFilter, explain });
 }
 
 function buildTableInfo(
@@ -385,7 +407,12 @@ function buildTableInfo(
     if (fc.hidden) hiddenColumns.add(col);
     if (fc.visibleTo) visibleTo.set(col, [...fc.visibleTo]);
   }
-  for (const col of tc.filterable ?? []) requireColumn(col, "filterable");
+  for (const col of tc.filterable ?? []) {
+    requireColumn(col, "filterable");
+    if (hiddenColumns.has(col)) throw new CastraConfigError(`tables.${name}.filterable: column "${col}" is hidden`);
+  }
+  // ADR 0007 amendment: every column named by an owner() rule is implicitly setBy: "server".
+  for (const col of ownerColumns) serverColumns.add(col);
 
   let selfColumn: string | undefined;
   if (tc.selfColumn !== undefined) {
@@ -500,7 +527,9 @@ function isBindable(v: unknown): boolean {
   );
 }
 
-const NUMERIC_TEXT = /^\s*[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?\s*$/;
+// SQLite skips only ASCII whitespace (space, \t, \n, \v, \f, \r) around numeric text; JS `\s` also matches
+// U+00A0, U+2028, U+FEFF, U+3000 and friends, which SQLite treats as non-numeric (the text stays TEXT).
+const NUMERIC_TEXT = /^[ \t\n\v\f\r]*[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?[ \t\n\v\f\r]*$/;
 
 /**
  * Binds a candidate value so it compares like a value stored in a column of that affinity. A bound
