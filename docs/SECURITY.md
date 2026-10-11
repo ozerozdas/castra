@@ -1,7 +1,7 @@
 # Castra security model
 
 Castra is a policy engine and a REST/MCP surface in front of a Cloudflare D1 database. This document says what it
-protects, what it relies on, and what it does not do. Status: v0.1, pre-release, not externally audited. Design
+protects, what it relies on, and what it does not do. Status: v0.1.0, released, not externally audited. Design
 background: [ARCHITECTURE.md](ARCHITECTURE.md). Decisions: [docs/adr](adr/).
 
 ## 1. Scope and trust boundaries
@@ -213,5 +213,5 @@ command, HTTP endpoints for API key management, and `castra init` (the CLI print
 
 Please do not open a public issue. Open a private security advisory on the GitHub repository (Security tab,
 "Report a vulnerability"). Include the affected version or commit, a reproduction (config, request, expected and
-actual result), and the impact. This is a pre-release project maintained without a service level; reports are
+actual result), and the impact. This is an early-stage project maintained without a service level; reports are
 handled as time allows.

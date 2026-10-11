@@ -32,8 +32,10 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
   `/mcp` without a token 401. Hit on the way: an account token (`cfat_`) without `CLOUDFLARE_ACCOUNT_ID` was
   reported as invalid, and an `All accounts` token stopped at `multiple-accounts`; the CLI now names the
   `cfat_` case before any call and refuses `cfk_` Global API Keys; docs/cloudflare-token.md shows the token form.
-- Push, publish and package-name decisions. Nothing is pushed or published, and `npm create @castra-kit@latest` needs a
-  published package (ADR 0004).
+- Publish: done 2026-10-11 by the human. `@castra-kit/core|auth|mcp|cli|create@0.1.0` are on npm (ADR 0069; npm
+  refused `castra` as too similar to `astro`). Tag `v0.1.0` and GitHub release created. A project scaffolded from npm
+  (`pnpm create @castra-kit`) passed typecheck, its tests and `test:policies`, and served `/health` locally;
+  `mehmetozer-blog` was moved to the npm packages and redeployed.
 
 ## Done
 - **Final v0.1 review fixes** (2026-10-11). The review tests are in

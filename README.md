@@ -5,11 +5,10 @@ database in your own Cloudflare account serve auto-generated REST endpoints for 
 TypeScript policy engine that compiles every rule to SQL. Auth is Better Auth, and an MCP server lets AI agents
 inspect and verify the exact policies that production enforces. Tables without a policy do not exist as routes.
 
-**Status: v0.1, pre-release, not published to npm.** Everything below runs from a checkout of this repository. Mocked
-tests cover the Cloudflare API calls; nothing has been run against a real Cloudflare account yet (see
-[What works and what does not](#what-works-and-what-does-not)). `npm create @castra-kit@latest my-app` will work only after the
-packages are published (names must be re-checked first, [ADR 0004](docs/adr/0004-package-names.md)). Until then,
-scaffold with `--local-packages` as shown below ([ADR 0036](docs/adr/0036-create-castra-local-packages.md)).
+**Status: v0.1.0, released 2026-10-11** ([release notes](https://github.com/ozerozdas/castra/releases/tag/v0.1.0)).
+The packages are on npm under `@castra-kit/*` ([ADR 0069](docs/adr/0069-all-packages-under-castra-kit.md)). Deploy has
+been verified on one real Cloudflare account; see
+[What works and what does not](#what-works-and-what-does-not) for the rest.
 
 ## Contents
 
@@ -23,19 +22,24 @@ Requirements: Node >= 20, pnpm 10. No Cloudflare account is needed until the dep
 
 ### 1. Scaffold
 
-Build a checkout, then scaffold **outside** it (a project inside the repo would be taken for part of the pnpm workspace):
+```sh
+npm create @castra-kit@latest my-app    # or: pnpm create @castra-kit my-app
+cd my-app
+```
+
+Scaffolder options: `--template <name>` (only `default`), `--package-manager pnpm|npm`, `--no-install`,
+`--local-packages <path>`.
+
+To try unreleased changes, build a checkout and scaffold **outside** it (a project inside the repo would be taken for
+part of the pnpm workspace). `--local-packages` is only supported with pnpm
+([ADR 0036](docs/adr/0036-create-castra-local-packages.md)):
 
 ```sh
 git clone git@github.com:ozerozdas/castra.git && cd castra
 pnpm install && pnpm -r build
 cd ~/projects
 node <path-to-castra>/packages/create-castra/dist/cli.js my-app --local-packages <path-to-castra>
-cd my-app
 ```
-
-Scaffolder options: `--template <name>` (only `default`), `--package-manager pnpm|npm`, `--no-install`,
-`--local-packages <path>`. `--local-packages` is only supported with pnpm. After publishing this becomes
-`npm create @castra-kit@latest my-app`.
 
 ### 2. Run locally
 

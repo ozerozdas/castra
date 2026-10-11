@@ -1,37 +1,33 @@
-# Castra v0.1 — Current state
+# Castra — Current state
 
-Date: 2026-10-11. `master` pushed to `origin`. No open worktrees.
-Details: `docs/PROGRESS.md` (final state), `docs/SECURITY.md`, `README.md`, ADRs 0001–0067.
+Date: 2026-10-11. **v0.1.0 is released.** `master` and tag `v0.1.0` are on `origin`; CI green. No open worktrees.
+Details: `docs/PROGRESS.md`, `docs/SECURITY.md`, `README.md`, ADRs 0001–0069.
 
-## Done
+## Released
 
-M0–M6 complete. Every milestone has a reviewer sign-off: reviews 1–5 plus a final adversarial review, all findings fixed.
-The README quickstart (steps 1–5) was verified end to end locally.
+- npm: `@castra-kit/core`, `@castra-kit/auth`, `@castra-kit/mcp`, `@castra-kit/cli`, `@castra-kit/create` at `0.1.0`
+  (ADR 0069). Scaffold with `npm create @castra-kit@latest my-app`.
+- GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.1.0
+- Problem type pages: https://castra.mehmetozer.dev/problems/ (`pnpm site:deploy`, ADR 0067).
+- Real account: `mehmetozer-blog` runs on the npm packages at `mehmetozer-blog.nuvocode.workers.dev`.
 
-Last full run on master:
+Last full run on master: core 782 · auth 20 · mcp 83 · cli 102 · create 43 (+5 opt-in e2e skipped) + 28 template ·
+blog 103 · test:policies 517.
 
-```
-pnpm install && pnpm -r build && pnpm lint && pnpm typecheck && pnpm -r test && pnpm test:policies
-```
+## Releasing a new version
 
-Exit 0. Test counts: core 779 · auth 20 · mcp 83 · cli 102 · create-castra 43 (+5 opt-in e2e skipped) + 28 template · blog 103 · test:policies 517.
+Bump the five package versions together (the scaffolder writes its own version into new apps), run the full
+pipeline, then `pnpm -r publish --no-git-checks` (npm web login), tag `vX.Y.Z`, and create the GitHub release.
+Publishing, tagging and releases need explicit human approval.
 
-## Left for a human (needs explicit approval)
+## Next (v0.1.x hardening)
 
-1. Publish `@castra-kit/*` (org `castra-kit` exists; `castra` was refused by npm as too similar to `astro`, ADR 0069). Until then `npm create @castra-kit@latest` does not work; use `--local-packages`.
+- `_castra_audit` retention and a prune command.
+- Rate limiting for `/mcp` (at least a documented WAF rule).
+- PII in audit arguments.
+- Better Auth `/api/auth/*` errors as problem+json.
+- Signal truncated one-to-many includes (25 rows per parent).
+- Collations in the snapshot so `check_access` matches the guarded write.
 
-## Since v0.1 work
-
-- A scaffolded app (`mehmetozer-blog`) was deployed to a real account; live endpoints checked.
-- Problem `type` URIs moved to `https://castra.mehmetozer.dev/problems/<code>` (ADR 0067). The pages are live,
-  built from `site/problems.json` and deployed with `pnpm site:deploy`.
-
-## Known issues
-
-Listed in PROGRESS "Open issues" and SECURITY.md §3, including:
-
-- no rate limiting on `/mcp`;
-- audit log stores tool arguments verbatim;
-- `access:check` reveals hidden column names;
-- `castra init` is deferred (ADR 0038);
-- `auth`/`storage` config keys are validated but not read in v0.1.
+Then v0.2 (MCP writes, migrations, `propose_policy`) per ARCHITECTURE §8. A read-only admin UI in v0.3 is an open
+proposal (needs an ADR).
