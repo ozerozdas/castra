@@ -14,7 +14,21 @@
 
 ## In progress
 - **M6 README (pending review)**: v0.1 `README.md` (quickstart, concepts, config/REST/CLI reference, D1 limits cited from Cloudflare docs); `docs/SECURITY.md` now points to `castra test policies`.
-- **M5 create-castra + `castra test policies` (pending review)**
+- **M5 review fixes (2026-10-11), M5 signed off pending final review.** Review tests:
+  `packages/cli/test/review5.test.ts`, `packages/create-castra/test/review5.test.ts` (no `it.todo` left).
+  - R5-1 doctor: token policies count only when their `resources` cover the target account
+    (`com.cloudflare.api.account.<id>` / `.*`), deny policies remove groups, the read-only probe always runs and a
+    403 is `missing` whatever the policies say (ADR 0033 amendment).
+  - R5-2 provision: default R2 bucket name stays within 3-63 chars (`<truncated>-<sha256 8>-storage`, deterministic);
+    D1/KV names unchanged (no documented D1 limit, KV titles up to 512) (ADR 0030 amendment).
+  - R5-3 CI runs on pushes to `master`.
+  - R5-4 `spawnExec` swallows stdin EPIPE and returns the child's exit code.
+  - R5-5 deploy/migrate pass `CLOUDFLARE_API_TOKEN` from the injected env to wrangler (ADR 0032 amendment).
+  - R5-6 provision refuses (`d1-id-mismatch`, exit 1) a real `database_id` that is not the named database instead
+    of repointing it to a new empty database (ADR 0030 amendment).
+  - R5-7 `castra`: runtime `CliError`s (config not found, unprovisioned binding) exit 1; `UsageError` exits 2.
+  - R5-8 `.gitignore` (template and repo root) ignores `.dev.vars*` / `.env*`, keeps `.dev.vars.example` / `.env.example`.
+- **M5 create-castra + `castra test policies` (signed off pending final review)**
   - `create-castra <name> [--template default] [--package-manager pnpm|npm] [--no-install] [--local-packages <repo>]`:
     copies `template/`, renames `_gitignore` / `_dev.vars.example`, substitutes the name in `package.json`,
     `wrangler.jsonc` (`<name>`, `<name>-db`) and `README.md`, refuses a non-empty target, installs, prints next steps
@@ -104,7 +118,7 @@
   - Deps: `kysely` 0.29.6 (core dep); dev: `kysely-d1` 0.4.0, `fast-check` 4.10.2,
     `@cloudflare/vitest-plugin` 1.4.0, `@cloudflare/workers-types` 5.20261010.1.
   - Open: snapshot in policy tests is a hand-written fixture until the Schema agent's generator lands.
-- **M5 CLI provision/doctor/migrate/deploy (pending review)**
+- **M5 CLI provision/doctor/migrate/deploy (signed off pending final review)**
   - `@castra/cli`: `castra provision [--config] [--account-id] [--storage]`, `castra doctor`,
     `castra migrate [--local|--remote]`, `castra deploy`. Cloudflare REST client behind injectable `fetch`,
     wrangler behind injectable `exec`; all exported from `packages/cli/src/index.ts` for `create-castra`.

@@ -13,7 +13,8 @@ Storage is on when either:
 1. `--storage` is passed to `castra provision` / `castra deploy` / `castra doctor`, or
 2. `wrangler.jsonc` already declares at least one `r2_buckets` entry.
 
-The first `castra provision --storage` adds `{ "binding": "STORAGE", "bucket_name": "<worker>-storage" }`; from
+The first `castra provision --storage` adds `{ "binding": "STORAGE", "bucket_name": "<worker>-storage" }` (shortened with a hash suffix when that exceeds R2's 63 characters, see the
+ADR 0030 amendment of 2026-10-11); from
 then on rule 2 keeps storage on without the flag. `castra.config.ts` is not read by the CLI.
 
 ## Consequences
