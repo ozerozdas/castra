@@ -59,13 +59,18 @@ Each item names where it is enforced and which tests cover it. Test paths are re
    ([ADR 0042](adr/0042-includes.md)). Tests: `packages/core/test/api/`, `examples/blog/test/api.test.ts`.
 6. **Column visibility on read and write.** `hidden` columns never leave the server. `visibleTo` columns are stripped
    for callers without the role (`self` is supported), and a `visibleTo` column can only be written by a caller who
-   could read it. `engine.projectRow`, `prepareWrite`. Tests: `packages/core/test/policy/fields.test.ts`,
-   `field-write.test.ts`.
+   could read it. When a create or update cannot be re-read under the read policy, the response carries only the
+   primary key, and only if the caller may read the key column (`engine.canReadColumn`); otherwise it is `{}`.
+   `engine.projectRow`, `prepareWrite`, `rereadBody` in `packages/core/src/api/plan.ts`. Tests:
+   `packages/core/test/policy/fields.test.ts`, `field-write.test.ts`, `packages/core/test/api/final-review.d1.test.ts`
+   (FR-2), `final-review-fixes.d1.test.ts`.
 7. **Filters and sorts only on readable columns.** Every filtered or sorted column goes through
    `engine.canFilter` (false for hidden columns, columns the caller cannot see, and tables without an open `read`);
    a rejected column answers like an unknown one. Item routes (`/:id`) are 404 for callers who cannot read the primary
-   key. `packages/core/src/api/plan.ts`. Tests: `packages/core/test/policy/review-fixes.test.ts`,
-   `packages/core/test/api/item-routes.test.ts`, `review3.d1.test.ts`.
+   key. OpenAPI lists only the operations REST serves (no `POST` without a single-column primary key, no `/{id}`
+   routes for a hidden key). `packages/core/src/api/plan.ts`, `openapi.ts`. Tests:
+   `packages/core/test/policy/review-fixes.test.ts`, `packages/core/test/api/item-routes.test.ts`, `review3.d1.test.ts`,
+   `final-review.d1.test.ts` (FR-3), `final-review-fixes.d1.test.ts`.
 8. **No string-built SQL.** Queries are built with Kysely; values are bound; identifiers come from the schema
    snapshot (`sql.id`). Config columns and tables are checked against the snapshot at startup, and the `Rule` and the
    snapshot are deep-frozen copies. Schema introspection uses `pragma_*()` functions with bound parameters
@@ -81,12 +86,16 @@ Each item names where it is enforced and which tests cover it. Test paths are re
     ([ADR 0021](adr/0021-sessions-in-d1-only.md)). `packages/auth/src/context.ts`, `create-auth.ts`. Tests:
     `examples/blog/test/auth.test.ts` (sign-out, role revoke, revoked key).
 11. **API keys and MCP tokens are stored as SHA-256 hashes and compared in constant time.** Both carry 256 bits of
-    secret. The comparison also runs against a dummy hash when the id is unknown. A presented but invalid API key
-    resolves to anonymous and does not fall back to a cookie. `packages/auth/src/api-keys.ts`,
-    `packages/mcp/src/tokens.ts`. Tests: `packages/auth/test/unit.test.ts`, `packages/mcp/test/remote.test.ts`.
+    secret. The comparison also runs against a dummy hash of the same length when the id is unknown. A presented but
+    invalid API key resolves to anonymous and does not fall back to a cookie. `packages/auth/src/api-keys.ts`,
+    `hash.ts`, `packages/mcp/src/tokens.ts`. Tests: `examples/blog/test/auth.test.ts` (API keys: valid, revoked,
+    expired, role subset, no cookie fallback), `packages/auth/test/unit.test.ts`, `packages/mcp/test/remote.test.ts`.
+    The dummy-hash path is covered by `packages/auth/test/api-key-timing.test.ts` and
+    `packages/mcp/test/token-timing.test.ts`: an unknown id runs exactly one comparison, against the all-zero dummy hash.
 12. **Weak secrets are rejected.** `BETTER_AUTH_SECRET` must be at least 32 characters, must not contain a known
     placeholder marker (for example `replace-me`, `changeme`, `example`) and needs at least 10 distinct characters; the
-    Worker refuses to build auth otherwise. `packages/auth/src/create-auth.ts`. Test: `packages/auth/test/unit.test.ts`.
+    Worker refuses to build auth otherwise. This happens on the first request that needs auth, which answers with a
+    generic 500. `/health` still returns 200. `packages/auth/src/create-auth.ts`. Test: `packages/auth/test/unit.test.ts`.
     `castra deploy` generates a 32-byte random secret if none exists.
 13. **MCP uses the same pipeline as REST.** `query_data` plans and executes through the REST request pipeline and
     the same engine; there is no MCP-only data path (ADR [0060](adr/0060-mcp-shared-tools.md)). Tests:
@@ -109,6 +118,16 @@ Each item names where it is enforced and which tests cover it. Test paths are re
     Tests: `packages/core/test/api/parse.test.ts`, `review3.d1.test.ts`, `packages/mcp/test/remote.test.ts`.
 17. **Errors are `application/problem+json`** for unmatched routes and uncaught exceptions; 500s are generic and do
     not include SQL or stack traces. Better Auth's own `/api/auth/*` errors are not (see section 3).
+18. **A create or update never deletes another row.** Castra's write path issues only plain `INSERT` and `UPDATE`
+    statements: no `INSERT OR REPLACE`, `REPLACE` or upsert. A schema-level `ON CONFLICT REPLACE` on a `UNIQUE` or
+    `PRIMARY KEY` constraint would make a colliding write delete the other row without the delete policy. Introspection
+    detects that clause conservatively from `sqlite_master.sql` (`TableSnapshot.conflictReplace`), and the engine
+    refuses every create and update on such a table with 403 `unsafe_schema`, for every caller. Read and delete keep
+    their policies. OpenAPI does not advertise the refused writes and `castra generate` warns
+    ([ADR 0066](adr/0066-on-conflict-replace-tables.md)). `packages/core/src/schema/introspect.ts`
+    (`hasReplaceConflictClause`), `engine.ts`. Tests: `packages/core/test/api/final-review.d1.test.ts` (FR-1),
+    `final-review-fixes.d1.test.ts`, `packages/mcp/test/final-review.test.ts`, `packages/cli/test/generate.test.ts`.
+    Triggers are trusted schema code and can still change other rows.
 
 ## 3. What Castra does not guarantee
 
@@ -126,7 +145,11 @@ Each item names where it is enforced and which tests cover it. Test paths are re
 - **`check_access` can differ from the real write.** Column collations (NOCASE, RTRIM) are not in the snapshot, so
   the dry run compares with BINARY. Only the guarded write is exact.
 - **Existence oracles.** Constraint errors (409) on unique constraints with client-chosen values, and foreign-key
-  children blocking a delete, reveal that a row exists even if the caller cannot read it.
+  children blocking a delete, reveal that a row exists even if the caller cannot read it. The same goes for a foreign
+  key into a table without an open `read` policy. Castra leaves that reference to the database, so a create or
+  update answers differently (success or 409) depending on whether the unreadable parent row exists. A foreign key
+  into a table with an open `read` policy is checked under that policy, and a missing or unreadable parent is the
+  same 400 `invalid_reference`.
 - **Audit table growth.** A request with a known MCP token id and a wrong secret writes one `_castra_audit` row per
   request. Anyone who learns a token id (it is part of the token and appears in `_castra_mcp_tokens`) can grow the
   table. There is no retention policy.

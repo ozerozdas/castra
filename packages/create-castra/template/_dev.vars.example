@@ -1,5 +1,6 @@
 # Copy to .dev.vars for `wrangler dev`. .dev.vars is gitignored; never commit real values.
-# Generate a secret with: openssl rand -base64 32 (the placeholder below is rejected at startup)
+# Generate a secret with: openssl rand -base64 32. The placeholder below is rejected on the first auth
+# request (generic 500); /health still returns 200.
 # In production `castra deploy` sets BETTER_AUTH_SECRET as a Worker secret for you.
 BETTER_AUTH_SECRET=replace-me-with-at-least-32-random-characters
 BETTER_AUTH_URL=http://localhost:8787

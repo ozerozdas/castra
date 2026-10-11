@@ -1,6 +1,59 @@
 # Progress
 
+## Status (2026-10-11)
+v0.1 is complete in this repository. Milestones M1-M6 are signed off:
+
+| Milestone | Signed off by |
+| --- | --- |
+| M1 policy engine, M1 schema snapshot | review 3 (after reviews 1 and 2 and their fixes) |
+| M2 REST API | review 3, findings fixed |
+| M3 auth | review 1 (M1/M3 security review), findings fixed |
+| M4 MCP | review 4, findings fixed |
+| M5 CLI and create-castra | review 5, findings fixed |
+| M6 README, SECURITY.md, final state | final v0.1 review, findings FR-1 to FR-3 and doc items fixed (below) |
+
+Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers pool where noted):
+
+| Package | Files | Tests |
+| --- | --- | --- |
+| `castra` (core, Workers pool) | 28 | 779 |
+| `@castra/auth` (Node) | 2 | 20 |
+| `@castra/mcp` (Workers pool) | 5 | 83 |
+| `@castra/cli` | 10 | 100 |
+| `create-castra` | 5 (1 skipped: opt-in e2e) | 48 (43 passed, 5 skipped) |
+| `create-castra` template (`test:template`) | 2 | 28 |
+| `examples/blog` (Workers pool) | 7 | 103 |
+
+**Remaining human-only steps:**
+- A real-account deploy of `examples/blog`. `provision`, `doctor`, `migrate --remote` and `deploy` are only tested
+  against a fake Cloudflare API and fake wrangler. Nothing has run against a real account.
+- Push, publish and package-name decisions. Nothing is pushed or published, and `npx create-castra` needs a
+  published package (ADR 0004).
+
 ## Done
+- **Final v0.1 review fixes** (2026-10-11). The review tests are in
+  `packages/core/test/api/final-review.d1.test.ts` and all pass with their assertions unchanged.
+  - FR-1 (Medium): a `UNIQUE`/`PRIMARY KEY ... ON CONFLICT REPLACE` constraint let a create or update silently delete
+    another user's conflicting row. `introspect` now flags such tables conservatively from `sqlite_master.sql`
+    (`TableSnapshot.conflictReplace`; `NOT NULL ON CONFLICT REPLACE` is not flagged). The engine refuses create and
+    update on them for every caller with 403 `unsafe_schema`. OpenAPI and MCP do not advertise those writes, and
+    `castra generate` warns. The REST/MCP write path issues no `INSERT OR REPLACE` or upsert (ADR 0066). The blog
+    and template snapshots are unchanged; they have no such clause.
+  - FR-2 (Low-Medium): a create/update that cannot be re-read returns the primary key only when the caller may read
+    the key column, `{}` otherwise. MCP has no write path, so it has no such response.
+  - FR-3 (Low): OpenAPI advertises `POST` only with a single-column primary key, and `/{id}` routes only for a key
+    column that is not hidden. This now matches REST.
+  - The dummy-hash constant-time path has tests (`packages/auth/test/api-key-timing.test.ts`,
+    `packages/mcp/test/token-timing.test.ts`). `sha256Hex` and `timingSafeEqual` moved to `packages/auth/src/hash.ts`
+    and are still exported.
+  - New allow and deny tests: `packages/core/test/api/final-review-fixes.d1.test.ts`,
+    `packages/mcp/test/final-review.test.ts`, and `packages/cli/test/generate.test.ts` (flag and warning).
+  - The template's "OpenAPI lists only notes" test checks that notes is present and the closed tables are absent, so
+    the README quickstart (adding `tags`) passes `pnpm test:policies` unchanged.
+  - Docs: SECURITY.md (FR-1 as guarantee 18, FR-2/FR-3 under guarantees 6/7, test references for API keys and the
+    dummy hash, FK existence oracle, weak secret fails on the first auth request); README (404 until
+    `pnpm generate`, `BETTER_AUTH_URL`/origin behaviour, OpenAPI wording, `unsafe_schema`); `.dev.vars.example`
+    wording.
 - **M0 Foundation** (2026-10-10)
   - pnpm workspace: `castra` (core), `@castra/auth`, `@castra/mcp`, `@castra/cli` (bin `castra`),
     `create-castra` (bin). All private, nothing published. Each has tsup build, placeholder `src/index.ts`,
@@ -12,9 +65,8 @@
     vitest test with `@cloudflare/vitest-plugin` applying migrations. `wrangler dev` verified locally.
   - GitHub Actions CI, ADRs 0001-0004, README stub.
 
-## In progress
-- **M6 README (pending review)**: v0.1 `README.md` (quickstart, concepts, config/REST/CLI reference, D1 limits cited from Cloudflare docs); `docs/SECURITY.md` now points to `castra test policies`.
-- **M5 review fixes (2026-10-11), M5 signed off pending final review.** Review tests:
+- **M6 README (signed off by the final review + fixes)**: v0.1 `README.md` (quickstart, concepts, config/REST/CLI reference, D1 limits cited from Cloudflare docs); `docs/SECURITY.md` now points to `castra test policies`.
+- **M5 review fixes (2026-10-11), M5 signed off by review 5 + these fixes.** Review tests:
   `packages/cli/test/review5.test.ts`, `packages/create-castra/test/review5.test.ts` (no `it.todo` left).
   - R5-1 doctor: token policies count only when their `resources` cover the target account
     (`com.cloudflare.api.account.<id>` / `.*`), deny policies remove groups, the read-only probe always runs and a
@@ -28,7 +80,7 @@
     of repointing it to a new empty database (ADR 0030 amendment).
   - R5-7 `castra`: runtime `CliError`s (config not found, unprovisioned binding) exit 1; `UsageError` exits 2.
   - R5-8 `.gitignore` (template and repo root) ignores `.dev.vars*` / `.env*`, keeps `.dev.vars.example` / `.env.example`.
-- **M5 create-castra + `castra test policies` (signed off pending final review)**
+- **M5 create-castra + `castra test policies` (signed off by review 5 + fixes)**
   - `create-castra <name> [--template default] [--package-manager pnpm|npm] [--no-install] [--local-packages <repo>]`:
     copies `template/`, renames `_gitignore` / `_dev.vars.example`, substitutes the name in `package.json`,
     `wrangler.jsonc` (`<name>`, `<name>-db`) and `README.md`, refuses a non-empty target, installs, prints next steps
@@ -47,7 +99,7 @@
   - Not done: publishing (nothing is on npm, so plain `npx create-castra` does not work yet), npm-flavoured e2e,
     `castra init`.
 - **M2 REST API (signed off by review 3, findings fixed)**
-- **M4 MCP (pending review)**
+- **M4 MCP (signed off by review 4 + fixes)**
   - `@castra/mcp`: four read-only tools (`describe_schema`, `check_access`, `explain_query`, `query_data`) defined
     once and served by both transports. They run on the same engine and REST pipeline (ADR 0060).
     `query_data` ≡ REST, asserted for 5 identities × 10 requests.
@@ -80,7 +132,7 @@
     An unknown `userId` is a 400 `unknown_user`. Local stdio is unchanged.
   - Tests: 4 reviewer BUG tests in `packages/mcp/test/review4.test.ts` now pass. The design pin for explicit roles
     asserts the new behaviour. 5 regression tests were added in `packages/mcp/test/remote.test.ts`.
-- **M2 REST API (pending review)**
+- **M2 REST API (details; signed off by review 3)**
   - `castra` core `src/api`: `parseRequest` → `planRequest` (compiled SQL + explanations, no execution) →
     `executePlan`; `createRestRouter` (Hono, problem+json, `beforeRequest` hook), `generateOpenApi` (3.1),
     ADRs 0040–0044.
@@ -97,14 +149,15 @@
   - D1 PRAGMAs verified: `table_list`, `table_info`, `table_xinfo`, `foreign_key_list`, `index_list`, `index_info`,
     `index_xinfo`, `foreign_keys` work; `user_version`, `schema_version`, `compile_options` are rejected;
     D1 refuses to create `_cf_*` tables (the filter is covered with a stubbed query).
-- **M3 auth (pending review)**
+- **M3 auth (signed off by review 1 + fixes)**
   - `@castra/auth`: `createAuth` (Better Auth 1.7.7, native D1, email+password, GitHub when env set,
     bearer plugin), `resolveContext` (session / API key / anonymous), roles helpers, API keys
     (`_castra_api_keys`, SHA-256 hashed), Hono `authRoutes`, `castraContext`, `requireRole`.
   - `examples/blog`: `0002_auth.sql` (generated Better Auth tables + `_castra_roles` + `_castra_api_keys`),
     `/api/auth/*`, `/me`, `GET /admin/ping` (admin only), `.dev.vars.example`.
   - Sessions checked against D1 every request, no KV/cookie cache. ADRs 0020-0023.
-  - Tests: 15 unit (auth), 24 integration against local D1 (blog).
+  - Tests at M3: 15 unit (auth), 24 integration against local D1 (blog). Now 20 unit tests in 2 files (auth), and
+    103 tests in 7 files (blog), see Status.
   - Not done: GitHub OAuth flow only unit-tested (no network); no HTTP endpoints for API key management;
     no `users` mirror repair command.
 - **M1 policy engine (signed off by review 3)**
@@ -118,7 +171,7 @@
   - Deps: `kysely` 0.29.6 (core dep); dev: `kysely-d1` 0.4.0, `fast-check` 4.10.2,
     `@cloudflare/vitest-plugin` 1.4.0, `@cloudflare/workers-types` 5.20261010.1.
   - Open: snapshot in policy tests is a hand-written fixture until the Schema agent's generator lands.
-- **M5 CLI provision/doctor/migrate/deploy (signed off pending final review)**
+- **M5 CLI provision/doctor/migrate/deploy (signed off by review 5 + fixes)**
   - `@castra/cli`: `castra provision [--config] [--account-id] [--storage]`, `castra doctor`,
     `castra migrate [--local|--remote]`, `castra deploy`. Cloudflare REST client behind injectable `fetch`,
     wrangler behind injectable `exec`; all exported from `packages/cli/src/index.ts` for `create-castra`.
@@ -162,7 +215,8 @@
     (`PolicyEngine.canReadColumn`).
   - `d1_migrations` is a reserved table.
 
-- **M6: SECURITY.md** (2026-10-11): `docs/SECURITY.md` threat model, guarantees, known issues and operator checklist.
+- **M6: SECURITY.md** (2026-10-11, signed off by the final review + fixes): `docs/SECURITY.md` threat model,
+  guarantees, known issues and operator checklist.
 
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
@@ -195,7 +249,7 @@ Other decisions:
 ## Open issues
 - `custom()` / `where()` predicates may contain subqueries that read reserved tables (Better Auth, `_castra_*`).
   The engine cannot see inside raw `sql` and only validates table names it can walk; reading such tables in a
-  predicate is the config author's responsibility. To be documented in `docs/SECURITY.md`.
+  predicate is the config author's responsibility. Documented in `docs/SECURITY.md` section 3.
 - Very deep rule nesting (~5000 alternating `and`/`or` levels) overflows the stack while the config is built
   (rule copy, validation, compilation). Fails at startup, never at request time; accepted.
 - Column collations are not in the snapshot, so `checkRow` (dry run) compares with BINARY; only the guarded
@@ -208,8 +262,12 @@ Other decisions:
 - `isReservedTable` hard-codes the four Better Auth tables (`user`, `session`, `account`, `verification`). A Better Auth
   plugin that adds tables must also add them to `AUTH_TABLES`, or the policy engine could expose them. v0.1 uses only the
   `bearer` plugin, which adds no tables.
-- Constraint 409s act as existence oracles: unique constraints on client-chosen values and FK children blocking a
-  delete reveal that a row exists even if the caller cannot read it. For `docs/SECURITY.md`.
+- Constraint 409s act as existence oracles: unique constraints on client-chosen values, FK children blocking a
+  delete, and FKs into a table without an open `read` policy (left to the database: success vs 409) reveal that a row
+  exists even if the caller cannot read it. Documented in `docs/SECURITY.md` section 3.
+- A table with `ON CONFLICT REPLACE` on a `UNIQUE`/`PRIMARY KEY` constraint can be read and deleted through Castra
+  but not created into or updated (403 `unsafe_schema`, ADR 0066). That is intended. Triggers are trusted schema code
+  and can still change other rows.
 - The keyset cursor always compares on the primary key even when the PK is not in `filterable`. The PK is visible
   to anyone who can open item routes (they are 404 otherwise), so nothing leaks.
 - The example config makes `comments` public, including comments on draft posts (intended, ARCHITECTURE §7).
