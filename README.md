@@ -261,11 +261,11 @@ violation or concurrent change, 500 generic (no SQL or stack). Better Auth's own
 - **Sessions are checked against D1 on every request.** There is no KV or cookie cache, so a signed-out, deleted or
   expired session is anonymous on the next request ([ADR 0021](docs/adr/0021-sessions-in-d1-only.md)).
 - **Roles** live in `_castra_roles (user_id, role)` and are re-read on every request. There is no CLI or HTTP endpoint
-  to grant them in v0.1: call `assignRole(env.DB, userId, role, config.roles)` from `@castra/auth`, or insert rows with
+  to grant them in v0.1: call `assignRole(env.DB, userId, role, config.roles)` from `@castra-kit/auth`, or insert rows with
   `wrangler d1 execute`.
 - **API keys** (`castra_ak_...`) act as a user with a subset of that user's roles, are stored as SHA-256 hashes, and are
   sent as `x-api-key` or `Authorization: Bearer`. Create and revoke them with `createApiKey` / `revokeApiKey` from
-  `@castra/auth`; there is no CLI or HTTP endpoint yet ([ADR 0022](docs/adr/0022-own-api-keys-table.md)). A presented but
+  `@castra-kit/auth`; there is no CLI or HTTP endpoint yet ([ADR 0022](docs/adr/0022-own-api-keys-table.md)). A presented but
   invalid key is anonymous, never a fallback to a cookie.
 - A `users` table mirrors `id`, `email`, `name` from Better Auth so app tables can reference it with foreign keys
   ([ADR 0023](docs/adr/0023-users-profile-mirror.md)).
@@ -303,7 +303,7 @@ Details: [ADR 0060](docs/adr/0060-mcp-shared-tools.md), [0061](docs/adr/0061-mcp
 
 ## CLI reference
 
-The `castra` binary comes from `@castra/cli`; a scaffolded project exposes most commands as package scripts.
+The `castra` binary comes from `@castra-kit/cli`; a scaffolded project exposes most commands as package scripts.
 Exit codes: 0 success, 1 check or runtime failure, 2 usage error or not implemented.
 
 | Command | Does | Options |
@@ -374,9 +374,9 @@ not in CI (its e2e needs the registry). Known issues are listed in [docs/SECURIT
 | Path | What |
 | --- | --- |
 | `packages/core` (`castra`) | Policy engine, schema snapshot, REST router, OpenAPI |
-| `packages/auth` (`@castra/auth`) | Better Auth wiring, roles, API keys, context |
-| `packages/mcp` (`@castra/mcp`) | MCP tools, stdio entry, `/mcp` route |
-| `packages/cli` (`@castra/cli`) | The `castra` binary |
+| `packages/auth` (`@castra-kit/auth`) | Better Auth wiring, roles, API keys, context |
+| `packages/mcp` (`@castra-kit/mcp`) | MCP tools, stdio entry, `/mcp` route |
+| `packages/cli` (`@castra-kit/cli`) | The `castra` binary |
 | `packages/create-castra` | `create-castra` scaffolder and template |
 | `examples/blog` | Reference app and e2e test target |
 

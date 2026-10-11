@@ -4,8 +4,8 @@ import {
   type AuthEnv,
   type CastraAuthOptions,
   type CastraAuthVariables,
-} from "@castra/auth";
-import { createMcpRoute } from "@castra/mcp";
+} from "@castra-kit/auth";
+import { createMcpRoute } from "@castra-kit/mcp";
 import { createPolicyEngine, createRestRouter, withProblemHandlers, type PolicyEngine, type SchemaSnapshot } from "castra";
 import { Hono } from "hono";
 import { Kysely } from "kysely";

@@ -1,7 +1,7 @@
 # 0004. Package names
 
 ## Status
-Accepted (2026-10-10). Re-check availability before publishing.
+Accepted (2026-10-10). Re-check availability before publishing. Scoped names amended by ADR 0068 (`@castra-kit/*`).
 
 ## Context
 Users import `defineConfig` and the rule helpers from one package, and scaffold with `npx create-<name>`.

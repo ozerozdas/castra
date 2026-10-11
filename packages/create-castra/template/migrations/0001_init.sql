@@ -8,7 +8,7 @@
 --   DROP TABLE IF EXISTS users;
 PRAGMA foreign_keys = ON;
 
--- Public profile mirror of the Better Auth `user` table, kept in sync by @castra/auth (ADR 0023).
+-- Public profile mirror of the Better Auth `user` table, kept in sync by @castra-kit/auth (ADR 0023).
 -- App tables reference it with foreign keys. It has no policy in castra.config.ts, so it is not exposed.
 CREATE TABLE users (
   id TEXT PRIMARY KEY NOT NULL,

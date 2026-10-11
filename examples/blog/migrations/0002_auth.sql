@@ -1,7 +1,7 @@
 -- Auth + internal tables. Never exposed by Castra (no policy, reserved names).
 --
 -- Better Auth 1.7.7 tables below are generated, not hand-written:
---   pnpm --filter @castra/auth build && pnpm --filter @castra/auth auth:schema
+--   pnpm --filter @castra-kit/auth build && pnpm --filter @castra-kit/auth auth:schema
 -- Regenerate and diff on every Better Auth upgrade (ADR 0020).
 PRAGMA foreign_keys = ON;
 

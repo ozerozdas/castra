@@ -69,7 +69,7 @@ export async function mcp(options: McpOptions): Promise<number> {
   const config = await loadCastraConfig(configPath);
 
   const { getPlatformProxy } = await import("wrangler");
-  const { serveStdio } = await import("@castra/mcp/stdio");
+  const { serveStdio } = await import("@castra-kit/mcp/stdio");
   const proxy = await getPlatformProxy<Record<string, unknown>>({
     configPath: wranglerPath,
     persist: { path: join(dirname(wranglerPath), ".wrangler", "state", "v3") },

@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { generate, migrate, openLocalD1, spawnExec, type ExecFn } from "@castra/cli";
+import { generate, migrate, openLocalD1, spawnExec, type ExecFn } from "@castra-kit/cli";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { scaffold, TEMPLATE_NAME } from "../src/scaffold.js";
 

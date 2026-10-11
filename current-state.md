@@ -18,7 +18,7 @@ Exit 0. Test counts: core 779 · auth 20 · mcp 83 · cli 102 · create-castra 4
 
 ## Left for a human (needs explicit approval)
 
-1. Check that the npm names `castra`, `create-castra` and `@castra/*` are free, then publish. Until then `npx create-castra` does not work; use `--local-packages`.
+1. Check that the npm names `castra`, `create-castra` and `@castra-kit/*` are free, then publish. Until then `npx create-castra` does not work; use `--local-packages`.
 
 ## Since v0.1 work
 

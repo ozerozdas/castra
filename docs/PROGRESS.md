@@ -17,9 +17,9 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
 | Package | Files | Tests |
 | --- | --- | --- |
 | `castra` (core, Workers pool) | 28 | 779 |
-| `@castra/auth` (Node) | 2 | 20 |
-| `@castra/mcp` (Workers pool) | 5 | 83 |
-| `@castra/cli` | 10 | 102 |
+| `@castra-kit/auth` (Node) | 2 | 20 |
+| `@castra-kit/mcp` (Workers pool) | 5 | 83 |
+| `@castra-kit/cli` | 10 | 102 |
 | `create-castra` | 5 (1 skipped: opt-in e2e) | 48 (43 passed, 5 skipped) |
 | `create-castra` template (`test:template`) | 2 | 28 |
 | `examples/blog` (Workers pool) | 7 | 103 |
@@ -60,7 +60,7 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
     `pnpm generate`, `BETTER_AUTH_URL`/origin behaviour, OpenAPI wording, `unsafe_schema`); `.dev.vars.example`
     wording.
 - **M0 Foundation** (2026-10-10)
-  - pnpm workspace: `castra` (core), `@castra/auth`, `@castra/mcp`, `@castra/cli` (bin `castra`),
+  - pnpm workspace: `castra` (core), `@castra-kit/auth`, `@castra-kit/mcp`, `@castra-kit/cli` (bin `castra`),
     `create-castra` (bin). All private, nothing published. Each has tsup build, placeholder `src/index.ts`,
     a passing vitest test and a tsconfig extending `tsconfig.base.json`.
   - Root scripts: `build`, `test`, `test:policies` (`--passWithNoTests`), `lint` (ESLint flat), `typecheck`
@@ -96,7 +96,7 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
   - The template is linted, typechecked (`tsconfig.template.json`) and tested inside the monorepo;
     `test/template-drift.test.ts` runs real `castra migrate --local` + `castra generate --check` on a scaffolded copy.
   - `castra test policies` runs the project's `vitest run policies` (ADR 0037). `castra init` deferred (ADR 0038).
-  - `examples/blog`: `provision`, `doctor`, `migrate` (`--remote`), `deploy` scripts via `@castra/cli`.
+  - `examples/blog`: `provision`, `doctor`, `migrate` (`--remote`), `deploy` scripts via `@castra-kit/cli`.
   - E2E (opt-in, `pnpm --filter create-castra test:e2e`): scaffold with `--local-packages` → `pnpm install` →
     typecheck → tests + `test:policies` → `db:migrate:local` + `castra generate --check` → `wrangler dev` on a free
     port, `/health` and `/api/notes` answer, the dev server's process group is stopped. Passed locally 2026-10-11;
@@ -105,7 +105,7 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
     `castra init`.
 - **M2 REST API (signed off by review 3, findings fixed)**
 - **M4 MCP (signed off by review 4 + fixes)**
-  - `@castra/mcp`: four read-only tools (`describe_schema`, `check_access`, `explain_query`, `query_data`) defined
+  - `@castra-kit/mcp`: four read-only tools (`describe_schema`, `check_access`, `explain_query`, `query_data`) defined
     once and served by both transports. They run on the same engine and REST pipeline (ADR 0060).
     `query_data` ≡ REST, asserted for 5 identities × 10 requests.
   - Remote: `createMcpRoute` / `handleMcpRequest`, stateless Streamable HTTP with JSON responses (SDK 1.32.1,
@@ -147,7 +147,7 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
 - **M1 schema snapshot (signed off by review 3)**
   - `castra` core: `introspect(query)`, `generateKyselyTypes(snapshot)`, `diffSnapshots(a, b)` in
     `packages/core/src/schema`, tested against a real miniflare D1 (core now runs its tests in the Workers pool).
-  - `@castra/cli`: `castra generate [--local] [--config] [--out] [--binding] [--check]`; other subcommands print
+  - `@castra-kit/cli`: `castra generate [--local] [--config] [--out] [--binding] [--check]`; other subcommands print
     "not implemented yet" and exit 2. Reads local D1 through wrangler `getPlatformProxy` (ADR 0011).
   - `examples/blog/castra/schema.json` + `db.d.ts` generated from the local blog D1.
   - Mapping decisions (INTEGER PRIMARY KEY `notNull`, index/FK rules) in ADR 0010; `SchemaSnapshot` unchanged.
@@ -155,7 +155,7 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
     `index_xinfo`, `foreign_keys` work; `user_version`, `schema_version`, `compile_options` are rejected;
     D1 refuses to create `_cf_*` tables (the filter is covered with a stubbed query).
 - **M3 auth (signed off by review 1 + fixes)**
-  - `@castra/auth`: `createAuth` (Better Auth 1.7.7, native D1, email+password, GitHub when env set,
+  - `@castra-kit/auth`: `createAuth` (Better Auth 1.7.7, native D1, email+password, GitHub when env set,
     bearer plugin), `resolveContext` (session / API key / anonymous), roles helpers, API keys
     (`_castra_api_keys`, SHA-256 hashed), Hono `authRoutes`, `castraContext`, `requireRole`.
   - `examples/blog`: `0002_auth.sql` (generated Better Auth tables + `_castra_roles` + `_castra_api_keys`),
@@ -177,7 +177,7 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
     `@cloudflare/vitest-plugin` 1.4.0, `@cloudflare/workers-types` 5.20261010.1.
   - Open: snapshot in policy tests is a hand-written fixture until the Schema agent's generator lands.
 - **M5 CLI provision/doctor/migrate/deploy (signed off by review 5 + fixes)**
-  - `@castra/cli`: `castra provision [--config] [--account-id] [--storage]`, `castra doctor`,
+  - `@castra-kit/cli`: `castra provision [--config] [--account-id] [--storage]`, `castra doctor`,
     `castra migrate [--local|--remote]`, `castra deploy`. Cloudflare REST client behind injectable `fetch`,
     wrangler behind injectable `exec`; all exported from `packages/cli/src/index.ts` for `create-castra`.
   - Provision is find-by-name then create; ids written with `jsonc-parser` edits (comments preserved); second run
@@ -268,7 +268,7 @@ Other decisions:
 - `prepareWrite` does not reject primary-key changes on update; with `runGuardedWrite` the guard must be given the
   new key, otherwise the write fails closed (403).
 - Contract types: `ColumnSnapshot.notNull` for INTEGER PRIMARY KEY columns follows `PRAGMA table_info`; Schema agent should confirm.
-- npm names checked free on 2026-10-11 (`castra`, `create-castra`, `@castra/auth|cli|mcp`). Before publish, create the npm org `castra` (owner of the `@castra` scope) and re-check (ADR 0004).
+- npm names checked free on 2026-10-11 (`castra`, `create-castra`, `@castra-kit/auth|cli|mcp`). Before publish, create the npm org `castra-kit` (the `castra` org is taken) and re-check (ADRs 0004, 0068).
 - `pnpm install` emits no peer warnings, but two workerd versions are installed (wrangler vs the plugin's miniflare).
 - `isReservedTable` hard-codes the four Better Auth tables (`user`, `session`, `account`, `verification`). A Better Auth
   plugin that adds tables must also add them to `AUTH_TABLES`, or the policy engine could expose them. v0.1 uses only the

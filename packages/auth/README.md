@@ -1,4 +1,4 @@
-# @castra/auth
+# @castra-kit/auth
 
 Better Auth wiring, roles and request identity for Castra.
 

@@ -3,7 +3,7 @@
  * real Better Auth sessions and a local D1 with all migrations applied. Run with `pnpm test:policies`.
  * When you change a policy, change these tests in the same commit.
  */
-import { assignRole } from "@castra/auth";
+import { assignRole } from "@castra-kit/auth";
 import { env } from "cloudflare:test";
 import { exports } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";

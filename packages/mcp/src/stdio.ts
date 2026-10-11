@@ -1,5 +1,5 @@
 /**
- * `@castra/mcp/stdio`: the local MCP server over stdio (Node only). Used by `castra mcp`.
+ * `@castra-kit/mcp/stdio`: the local MCP server over stdio (Node only). Used by `castra mcp`.
  * @packageDocumentation
  */
 import type { Readable, Writable } from "node:stream";

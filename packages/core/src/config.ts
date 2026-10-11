@@ -35,7 +35,7 @@ export interface TableConfig {
   selfColumn?: string;
 }
 
-/** Authentication settings (consumed by `@castra/auth`). */
+/** Authentication settings (consumed by `@castra-kit/auth`). */
 export interface AuthConfig {
   provider?: "better-auth";
   methods?: string[];

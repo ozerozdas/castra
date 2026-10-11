@@ -23,9 +23,9 @@ const env = (extra: Partial<AuthEnv> = {}): AuthEnv => ({
   ...extra,
 });
 
-describe("@castra/auth", () => {
+describe("@castra-kit/auth", () => {
   it("exports its package name", () => {
-    expect(name).toBe("@castra/auth");
+    expect(name).toBe("@castra-kit/auth");
   });
 });
 

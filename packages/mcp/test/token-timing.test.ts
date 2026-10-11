@@ -1,15 +1,15 @@
 /**
  * verifyMcpToken runs the same work for an unknown token id as for a known id with a wrong secret: one
  * SHA-256 and one constant-time comparison, against a dummy all-zero hash when no row exists
- * (SECURITY.md, "timing"). The comparison from @castra/auth is spied on through a module mock.
+ * (SECURITY.md, "timing"). The comparison from @castra-kit/auth is spied on through a module mock.
  */
-import * as auth from "@castra/auth";
+import * as auth from "@castra-kit/auth";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMcpToken, verifyMcpToken } from "../src/index.js";
 import { setup, testDb, USERS } from "./fixtures.js";
 
-vi.mock("@castra/auth", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@castra/auth")>();
+vi.mock("@castra-kit/auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@castra-kit/auth")>();
   return { ...actual, timingSafeEqual: vi.fn(actual.timingSafeEqual) };
 });
 

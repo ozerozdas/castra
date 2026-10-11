@@ -1,10 +1,10 @@
 /**
- * `@castra/auth`: Better Auth on D1, roles, API keys and request context resolution.
+ * `@castra-kit/auth`: Better Auth on D1, roles, API keys and request context resolution.
  * @packageDocumentation
  */
 
 /** Package identifier. */
-export const name = "@castra/auth";
+export const name = "@castra-kit/auth";
 
 export {
   buildAuthOptions,

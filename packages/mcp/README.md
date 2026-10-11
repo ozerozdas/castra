@@ -1,4 +1,4 @@
-# @castra/mcp
+# @castra-kit/mcp
 
 MCP server for Castra: stdio entry and Worker /mcp route, on the same policy engine as REST.
 

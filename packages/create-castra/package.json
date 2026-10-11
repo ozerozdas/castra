@@ -47,9 +47,9 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.template.json"
   },
   "devDependencies": {
-    "@castra/auth": "workspace:*",
-    "@castra/cli": "workspace:*",
-    "@castra/mcp": "workspace:*",
+    "@castra-kit/auth": "workspace:*",
+    "@castra-kit/cli": "workspace:*",
+    "@castra-kit/mcp": "workspace:*",
     "@cloudflare/vitest-plugin": "1.4.0",
     "@cloudflare/workers-types": "5.20261010.1",
     "castra": "workspace:*",

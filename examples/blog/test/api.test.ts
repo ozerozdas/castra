@@ -2,7 +2,7 @@
  * REST API end to end on the blog Worker: real Better Auth sessions, real D1, the example config.
  * Creates and updates run as atomic [write, guard] D1 batches (ADR 0050).
  */
-import { assignRole } from "@castra/auth";
+import { assignRole } from "@castra-kit/auth";
 import { env } from "cloudflare:test";
 import { exports } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -41,7 +41,7 @@ async function signUp(role?: string): Promise<Who> {
   expect(res.status).toBe(200);
   const { user } = (await res.json()) as { user: { id: string } };
   if (role) await assignRole(env.DB, user.id, role, authOptions.roles);
-  // @castra/auth mirrors the user into the app `users` table that posts/comments reference.
+  // @castra-kit/auth mirrors the user into the app `users` table that posts/comments reference.
   return { id: user.id, headers: { authorization: `Bearer ${res.headers.get("set-auth-token")}` } };
 }
 

@@ -1,5 +1,5 @@
 /** Package identifier. */
-export const name = "@castra/cli";
+export const name = "@castra-kit/cli";
 
 export { run } from "./run.js";
 export type { RunEnv } from "./run.js";

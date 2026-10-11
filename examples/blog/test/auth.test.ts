@@ -1,4 +1,4 @@
-import { assignRole, createApiKey, getRoles, revokeApiKey, revokeRole, UnknownRoleError } from "@castra/auth";
+import { assignRole, createApiKey, getRoles, revokeApiKey, revokeRole, UnknownRoleError } from "@castra-kit/auth";
 import { env } from "cloudflare:test";
 import { exports } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { insertMcpTokenQuery, mintMcpToken, parseScopes, revokeMcpTokenQuery } from "@castra/mcp";
+import { insertMcpTokenQuery, mintMcpToken, parseScopes, revokeMcpTokenQuery } from "@castra-kit/mcp";
 import type { OpenDatabaseFn } from "../local-d1.js";
 import { CliError, readD1Target, UsageError } from "../wrangler-config.js";
 

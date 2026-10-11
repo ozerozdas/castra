@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { buildAuthOptions } from "@castra/auth";
+import { buildAuthOptions } from "@castra-kit/auth";
 import { main, nextSteps, detectPackageManager, type RunCommandFn } from "../src/main.js";
 import {
   CASTRA_PACKAGES,
@@ -220,9 +220,9 @@ describe("--local-packages", () => {
   });
 
   it("rewritePackageJson only touches Castra packages, in dependencies and devDependencies", () => {
-    const text = JSON.stringify({ name: "t", dependencies: { castra: "0", hono: "1" }, devDependencies: { "@castra/cli": "0" } });
-    const pkg = JSON.parse(rewritePackageJson(text, "n", { castra: "link:/x", "@castra/cli": "link:/y" }));
-    expect(pkg).toEqual({ name: "n", dependencies: { castra: "link:/x", hono: "1" }, devDependencies: { "@castra/cli": "link:/y" } });
+    const text = JSON.stringify({ name: "t", dependencies: { castra: "0", hono: "1" }, devDependencies: { "@castra-kit/cli": "0" } });
+    const pkg = JSON.parse(rewritePackageJson(text, "n", { castra: "link:/x", "@castra-kit/cli": "link:/y" }));
+    expect(pkg).toEqual({ name: "n", dependencies: { castra: "link:/x", hono: "1" }, devDependencies: { "@castra-kit/cli": "link:/y" } });
   });
 });
 
@@ -240,7 +240,7 @@ describe("dotfiles and secrets", () => {
     for (const entry of [".dev.vars*", ".env*", "!.dev.vars.example", ".wrangler/", "node_modules/", "dist/"]) expect(lines).toContain(entry);
   });
 
-  it(".dev.vars.example holds no usable secret: its placeholder is rejected by @castra/auth", async () => {
+  it(".dev.vars.example holds no usable secret: its placeholder is rejected by @castra-kit/auth", async () => {
     expect(await create(["app", "--no-install"])).toBe(0);
     expect(existsSync(join(cwd, "app", ".dev.vars"))).toBe(false);
     const text = await readFile(join(cwd, "app", ".dev.vars.example"), "utf8");
@@ -277,10 +277,10 @@ describe("name substitution", () => {
 });
 
 describe("--local-packages details", () => {
-  it("resolves a relative path against the current directory and links @castra/cli too", async () => {
+  it("resolves a relative path against the current directory and links @castra-kit/cli too", async () => {
     expect(await create(["app", "--no-install", "--local-packages", relative(cwd, REPO)])).toBe(0);
     const pkg = JSON.parse(await readFile(join(cwd, "app", "package.json"), "utf8"));
-    expect(pkg.dependencies["@castra/cli"]).toBe(`link:${join(REPO, "packages/cli")}`);
+    expect(pkg.dependencies["@castra-kit/cli"]).toBe(`link:${join(REPO, "packages/cli")}`);
   });
 
   it("warns (but succeeds) when a local package has not been built", async () => {

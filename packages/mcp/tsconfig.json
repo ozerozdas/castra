@@ -4,7 +4,7 @@
     "types": ["node", "@cloudflare/workers-types"],
     "paths": {
       "castra": ["../core/src/index.ts"],
-      "@castra/auth": ["../auth/src/index.ts"]
+      "@castra-kit/auth": ["../auth/src/index.ts"]
     }
   },
   "include": ["src", "test", "tsup.config.ts", "vitest.config.ts"]

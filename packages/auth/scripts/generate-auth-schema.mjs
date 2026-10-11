@@ -1,5 +1,5 @@
 // Prints the SQLite DDL Better Auth needs for Castra's exact auth configuration.
-// Usage: pnpm --filter @castra/auth build && node packages/auth/scripts/generate-auth-schema.mjs
+// Usage: pnpm --filter @castra-kit/auth build && node packages/auth/scripts/generate-auth-schema.mjs
 // Runs against an in-memory node:sqlite database (same SQLite dialect as D1); no network, no secrets.
 import process from "node:process";
 import { DatabaseSync } from "node:sqlite";

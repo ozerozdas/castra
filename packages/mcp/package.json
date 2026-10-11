@@ -1,5 +1,5 @@
 {
-  "name": "@castra/mcp",
+  "name": "@castra-kit/mcp",
   "version": "0.1.0",
   "description": "MCP server for Castra: stdio entry and Worker /mcp route, on the same policy engine as REST.",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@castra/auth": "workspace:*",
+    "@castra-kit/auth": "workspace:*",
     "@modelcontextprotocol/sdk": "1.32.1",
     "castra": "workspace:*",
     "hono": "4.13.13",

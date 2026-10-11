@@ -1,4 +1,4 @@
-# @castra/cli
+# @castra-kit/cli
 
 The castra CLI: provision, generate, migrate, deploy, test, mcp and doctor for Castra apps.
 

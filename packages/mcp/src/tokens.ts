@@ -1,4 +1,4 @@
-import { sha256Hex, timingSafeEqual } from "@castra/auth";
+import { sha256Hex, timingSafeEqual } from "@castra-kit/auth";
 import type { CompiledQuery } from "kysely";
 import { compileOnly, mcpDb, type McpDbInput, type McpTokensTable } from "./db.js";
 import { parseScopes, readStoredScopes, type McpScope } from "./scopes.js";

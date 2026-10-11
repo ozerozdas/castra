@@ -5,8 +5,8 @@
   "compilerOptions": {
     "ignoreDeprecations": "6.0",
     "paths": {
-      "@castra/auth": ["../auth/src/index.ts"],
-      "@castra/mcp": ["../mcp/src/index.ts"],
+      "@castra-kit/auth": ["../auth/src/index.ts"],
+      "@castra-kit/mcp": ["../mcp/src/index.ts"],
       "castra": ["../core/src/index.ts"]
     }
   },

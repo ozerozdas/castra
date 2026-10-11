@@ -4,7 +4,7 @@
  * The "FINDING" block asserts the CORRECT behaviour and fails until fixed; the rest are regression
  * tests for attacks that held.
  */
-import { assignRole, buildAuthOptions, createApiKey, revokeRole } from "@castra/auth";
+import { assignRole, buildAuthOptions, createApiKey, revokeRole } from "@castra-kit/auth";
 import { env } from "cloudflare:test";
 import { exports } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";

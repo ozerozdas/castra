@@ -2,7 +2,7 @@
  * Third security review (M2 REST) on the blog Worker: real Better Auth sessions, real local D1, the
  * example config. Asserts CORRECT behaviour; a failing test is a finding.
  */
-import { assignRole } from "@castra/auth";
+import { assignRole } from "@castra-kit/auth";
 import { env } from "cloudflare:test";
 import { exports } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";

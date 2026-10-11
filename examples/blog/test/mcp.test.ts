@@ -2,8 +2,8 @@
  * Remote MCP on the blog Worker (/mcp): token auth, audit, read-only tools, and rule 7 — the same
  * request through REST and through MCP `query_data` yields the identical status and body.
  */
-import { assignRole, createApiKey } from "@castra/auth";
-import { createMcpToken, revokeMcpToken } from "@castra/mcp";
+import { assignRole, createApiKey } from "@castra-kit/auth";
+import { createMcpToken, revokeMcpToken } from "@castra-kit/mcp";
 import { env } from "cloudflare:test";
 import { exports } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";

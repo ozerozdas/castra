@@ -1,5 +1,5 @@
 {
-  "name": "@castra/auth",
+  "name": "@castra-kit/auth",
   "version": "0.1.0",
   "description": "Better Auth wiring, roles and request identity for Castra.",
   "license": "MIT",

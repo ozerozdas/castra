@@ -1,8 +1,8 @@
 /**
  * Review 4 (M4, security): the remote /mcp route through real HTTP to the blog Worker on local D1.
  */
-import { assignRole } from "@castra/auth";
-import { createMcpToken } from "@castra/mcp";
+import { assignRole } from "@castra-kit/auth";
+import { createMcpToken } from "@castra-kit/mcp";
 import { env } from "cloudflare:test";
 import { exports } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";

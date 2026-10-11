@@ -1,5 +1,5 @@
 {
-  "name": "@castra/cli",
+  "name": "@castra-kit/cli",
   "version": "0.1.0",
   "description": "The castra CLI: provision, generate, migrate, deploy, test, mcp and doctor for Castra apps.",
   "license": "MIT",
@@ -40,7 +40,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@castra/mcp": "workspace:*",
+    "@castra-kit/mcp": "workspace:*",
     "castra": "workspace:*",
     "jsonc-parser": "3.3.1"
   },
