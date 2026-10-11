@@ -144,8 +144,9 @@ Each item names where it is enforced and which tests cover it. Test paths are re
   (ARCHITECTURE section 3) and pinned in `packages/mcp/test/review4.test.ts`. Do not give that scope to parties who
   must not learn your schema details. Likewise, writing a `visibleTo` column without the role answers 403, which
   reveals that the column exists (ADR 0007, amendment 2).
-- **`check_access` can differ from the real write.** Column collations (NOCASE, RTRIM) are not in the snapshot, so
-  the dry run compares with BINARY. Only the guarded write is exact.
+- **`check_access` can differ from the real write.** The dry run cannot reproduce non-literal defaults, rowid
+  assignment or non-numeric text in numeric columns, and says "approximate" when one applies. Column collations
+  (NOCASE, RTRIM) are applied ([ADR 0075](adr/0075-column-collations.md)). Only the guarded write is exact.
 - **Existence oracles.** Constraint errors (409) on unique constraints with client-chosen values, and foreign-key
   children blocking a delete, reveal that a row exists even if the caller cannot read it. The same goes for a foreign
   key into a table without an open `read` policy. Castra leaves that reference to the database, so a create or

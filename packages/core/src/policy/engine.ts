@@ -124,8 +124,9 @@ export interface PolicyEngine {
   /**
    * Best-effort DRY RUN of the write check: evaluates the operation's rule in SQL against a candidate
    * row that is never stored. **Not authoritative**: the candidate cannot reproduce every storage
-   * effect (column collations, non-numeric text in numeric columns, non-literal defaults, rowid
-   * assignment). The explanation's `reason` says "approximate" when one of those applies. Use it for
+   * effect (non-numeric text in numeric columns, non-literal defaults, rowid
+   * assignment). Column collations from the snapshot are applied (ADR 0075). The explanation's `reason`
+   * says "approximate" when one of those applies. Use it for
    * MCP `check_access` and as an early pre-check; enforce writes with {@link writeGuard}.
    *
    * On create, omitted columns take their literal snapshot default (else NULL, marked approximate).
@@ -396,27 +397,28 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     // Storage effects the candidate cannot reproduce: reported, never silently ignored.
     const approximate: string[] = [];
     const strict = t.snapshot.strict === true;
-    const cells = t.snapshot.columns.map((c) => {
+    const cell = (c: ColumnSnapshot): RawBuilder<unknown> => {
       const given = Object.hasOwn(candidateRow, c.name);
       const value = given ? candidateRow[c.name] : undefined;
       if (given && typeof value === "string" && isNumericAffinity(t, c) && !NUMERIC_TEXT.test(value)) {
         approximate.push(`non-numeric text in numeric column "${c.name}"`);
       }
-      if (given || op !== "create") return castToAffinity(c, value ?? null, strict).as(c.name);
+      if (given || op !== "create") return castToAffinity(c, value ?? null, strict);
       // Create with the column omitted: the database stores the column DEFAULT (ADR 0050).
       const isRowidAlias = t.snapshot.primaryKey.length === 1 && c.primaryKeyPosition === 1 && c.type === "INTEGER";
       if (isRowidAlias) {
         approximate.push(`rowid column "${c.name}" is assigned by the database`);
-        return sql`${null}`.as(c.name);
+        return sql`${null}`;
       }
       const dflt = parseDefault(c.defaultValue);
       if (dflt.kind === "expr") {
         approximate.push(`non-literal default of "${c.name}"`);
-        return sql`${null}`.as(c.name);
+        return sql`${null}`;
       }
-      if (dflt.kind === "numeric") return castNumericLiteral(c, dflt.text, strict).as(c.name);
-      return castToAffinity(c, dflt.value, strict).as(c.name);
-    });
+      if (dflt.kind === "numeric") return castNumericLiteral(c, dflt.text, strict);
+      return castToAffinity(c, dflt.value, strict);
+    };
+    const cells = t.snapshot.columns.map((c) => withCollation(c, cell(c)));
     let allowed: boolean;
     if (residual.kind === "const") {
       allowed = residual.value;
@@ -755,6 +757,18 @@ function isNumericAffinity(t: TableInfo, col: ColumnSnapshot): boolean {
  */
 function requiresNumericText(t: TableInfo, col: ColumnSnapshot): boolean {
   return isNumericAffinity(t, col) && !/DATE|TIME/.test(col.type);
+}
+
+const COLLATE = { NOCASE: sql.raw("COLLATE NOCASE"), RTRIM: sql.raw("COLLATE RTRIM") } as const;
+
+/**
+ * Names a candidate cell after its column and gives it the column's declared collation, so the rule
+ * compares it as it would compare the stored value (ADR 0075). The collation comes from a fixed map,
+ * never from snapshot text.
+ */
+function withCollation(col: ColumnSnapshot, value: RawBuilder<unknown>) {
+  const collate = col.collation === undefined ? undefined : COLLATE[col.collation];
+  return (collate ? sql`${value} ${collate}` : value).as(col.name);
 }
 
 /** A JS number SQLite would store as an INTEGER in an INTEGER/NUMERIC column (sqlite3VdbeIntegerAffinity). */

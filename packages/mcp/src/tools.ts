@@ -178,6 +178,7 @@ export function castraTools(options: CastraToolsOptions): ToolDefinition[] {
             notNull: c.notNull,
             primaryKey: c.primaryKeyPosition > 0,
             default: c.defaultValue,
+            ...(c.collation ? { collation: c.collation } : {}),
             ...(Object.keys(rules).length > 0 ? { fields: rules } : {}),
           };
         }),

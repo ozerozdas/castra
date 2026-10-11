@@ -42,6 +42,8 @@ function diffColumn(table: string, left: ColumnSnapshot, right: ColumnSnapshot, 
       out.push(`${where}${field} changed from ${JSON.stringify(left[field])} to ${JSON.stringify(right[field])}`);
     }
   }
+  const [lc, rc] = [left.collation ?? "BINARY", right.collation ?? "BINARY"];
+  if (lc !== rc) out.push(`${where}collation changed from ${JSON.stringify(lc)} to ${JSON.stringify(rc)}`);
 }
 
 function diffTable(left: TableSnapshot, right: TableSnapshot, out: string[]): void {

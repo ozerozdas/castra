@@ -34,7 +34,7 @@ export function isInternalTable(name: string): boolean {
 /**
  * Quote an identifier for use in SQL text: wrap in double quotes and double any embedded double quote.
  * NUL characters cannot be represented safely and are rejected. Introspection no longer needs this
- * (it binds names to `pragma_*()` table-valued functions, ADR 0009); kept as a public helper.
+ * (it binds names to `pragma_*()` table-valued functions, ADR 0009); also used by the collation probe.
  */
 export function quoteIdentifier(name: string): string {
   if (name.includes("\0")) throw new Error("Invalid identifier: contains a NUL character");
@@ -105,6 +105,24 @@ export function hasReplaceConflictClause(createSql: string): boolean {
     if (!notNull) return true;
   }
   return false;
+}
+
+/**
+ * Sets `collation` on columns declared `COLLATE NOCASE` or `COLLATE RTRIM` (ADR 0075). No pragma reports a
+ * column's collation, so SQLite is asked directly: a compound SELECT takes each column's collation from
+ * its leftmost SELECT, so comparing a probe row against `'A'` and `'a '` reveals NOCASE and RTRIM.
+ * Identifiers come from `pragma_table_info` and are quoted; no row of the table is read (`WHERE 0`).
+ */
+async function readCollations(query: QueryFn, table: string, columns: ColumnSnapshot[]): Promise<void> {
+  if (columns.length === 0) return;
+  const probes = columns.map((_, i) => `x${i} = 'A' AS n${i}, x${i} = 'a ' AS r${i}`).join(", ");
+  const sources = columns.map((c, i) => `${quoteIdentifier(c.name)} AS x${i}`).join(", ");
+  const literals = columns.map(() => "'a'").join(", ");
+  const [row] = await query(`SELECT ${probes} FROM (SELECT ${sources} FROM ${quoteIdentifier(table)} WHERE 0 UNION ALL SELECT ${literals})`);
+  columns.forEach((c, i) => {
+    if (num(row?.[`n${i}`]) === 1) c.collation = "NOCASE";
+    else if (num(row?.[`r${i}`]) === 1) c.collation = "RTRIM";
+  });
 }
 
 /** A foreign key row before implicit parent columns are resolved. */
@@ -232,6 +250,8 @@ async function introspectTable(
   const sqlRows = await query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [name]);
   const createSql = sqlRows[0]?.sql;
   const conflictReplace = typeof createSql === "string" && hasReplaceConflictClause(createSql);
+
+  await readCollations(query, name, columns);
 
   const table: TableSnapshot = { name, columns, primaryKey, foreignKeys: [], indexes };
   if (strict) table.strict = true;

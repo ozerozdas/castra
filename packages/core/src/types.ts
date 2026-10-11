@@ -28,6 +28,8 @@ export interface ColumnSnapshot {
   defaultValue: string | null;
   /** 1-based position within the primary key; `0` when the column is not part of the primary key. */
   primaryKeyPosition: number;
+  /** Declared `COLLATE` when it is not the default BINARY (ADR 0075). Absent means BINARY. */
+  collation?: "NOCASE" | "RTRIM";
 }
 
 /** A foreign key from a column of this table to a column of another table. */

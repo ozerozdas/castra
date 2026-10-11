@@ -25,6 +25,7 @@ const DDL = [
   `CREATE TABLE IF NOT EXISTS r2_aff (id INTEGER PRIMARY KEY, i INTEGER, r REAL, n NUMERIC, t TEXT, b)`,
   `CREATE TABLE IF NOT EXISTS r2_dflt (id INTEGER PRIMARY KEY, title TEXT, status TEXT NOT NULL DEFAULT 'published')`,
   `CREATE TABLE IF NOT EXISTS r2_coll (id INTEGER PRIMARY KEY, status TEXT COLLATE NOCASE)`,
+  `CREATE TABLE IF NOT EXISTS r2_rtrim (id INTEGER PRIMARY KEY, tag TEXT COLLATE RTRIM)`,
   `CREATE TABLE IF NOT EXISTS r2_strict (id INTEGER PRIMARY KEY, x ANY) STRICT`,
 ];
 
@@ -98,9 +99,8 @@ function expectGuardedAgreement(o: Outcome, label: Record<string, unknown>): voi
 }
 
 /**
- * Column collations are not in the snapshot, so the dry run cannot model them (ADR 0050). The
- * security property, "a row the table treats as violating the rule is never written", is asserted
- * on the authoritative guarded write: it must be denied (and leave no row, see checkVsStored).
+ * The security property, "a row the table treats as violating the rule is never written", asserted on
+ * the authoritative guarded write: it must be denied (and leave no row, see checkVsStored).
  */
 function expectGuardedOnly(o: Outcome): void {
   expect(o.stored).toBe(false);
@@ -244,18 +244,50 @@ describe("FINDING C: checkRow on create treats omitted columns as NULL, but the 
   });
 });
 
-describe("FINDING D: checkRow ignores column collation (COLLATE NOCASE)", () => {
-  // Fixed by ADR 0050: asserted on the authoritative guarded write (see expectGuardedOnly).
-  // CREATE TABLE r2_coll (..., status TEXT COLLATE NOCASE). The snapshot has no collation, the derived
-  // table compares with BINARY, the real table with NOCASE.
-  it("bypass: create rule `status != 'published'` allows 'PUBLISHED', which the table treats as published", async () => {
-    const rule = authenticated().where((q) => q.eb("status", "!=", "published"));
-    expectGuardedOnly(await checkVsStored("r2_coll", rule, { status: "PUBLISHED" }));
+describe("FINDING D: column collations (fixed by ADR 0075: in the snapshot, applied by checkRow)", () => {
+  it("the snapshot records NOCASE and RTRIM, and nothing for BINARY columns", () => {
+    expect(snapshot.tables.r2_coll!.columns.find((c) => c.name === "status")!.collation).toBe("NOCASE");
+    expect(snapshot.tables.r2_rtrim!.columns.find((c) => c.name === "tag")!.collation).toBe("RTRIM");
+    expect(snapshot.tables.r2_aff!.columns.find((c) => c.name === "t")).not.toHaveProperty("collation");
   });
 
-  it("bypass: `status NOT IN ('published', 'archived')` allows 'Archived'", async () => {
+  it("deny: rule `status != 'published'` refuses 'PUBLISHED' in the dry run too", async () => {
+    const rule = authenticated().where((q) => q.eb("status", "!=", "published"));
+    const o = await checkVsStored("r2_coll", rule, { status: "PUBLISHED" });
+    expectGuardedOnly(o);
+    expectAgreement(o, {});
+  });
+
+  it("deny: `status NOT IN ('published', 'archived')` refuses 'Archived'", async () => {
     const rule = authenticated().where((q) => q.eb("status", "not in", ["published", "archived"]));
-    expectGuardedOnly(await checkVsStored("r2_coll", rule, { status: "Archived" }));
+    const o = await checkVsStored("r2_coll", rule, { status: "Archived" });
+    expectGuardedOnly(o);
+    expectAgreement(o, {});
+  });
+
+  it("allow: rule `status = 'published'` accepts 'PUBLISHED' in the dry run and the write", async () => {
+    const rule = authenticated().where((q) => q.eb("status", "=", "published"));
+    const o = await checkVsStored("r2_coll", rule, { status: "PUBLISHED" });
+    expect(o).toMatchObject({ stored: true, check: true, guarded: true });
+  });
+
+  it("RTRIM: trailing spaces are ignored on allow and deny alike", async () => {
+    const eq = authenticated().where((q) => q.eb("tag", "=", "news"));
+    expect(await checkVsStored("r2_rtrim", eq, { tag: "news  " })).toMatchObject({ stored: true, check: true, guarded: true });
+    const ne = authenticated().where((q) => q.eb("tag", "!=", "news"));
+    const o = await checkVsStored("r2_rtrim", ne, { tag: "news  " });
+    expectGuardedOnly(o);
+    expectAgreement(o, {});
+  });
+
+  it("property: equality rules on the NOCASE column agree with storage for any case mix", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.constantFrom("published", "draft"), fc.stringMatching(/^(published|PUBLISHED|Published|draft|DRAFT|x)$/), fc.constantFrom("=", "!="), async (lit, value, op) => {
+        const rule = authenticated().where((q) => q.eb("status", op as "=" | "!=", lit));
+        expectAgreement(await checkVsStored("r2_coll", rule, { status: value }), { lit, value, op });
+      }),
+      { numRuns: 40 },
+    );
   });
 });
 

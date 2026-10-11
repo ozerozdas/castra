@@ -5,6 +5,9 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 ## Unreleased
 
 ### Added
+- `castra generate` records `COLLATE NOCASE` and `COLLATE RTRIM` columns in the snapshot (`collation`), and
+  `check_access` / `checkRow` compare those columns as the table does. `describe_schema` shows the collation;
+  schema drift reports collation changes ([ADR 0075](docs/adr/0075-column-collations.md), #9).
 - A one-to-many include cut at 25 rows marks its parent row with `"$truncated": ["<include>"]`. Only rows the caller
   may read are counted. Documented in OpenAPI ([ADR 0074](docs/adr/0074-include-truncation-marker.md), #8).
 - Better Auth `/api/auth/*` errors are `application/problem+json` (type `auth_error`, or `rate_limited` for 429),

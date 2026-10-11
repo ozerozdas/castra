@@ -56,6 +56,12 @@ describe("diffSnapshots", () => {
     expect(diffSnapshots(b, base())[0]).toBe('table "posts": column "body" is missing from the database');
   });
 
+  it("reports a collation change and treats an absent collation as BINARY", () => {
+    const b = base();
+    b.tables.posts!.columns[1]!.collation = "NOCASE";
+    expect(diffSnapshots(base(), b)).toEqual(['table "posts", column "title": collation changed from "BINARY" to "NOCASE"']);
+  });
+
   it("reports primary key changes", () => {
     const b = base();
     b.tables.posts!.primaryKey = ["id", "title"];
