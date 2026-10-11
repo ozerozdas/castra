@@ -58,4 +58,4 @@ pnpm --filter blog dev   # run the example locally
 - Small PR-sized commits; conventional commit messages (`feat(core): ...`).
 - Public APIs get TSDoc. Errors use `application/problem+json`.
 - When a design decision deviates from `ARCHITECTURE.md`, write `docs/adr/NNNN-title.md` first, then change code.
-- Keep `README.md` honest: list what works, what doesn't, and D1's limits.
+- Keep `README.md` and `docs/limits.md` honest: list what works, what doesn't, and D1's limits.

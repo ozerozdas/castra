@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Better Auth wiring, roles and request identity for Castra.",
   "license": "MIT",
-  "author": "Özer Özdaş",
+  "author": "Mehmet Özer Özdaş",
   "homepage": "https://github.com/ozerozdas/castra#readme",
   "repository": {
     "type": "git",

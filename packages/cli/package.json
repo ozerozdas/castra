@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "The castra CLI: provision, generate, migrate, deploy, test, mcp and doctor for Castra apps.",
   "license": "MIT",
-  "author": "Özer Özdaş",
+  "author": "Mehmet Özer Özdaş",
   "homepage": "https://github.com/ozerozdas/castra#readme",
   "repository": {
     "type": "git",

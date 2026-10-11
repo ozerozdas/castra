@@ -1,0 +1,48 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems (policy bypass, data leak, injection) must be reported privately: Security tab → "Report a vulnerability".
+        Never paste API tokens, `BETTER_AUTH_SECRET` or other secrets here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got. Include the problem `type` if there was an error response.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: The relevant part of `castra.config.ts`, the migration, and the request (curl is ideal).
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Castra version
+      placeholder: "@castra-kit/core 0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - Local (wrangler dev)
+        - Deployed Worker
+        - CLI
+        - MCP
+        - Scaffolder
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Node, pnpm and wrangler versions
+      placeholder: "node 22.20, pnpm 10.30, wrangler 4.149"

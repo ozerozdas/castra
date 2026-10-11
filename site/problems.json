@@ -54,7 +54,7 @@
     "causes": [
       "A malformed parameter such as `limit` or `offset`, or too many filter values in one request (D1 allows 100 bound parameters)."
     ],
-    "fix": "Read `detail` for the exact parameter, and see the REST section of the README for the query syntax."
+    "fix": "Read `detail` for the exact parameter, and see docs/rest-api.md in the repository for the query syntax."
   },
   "invalid_filter": {
     "status": 400,

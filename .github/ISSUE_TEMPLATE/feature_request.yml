@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose a change or a new capability.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Larger ideas are easier to shape in [Discussions → Ideas](https://github.com/ozerozdas/castra/discussions/categories/ideas) first.
+        Check the roadmap and out-of-scope list in [docs/ARCHITECTURE.md](https://github.com/ozerozdas/castra/blob/master/docs/ARCHITECTURE.md) section 8.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How it could work. For policy changes, say how it stays default closed and compiles to SQL.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered

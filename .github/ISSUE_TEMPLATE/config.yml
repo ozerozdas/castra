@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/ozerozdas/castra/discussions
+    about: Ask questions and discuss ideas in Discussions.
+  - name: Security vulnerability
+    url: https://github.com/ozerozdas/castra/security/advisories/new
+    about: Report vulnerabilities privately, never in a public issue.

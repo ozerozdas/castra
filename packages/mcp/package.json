@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "MCP server for Castra: stdio entry and Worker /mcp route, on the same policy engine as REST.",
   "license": "MIT",
-  "author": "Özer Özdaş",
+  "author": "Mehmet Özer Özdaş",
   "homepage": "https://github.com/ozerozdas/castra#readme",
   "repository": {
     "type": "git",
