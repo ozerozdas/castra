@@ -13,6 +13,11 @@ pnpm test                        # all tests on a local D1 (no Cloudflare accoun
 pnpm test:policies               # only the policy allow/deny tests
 ```
 
+## Rate limiting
+
+Writes (sign-in, sign-up, `/mcp`, table writes) are limited to 60 per minute per IP by the `RATE_LIMITER` binding in
+`wrangler.jsonc`. Reads are not. Tuning and a WAF rule for reads: Castra docs, `docs/rate-limiting.md`.
+
 ## Deploy (5 commands)
 
 ```sh

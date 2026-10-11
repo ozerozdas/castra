@@ -34,8 +34,8 @@ only unit-tested (no network). The scaffolder's end-to-end test is opt-in and no
   Castra does not configure or test replication; a revoked session or role could be read from a lagging replica.
 - Statements are limited by the 100 bound parameters, so very wide tables or huge rules can fail.
 - No tenant isolation: one Worker and one D1 per deployment ([ADR 0002](adr/0002-no-multitenancy-v0.1.md)).
-- No rate limiting ([ADR 0003](adr/0003-rate-limiting-hook-only.md)); `hooks.beforeRequest` on the REST router is
-  the hook point, and Cloudflare rate limiting rules in front of the Worker are recommended.
+- Writes are rate limited per IP with the Workers Rate Limiting binding; reads are not. Counters are per location
+  and approximate ([rate limiting](rate-limiting.md), [ADR 0072](adr/0072-rate-limit-binding.md)).
 
 **Out of scope** ([ARCHITECTURE.md](ARCHITECTURE.md) section 8):
 - Until v1.0: PostgreSQL/MySQL/Hyperdrive, realtime (Durable Objects), queues, Redis/S3/OIDC adapters, a hosted or

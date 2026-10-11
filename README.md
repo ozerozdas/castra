@@ -73,6 +73,7 @@ export default defineConfig({
 | [Auth](docs/auth.md) | Better Auth, sessions, roles, API keys |
 | [MCP](docs/mcp.md) | Tools, local stdio server, remote `/mcp`, tokens and scopes |
 | [CLI](docs/cli.md) | `castra generate`, `provision`, `migrate`, `deploy`, `doctor`, `mcp` |
+| [Rate limiting](docs/rate-limiting.md) | Per-IP write limits, WAF rule for reads |
 | [Status and limits](docs/limits.md) | What is verified, D1 limits, what is out of scope |
 | [Security](docs/SECURITY.md) | Threat model, guarantees, known issues |
 | [Problem types](https://castra.mehmetozer.dev/problems/) | Every error code the API returns |

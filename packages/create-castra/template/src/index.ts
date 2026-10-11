@@ -6,7 +6,15 @@ import {
   type CastraAuthVariables,
 } from "@castra-kit/auth";
 import { createMcpRoute } from "@castra-kit/mcp";
-import { createPolicyEngine, createRestRouter, withProblemHandlers, type PolicyEngine, type SchemaSnapshot } from "@castra-kit/core";
+import {
+  createPolicyEngine,
+  createRestRouter,
+  rateLimitWrites,
+  withProblemHandlers,
+  type PolicyEngine,
+  type RateLimiterLike,
+  type SchemaSnapshot,
+} from "@castra-kit/core";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
@@ -15,6 +23,8 @@ import schema from "../castra/schema.json";
 
 export interface Env extends AuthEnv {
   DB: D1Database;
+  /** Workers Rate Limiting binding (`ratelimits` in wrangler.jsonc). */
+  RATE_LIMITER?: RateLimiterLike;
 }
 
 type AppEnv = { Bindings: Env; Variables: CastraAuthVariables };
@@ -47,6 +57,9 @@ function kyselyFor(d1: D1Database): Kysely<any> {
 export function createApp() {
   // Unmatched routes and uncaught errors answer application/problem+json.
   const app = withProblemHandlers(new Hono<AppEnv>());
+
+  // Limits writes per client IP before anything else runs (ADR 0072).
+  app.use("*", rateLimitWrites<AppEnv>((c) => c.env.RATE_LIMITER));
 
   app.get("/health", (c) => c.json({ ok: true }));
 

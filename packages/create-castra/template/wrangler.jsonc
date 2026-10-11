@@ -15,5 +15,8 @@
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  // Writes (sign-in, sign-up, /mcp, table writes) per client IP; reads are not limited (ADR 0072).
+  // namespace_id is any integer; apps on one account may share it, the key includes the host.
+  "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } }]
 }

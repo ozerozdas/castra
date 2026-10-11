@@ -132,7 +132,7 @@ production enforces.</p>
 <figcaption>Scaffold, migrate a local D1, run <code>pnpm dev</code>, and the allow and deny tests pass. Deploy with
 <code>CLOUDFLARE_API_TOKEN=... pnpm run deploy</code>.</figcaption></figure></section>
 <section><h2>Read before you rely on it</h2>
-<p class="note">Castra is early (v${VERSION}). It is deployed and tested, but there is no rate limiting yet and D1 has a
+<p class="note">Castra is early (v${VERSION}). It is deployed and tested, but only writes are rate limited and D1 has a
 single writer. See <a href="${doc("limits.md")}">status and limits</a> and the <a href="${doc("SECURITY.md")}">security model</a>.</p>
 <p><a href="${doc("concepts.md")}">Concepts</a> · <a href="${doc("rest-api.md")}">REST API</a> · <a href="${doc("auth.md")}">Auth</a> ·
 <a href="${doc("mcp.md")}">MCP</a> · <a href="${doc("cli.md")}">CLI</a> · <a href="/problems/">Problem types</a></p></section>`;

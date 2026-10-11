@@ -29,7 +29,7 @@ A MCP token is not a REST credential (it resolves to anonymous there), and an AP
 - The Better Auth library, pinned at 1.7.7 for the auth flows. Castra does not re-audit it.
 
 Out of the model: a compromised Cloudflare account, a malicious dependency, a compromised developer machine, and
-denial of service (see "No rate limiting" below).
+denial of service (writes are rate limited per IP; see "Rate limiting" below).
 
 ## 2. Guarantees
 
@@ -156,8 +156,9 @@ Each item names where it is enforced and which tests cover it. Test paths are re
   ([ADR 0070](adr/0070-audit-prune-command.md)).
 - **Audit rows may contain PII.** `_castra_audit.arguments` stores tool arguments verbatim up to 4 KB (filters,
   paths, `check_access` rows). Treat the table as sensitive and prune it regularly.
-- **No rate limiting.** Neither REST nor `/mcp` limits request rates ([ADR 0003](adr/0003-rate-limiting-hook-only.md)).
-  Use a Cloudflare rate limiting rule in front of the Worker, in particular for `/mcp` and `/api/auth/*`.
+- **Rate limiting covers writes only.** Sign-in, sign-up, `/mcp` and table writes are limited per IP (60 per minute by
+  default, per Cloudflare location, approximate). Reads are not; use a WAF rule on a custom domain
+  ([rate limiting](rate-limiting.md), [ADR 0072](adr/0072-rate-limit-binding.md)).
 - **Includes truncate silently.** One-to-many includes return at most 25 rows per parent and the response does not
   say so. This is a completeness issue, not a leak.
 - **Primary key changes on update** are not rejected by `prepareWrite`; the guard needs the new key and otherwise
@@ -203,7 +204,8 @@ command, HTTP endpoints for API key management, and `castra init` (the CLI print
       for anything except trusted verification tooling.
 - [ ] Revoke a token with `castra mcp token revoke <id> [--remote]`. Revoking a user's role takes effect on the next call.
 - [ ] Review `_castra_audit` regularly (`outcome` of `denied`, `unauthorized:*`, `rejected`), and prune old rows with `castra mcp audit prune --older-than <days> --remote`.
-- [ ] Add Cloudflare rate limiting rules for `/mcp`, `/api/auth/*` and write routes.
+- [ ] Keep the `RATE_LIMITER` binding and `rateLimitWrites` (new projects have both); tune `limit` for your users. On a
+      custom domain, add a WAF rule for reads ([rate limiting](rate-limiting.md)).
 - [ ] Restrict `trustedOrigins` for Better Auth to your real front-end origins.
 - [ ] Review every `custom()` and `where()` rule and give each allow and deny tests.
 - [ ] Run the policy tests in CI with `castra test policies` ([ADR 0037](adr/0037-castra-test-policies.md)); it fails when no

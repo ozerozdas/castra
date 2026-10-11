@@ -25,8 +25,8 @@ and request pipeline as REST. There are no write or admin tools in v0.1.
   `data:read:any_user`. Explicit roles are rejected: roles always come from `_castra_roles`. MCP tokens are accepted only
   on `/mcp`, and sessions or API keys are not. Every call writes a `_castra_audit` row. Nothing deletes them
   automatically; prune old rows with `castra mcp audit prune --older-than <days> [--local|--remote]`
-  ([ADR 0070](adr/0070-audit-prune-command.md)), or call `pruneAuditQuery` from a Cron Trigger. There is no rate limiting
-  on `/mcp`: add a Cloudflare rate limiting rule in front of it.
+  ([ADR 0070](adr/0070-audit-prune-command.md)), or call `pruneAuditQuery` from a Cron Trigger. `/mcp` calls count
+  against the per-IP write limit ([rate limiting](rate-limiting.md)).
 
 Details: [ADR 0060](adr/0060-mcp-shared-tools.md), [0061](adr/0061-mcp-tokens-and-scopes.md),
 [0062](adr/0062-mcp-remote-transport.md), [0063](adr/0063-mcp-audit-log.md),

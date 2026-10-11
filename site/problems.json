@@ -166,6 +166,12 @@
     "causes": ["Another request updated or deleted the row between the check and the write."],
     "fix": "Read the row again and retry."
   },
+  "rate_limited": {
+    "status": 429,
+    "summary": "Too many write requests (sign-in, sign-up, `/mcp` or table writes) from one address in a short time.",
+    "causes": ["A script or client retrying in a tight loop.", "Many users behind one IP address (an office or a carrier NAT).", "A limit set too low for the app (`ratelimits` in `wrangler.jsonc`)."],
+    "fix": "Wait the number of seconds in the `Retry-After` header, then retry. Operators can raise `simple.limit` of the `RATE_LIMITER` binding."
+  },
   "payload_too_large": {
     "status": 413,
     "summary": "The request body is larger than the limit (1 MiB for REST and `/mcp`).",
