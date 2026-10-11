@@ -1,7 +1,24 @@
 {
   "name": "castra",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Policy engine, schema snapshot and REST router for Castra, a Cloudflare-native BaaS on Workers and D1.",
+  "license": "MIT",
+  "author": "Özer Özdaş",
+  "homepage": "https://github.com/ozerozdas/castra#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ozerozdas/castra.git",
+    "directory": "packages/core"
+  },
+  "bugs": "https://github.com/ozerozdas/castra/issues",
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "d1",
+    "baas",
+    "mcp",
+    "policy"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -34,5 +51,8 @@
     "hono": "4.13.13",
     "kysely": "0.29.6",
     "zod": "4.6.5"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

@@ -1,12 +1,36 @@
 {
   "name": "@castra/auth",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Better Auth wiring, roles and request identity for Castra.",
+  "license": "MIT",
+  "author": "Özer Özdaş",
+  "homepage": "https://github.com/ozerozdas/castra#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ozerozdas/castra.git",
+    "directory": "packages/auth"
+  },
+  "bugs": "https://github.com/ozerozdas/castra/issues",
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "d1",
+    "baas",
+    "mcp",
+    "policy"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -25,5 +49,11 @@
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "vitest": "5.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

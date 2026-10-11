@@ -391,3 +391,7 @@ pnpm --filter create-castra test:e2e   # scaffold + install + wrangler dev (opt-
 ```
 
 Requires Node >= 20 and pnpm 10.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

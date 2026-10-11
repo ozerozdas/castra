@@ -268,7 +268,7 @@ Other decisions:
 - `prepareWrite` does not reject primary-key changes on update; with `runGuardedWrite` the guard must be given the
   new key, otherwise the write fails closed (403).
 - Contract types: `ColumnSnapshot.notNull` for INTEGER PRIMARY KEY columns follows `PRAGMA table_info`; Schema agent should confirm.
-- Re-verify npm availability of `castra` / `create-castra` before any publish (ADR 0004).
+- npm names checked free on 2026-10-11 (`castra`, `create-castra`, `@castra/auth|cli|mcp`). Before publish, create the npm org `castra` (owner of the `@castra` scope) and re-check (ADR 0004).
 - `pnpm install` emits no peer warnings, but two workerd versions are installed (wrangler vs the plugin's miniflare).
 - `isReservedTable` hard-codes the four Better Auth tables (`user`, `session`, `account`, `verification`). A Better Auth
   plugin that adds tables must also add them to `AUTH_TABLES`, or the policy engine could expose them. v0.1 uses only the
