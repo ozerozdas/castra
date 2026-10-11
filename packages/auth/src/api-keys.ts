@@ -1,5 +1,8 @@
 import { createAuthDb, type AuthDbInput } from "./db.js";
+import { sha256Hex, timingSafeEqual, toHex } from "./hash.js";
 import { assertKnownRoles } from "./roles.js";
+
+export { sha256Hex, timingSafeEqual } from "./hash.js";
 
 /** Every Castra API key starts with this prefix. */
 export const API_KEY_PREFIX = "castra_ak_";
@@ -37,29 +40,10 @@ export interface VerifiedApiKey {
   roles: string[] | null;
 }
 
-function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 function toBase64Url(bytes: Uint8Array): string {
   let s = "";
   for (const b of bytes) s += String.fromCharCode(b);
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-/** Lowercase hex SHA-256 of `value`. */
-export async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return toHex(new Uint8Array(digest));
-}
-
-/** Constant-time string comparison (time depends only on the length of `a`). */
-export function timingSafeEqual(a: string, b: string): boolean {
-  let diff = a.length ^ b.length;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ (i < b.length ? b.charCodeAt(i) : 0);
-  }
-  return diff === 0;
 }
 
 /** Splits a well-formed key into its public id, or returns `null` for anything malformed. */
