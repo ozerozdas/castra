@@ -31,6 +31,8 @@ pnpm db:migrate:local
 pnpm dev                          # http://localhost:8787/health
 ```
 
+![npm create, local migrations, the dev server answering /health and /openapi.json, and the policy tests passing](docs/images/quickstart.gif)
+
 Deploy to your Cloudflare account (token permissions: [docs/cloudflare-token.md](docs/cloudflare-token.md)):
 
 ```sh
