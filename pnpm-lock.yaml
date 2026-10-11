@@ -45,6 +45,9 @@ importers:
         specifier: 0.4.0
         version: 0.4.0(kysely@0.29.6)
     devDependencies:
+      '@castra/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@cloudflare/vitest-plugin':
         specifier: 1.4.0
         version: 1.4.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
@@ -65,7 +68,7 @@ importers:
     dependencies:
       better-auth:
         specifier: 1.7.7
-        version: 1.7.7(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
+        version: 1.7.7(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)))
       castra:
         specifier: workspace:*
         version: link:../core
@@ -90,7 +93,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.3
-        version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7))
 
   packages/cli:
     dependencies:
@@ -115,7 +118,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.3
-        version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7))
+        version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
       wrangler:
         specifier: 4.149.0
         version: 4.149.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)
@@ -159,6 +162,33 @@ importers:
 
   packages/create-castra:
     devDependencies:
+      '@castra/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@castra/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@castra/mcp':
+        specifier: workspace:*
+        version: link:../mcp
+      '@cloudflare/vitest-plugin':
+        specifier: 1.4.0
+        version: 1.4.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
+      '@cloudflare/workers-types':
+        specifier: 5.20261010.1
+        version: 5.20261010.1
+      castra:
+        specifier: workspace:*
+        version: link:../core
+      hono:
+        specifier: 4.13.13
+        version: 4.13.13
+      kysely:
+        specifier: 0.29.6
+        version: 0.29.6
+      kysely-d1:
+        specifier: 0.4.0
+        version: 0.4.0(kysely@0.29.6)
       tsup:
         specifier: 8.5.1
         version: 8.5.1(postcss@8.5.29)(typescript@6.0.3)
@@ -168,6 +198,9 @@ importers:
       vitest:
         specifier: 5.0.3
         version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+      wrangler:
+        specifier: 4.149.0
+        version: 4.149.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)
 
   packages/mcp:
     dependencies:
@@ -3364,7 +3397,7 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  better-auth@1.7.7(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))):
+  better-auth@1.7.7(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7))):
     dependencies:
       '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/drizzle-adapter': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)
@@ -3384,7 +3417,7 @@ snapshots:
       nanostores: 1.5.5
       zod: 4.6.5
     optionalDependencies:
-      vitest: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+      vitest: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7))
     transitivePeerDependencies:
       - '@opentelemetry/api'
 

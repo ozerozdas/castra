@@ -1,0 +1,40 @@
+{
+  "name": "castra-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:policies": "castra test policies",
+    "db:migrate:local": "castra migrate --local",
+    "generate": "castra generate",
+    "provision": "castra provision",
+    "doctor": "castra doctor",
+    "migrate": "castra migrate --remote",
+    "deploy": "castra deploy"
+  },
+  "dependencies": {
+    "@castra/auth": "0.0.0",
+    "@castra/cli": "0.0.0",
+    "@castra/mcp": "0.0.0",
+    "better-auth": "1.7.7",
+    "castra": "0.0.0",
+    "hono": "4.13.13",
+    "kysely": "0.29.6",
+    "kysely-d1": "0.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.4.0",
+    "@cloudflare/workers-types": "5.20261010.1",
+    "@types/node": "22.20.5",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3",
+    "wrangler": "4.149.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "workerd"]
+  }
+}

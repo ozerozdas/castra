@@ -13,6 +13,24 @@
   - GitHub Actions CI, ADRs 0001-0004, README stub.
 
 ## In progress
+- **M5 create-castra + `castra test policies` (pending review)**
+  - `create-castra <name> [--template default] [--package-manager pnpm|npm] [--no-install] [--local-packages <repo>]`:
+    copies `template/`, renames `_gitignore` / `_dev.vars.example`, substitutes the name in `package.json`,
+    `wrangler.jsonc` (`<name>`, `<name>-db`) and `README.md`, refuses a non-empty target, installs, prints next steps
+    (ADR 0035). `--local-packages` links the four Castra packages from a checkout (`link:` pnpm, `file:` npm; ADR 0036).
+  - Template: `notes` table with public/owner/admin policies, auth + MCP migrations identical to the blog's,
+    committed snapshot and types, Workers-pool tests (`health`, `policies` with allow AND deny per rule), scripts
+    `dev`, `test`, `test:policies`, `db:migrate:local`, `generate`, `provision`, `doctor`, `migrate`, `deploy`.
+  - The template is linted, typechecked (`tsconfig.template.json`) and tested inside the monorepo;
+    `test/template-drift.test.ts` runs real `castra migrate --local` + `castra generate --check` on a scaffolded copy.
+  - `castra test policies` runs the project's `vitest run policies` (ADR 0037). `castra init` deferred (ADR 0038).
+  - `examples/blog`: `provision`, `doctor`, `migrate` (`--remote`), `deploy` scripts via `@castra/cli`.
+  - E2E (opt-in, `pnpm --filter create-castra test:e2e`): scaffold with `--local-packages` → `pnpm install` →
+    typecheck → tests + `test:policies` → `db:migrate:local` + `castra generate --check` → `wrangler dev` on a free
+    port, `/health` and `/api/notes` answer, the dev server's process group is stopped. Passed locally 2026-10-11;
+    not in CI (needs the registry or a warm pnpm store).
+  - Not done: publishing (nothing is on npm, so plain `npx create-castra` does not work yet), npm-flavoured e2e,
+    `castra init`.
 - **M2 REST API (signed off by review 3, findings fixed)**
 - **M4 MCP (pending review)**
   - `@castra/mcp`: four read-only tools (`describe_schema`, `check_access`, `explain_query`, `query_data`) defined
@@ -96,7 +114,7 @@
   - Doctor: read-only probes (+ token policies if "API Tokens Read"), binding and local drift checks (ADR 0033).
   - Minimum token permissions with sources: `docs/cloudflare-token.md`. ADRs 0030–0034.
   - Tests: fake Cloudflare API + fake wrangler; global `fetch` stubbed to fail. Nothing run against a real account.
-  - Not done: real-account deploy (human), `env.*` overrides in wrangler.jsonc, `castra init`, `--persist-to`,
+  - Not done: real-account deploy (human), `env.*` overrides in wrangler.jsonc, `castra init` (deferred, ADR 0038), `--persist-to`,
     custom domains/routes in the printed URL beyond what wrangler prints.
 
 - **M1/M3 security review findings fixed** (2026-10-10)

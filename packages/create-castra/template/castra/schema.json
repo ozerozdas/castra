@@ -1,0 +1,831 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-10T15:22:32.322Z",
+  "tables": {
+    "_castra_api_keys": {
+      "name": "_castra_api_keys",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "user_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "key_hash",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "roles",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "revoked_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "user_id",
+          "referencesTable": "user",
+          "referencesColumn": "id",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_castra_api_keys_user_id",
+          "unique": false,
+          "columns": [
+            "user_id"
+          ]
+        },
+        {
+          "name": "sqlite_autoindex__castra_api_keys_2",
+          "unique": true,
+          "columns": [
+            "key_hash"
+          ]
+        }
+      ]
+    },
+    "_castra_audit": {
+      "name": "_castra_audit",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "token_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "user_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "tool",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "arguments",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "outcome",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "status",
+          "type": "INTEGER",
+          "affinity": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "name": "idx_castra_audit_at",
+          "unique": false,
+          "columns": [
+            "at"
+          ]
+        },
+        {
+          "name": "idx_castra_audit_token_id",
+          "unique": false,
+          "columns": [
+            "token_id"
+          ]
+        }
+      ]
+    },
+    "_castra_mcp_tokens": {
+      "name": "_castra_mcp_tokens",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "user_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "token_hash",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "scopes",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "revoked_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "user_id",
+          "referencesTable": "user",
+          "referencesColumn": "id",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_castra_mcp_tokens_user_id",
+          "unique": false,
+          "columns": [
+            "user_id"
+          ]
+        },
+        {
+          "name": "sqlite_autoindex__castra_mcp_tokens_2",
+          "unique": true,
+          "columns": [
+            "token_hash"
+          ]
+        }
+      ]
+    },
+    "_castra_roles": {
+      "name": "_castra_roles",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "role",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 2
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "user_id",
+        "role"
+      ],
+      "foreignKeys": [
+        {
+          "column": "user_id",
+          "referencesTable": "user",
+          "referencesColumn": "id",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "indexes": []
+    },
+    "account": {
+      "name": "account",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "accountId",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "providerId",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "userId",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "accessToken",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "refreshToken",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "idToken",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "accessTokenExpiresAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "refreshTokenExpiresAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "scope",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "password",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "createdAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "updatedAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "userId",
+          "referencesTable": "user",
+          "referencesColumn": "id",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "account_userId_idx",
+          "unique": false,
+          "columns": [
+            "userId"
+          ]
+        }
+      ]
+    },
+    "notes": {
+      "name": "notes",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "owner_id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "body",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "''",
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "is_public",
+          "type": "INTEGER",
+          "affinity": "INTEGER",
+          "notNull": true,
+          "defaultValue": "0",
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "owner_id",
+          "referencesTable": "users",
+          "referencesColumn": "id",
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_notes_is_public_created_at",
+          "unique": false,
+          "columns": [
+            "is_public",
+            "created_at"
+          ]
+        },
+        {
+          "name": "idx_notes_owner_id",
+          "unique": false,
+          "columns": [
+            "owner_id"
+          ]
+        }
+      ]
+    },
+    "session": {
+      "name": "session",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "expiresAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "token",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "createdAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "updatedAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "ipAddress",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "userAgent",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "userId",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "userId",
+          "referencesTable": "user",
+          "referencesColumn": "id",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "session_userId_idx",
+          "unique": false,
+          "columns": [
+            "userId"
+          ]
+        },
+        {
+          "name": "sqlite_autoindex_session_2",
+          "unique": true,
+          "columns": [
+            "token"
+          ]
+        }
+      ]
+    },
+    "user": {
+      "name": "user",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "emailVerified",
+          "type": "INTEGER",
+          "affinity": "INTEGER",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "image",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "createdAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "updatedAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_user_2",
+          "unique": true,
+          "columns": [
+            "email"
+          ]
+        }
+      ]
+    },
+    "users": {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_users_2",
+          "unique": true,
+          "columns": [
+            "email"
+          ]
+        }
+      ]
+    },
+    "verification": {
+      "name": "verification",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 1
+        },
+        {
+          "name": "identifier",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "value",
+          "type": "TEXT",
+          "affinity": "TEXT",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "expiresAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "createdAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        },
+        {
+          "name": "updatedAt",
+          "type": "DATE",
+          "affinity": "NUMERIC",
+          "notNull": true,
+          "defaultValue": null,
+          "primaryKeyPosition": 0
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "name": "verification_identifier_idx",
+          "unique": false,
+          "columns": [
+            "identifier"
+          ]
+        }
+      ]
+    }
+  }
+}

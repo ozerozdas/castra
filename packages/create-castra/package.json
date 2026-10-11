@@ -5,17 +5,42 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "bin": { "create-castra": "./dist/index.js" },
-  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "create-castra": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "template"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsup",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run && pnpm test:template",
+    "test:template": "vitest run --root template",
+    "test:e2e": "CASTRA_E2E=1 vitest run test/e2e.test.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.template.json"
   },
   "devDependencies": {
+    "@castra/auth": "workspace:*",
+    "@castra/cli": "workspace:*",
+    "@castra/mcp": "workspace:*",
+    "@cloudflare/vitest-plugin": "1.4.0",
+    "@cloudflare/workers-types": "5.20261010.1",
+    "castra": "workspace:*",
+    "hono": "4.13.13",
+    "kysely": "0.29.6",
+    "kysely-d1": "0.4.0",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
-    "vitest": "5.0.3"
+    "vitest": "5.0.3",
+    "wrangler": "4.149.0"
   }
 }

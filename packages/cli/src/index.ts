@@ -22,6 +22,8 @@ export { deploy, parseDeployedUrl, AUTH_SECRET_NAME } from "./commands/deploy.js
 export type { DeployDeps, DeployOptions, DeployResult } from "./commands/deploy.js";
 export { mcp, loadCastraConfig } from "./commands/mcp.js";
 export type { McpOptions } from "./commands/mcp.js";
+export { testPolicies, POLICY_TEST_FILTER } from "./commands/test-policies.js";
+export type { TestPoliciesDeps, TestPoliciesOptions } from "./commands/test-policies.js";
 export { createMcpTokenCommand, revokeMcpTokenCommand } from "./commands/mcp-token.js";
 export type { CreateMcpTokenOptions, McpTokenDeps, McpTokenTarget } from "./commands/mcp-token.js";
 

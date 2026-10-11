@@ -9,6 +9,7 @@ import { createMcpTokenCommand, revokeMcpTokenCommand } from "./commands/mcp-tok
 import { mcp } from "./commands/mcp.js";
 import { migrate } from "./commands/migrate.js";
 import { provision } from "./commands/provision.js";
+import { testPolicies } from "./commands/test-policies.js";
 import { spawnExec } from "./exec.js";
 import type { ExecFn } from "./exec.js";
 import { connect } from "./cloudflare/connect.js";
@@ -19,7 +20,7 @@ import { remoteD1Opener } from "./remote-d1.js";
 import { CliError } from "./wrangler-config.js";
 
 /** Commands that are planned (ARCHITECTURE section 6) but not built yet. */
-const PLANNED = ["init", "test"] as const;
+const PLANNED = ["init"] as const;
 
 const USAGE = `castra - Cloudflare-native, agent-safe BaaS toolkit
 
@@ -32,6 +33,7 @@ Commands:
   doctor     Check the API token, its permissions, bindings and schema drift
   deploy     provision -> migrate --remote -> drift check -> secrets -> wrangler deploy
   mcp        Serve the read-only MCP tools over stdio against the local D1; \`mcp token\` manages /mcp tokens
+  test       \`test policies\`: run the project's policy allow/deny tests (vitest, local D1)
   ${PLANNED.join(", ")}   (not implemented yet)
 
 Environment: CLOUDFLARE_API_TOKEN (required for provision/doctor/deploy/migrate --remote),
@@ -113,6 +115,11 @@ Options (token):
   --remote             Write to the Cloudflare database (needs CLOUDFLARE_API_TOKEN)
   --account-id <id>    Cloudflare account for --remote`;
 
+const TEST_USAGE = `Usage: castra test policies [-- <vitest options>]
+
+Runs \`vitest run policies\` in the current directory with the project's vitest config: every test file whose path
+contains "policies" (e.g. test/policies.test.ts). Exits with vitest's code; no matching file is a failure.`;
+
 /** I/O seams of {@link run}; defaults use the real process. */
 export interface RunEnv {
   cwd: string;
@@ -168,6 +175,8 @@ export async function run(argv: string[], overrides: Partial<RunEnv> = {}): Prom
         return await runDeploy(rest, env);
       case "mcp":
         return await runMcp(rest, env);
+      case "test":
+        return await runTest(rest, env);
     }
 
     if ((PLANNED as readonly string[]).includes(command)) {
@@ -321,6 +330,18 @@ async function runDeploy(args: string[], env: RunEnv): Promise<number> {
     env,
   );
   return result.code;
+}
+
+async function runTest(args: string[], env: RunEnv): Promise<number> {
+  const sep = args.indexOf("--");
+  const own = sep === -1 ? args : args.slice(0, sep);
+  const extraArgs = sep === -1 ? [] : args.slice(sep + 1);
+  if (own.length === 1 && (own[0] === "--help" || own[0] === "-h")) {
+    env.log(TEST_USAGE);
+    return 0;
+  }
+  if (own.length !== 1 || own[0] !== "policies") throw new CliError(`Expected \`castra test policies\`.\n\n${TEST_USAGE}`);
+  return testPolicies({ cwd: env.cwd, extraArgs }, env);
 }
 
 async function runMcp(args: string[], env: RunEnv): Promise<number> {
