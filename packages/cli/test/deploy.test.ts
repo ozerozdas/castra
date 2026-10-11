@@ -126,7 +126,9 @@ describe("castra deploy", () => {
     const migrate = execCalls[0]!;
     expect(migrate.command).toBe("wrangler");
     expect(migrate.args).toEqual(["d1", "migrations", "apply", "castra-blog", "--remote", "--config", join(dir, "wrangler.jsonc")]);
-    expect(migrate.options.env).toEqual({ CLOUDFLARE_ACCOUNT_ID: "acc1" });
+    // R5-5: wrangler gets the token from deps.env, not process.env.
+    expect(migrate.options.env).toEqual({ CLOUDFLARE_API_TOKEN: FAKE_TOKEN, CLOUDFLARE_ACCOUNT_ID: "acc1" });
+    for (const call of execCalls) expect(call.options.env).toMatchObject({ CLOUDFLARE_API_TOKEN: FAKE_TOKEN });
 
     const log = out.join("\n");
     expect(log).toContain("API:      https://castra-blog.testsub.workers.dev");
@@ -238,6 +240,24 @@ describe("castra migrate", () => {
     expect(calls[0]!.args).toContain("--remote");
     expect(calls[0]!.options.env).toEqual({ CLOUDFLARE_ACCOUNT_ID: "acc9" });
     expect(cf.calls).toEqual([]);
+  });
+
+  it("--remote hands wrangler the token from the injected env, not process.env (R5-5)", async () => {
+    const fx = fakeExec();
+    const code = await run(["migrate", "--remote"], {
+      cwd: dir,
+      log: (l) => out.push(l),
+      error: (l) => err.push(l),
+      exec: fx.exec,
+      fetch: cf.fetch,
+      env: { CLOUDFLARE_API_TOKEN: " injected-token ", CLOUDFLARE_ACCOUNT_ID: "acc9" },
+    });
+    expect(code).toBe(0);
+    expect(fx.calls[0]!.options.env).toEqual({ CLOUDFLARE_API_TOKEN: "injected-token", CLOUDFLARE_ACCOUNT_ID: "acc9" });
+    // --local never needs (or receives) the token.
+    const local = fakeExec();
+    await run(["migrate"], { cwd: dir, log: () => {}, error: () => {}, exec: local.exec, fetch: cf.fetch, env: { CLOUDFLARE_API_TOKEN: "t" } });
+    expect(local.calls[0]!.options.env).toEqual({});
   });
 
   it("rejects --local together with --remote", async () => {

@@ -7,7 +7,7 @@ import { CloudflareApiError } from "../cloudflare/api.js";
 import type { CloudflareApi } from "../cloudflare/api.js";
 import { problems } from "../problems.js";
 import { generate } from "./generate.js";
-import { migrate } from "./migrate.js";
+import { migrate, wranglerEnv } from "./migrate.js";
 import { provision } from "./provision.js";
 import type { CloudflareDeps } from "./provision.js";
 
@@ -69,7 +69,8 @@ export async function deploy(options: DeployOptions, deps: DeployDeps): Promise<
   );
   const { accountId, workerName, configPath, session } = provisioned;
   const cwd = dirname(configPath);
-  const env = { CLOUDFLARE_ACCOUNT_ID: accountId };
+  // wrangler gets the same token as the API calls above (deps.env), never an unrelated process.env token.
+  const env = wranglerEnv(deps.env, accountId);
 
   // 2. Remote migrations.
   const migrated = await migrate(
