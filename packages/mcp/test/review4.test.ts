@@ -264,14 +264,25 @@ describe("review4: no data path around the engine", () => {
 });
 
 describe("review4: identity and scopes (design pins)", () => {
-  it("pin: data:read:any_user + explicit roles reads admin-only fields, even for a non-admin token owner", async () => {
-    // ARCHITECTURE §5 says "no scope grants admin"; with data:read:any_user the token may evaluate as
-    // ANY role set, so it reads exactly what an admin reads. Pinned so a change is deliberate.
-    const t = await createMcpToken(env.DB, { userId: USERS.bob, scopes: "data:read data:read:any_user" });
-    const r = await tool(t.token, "query_data", { path: `/api/notes/${NOTES.alicePub}`, as: { userId: USERS.bob, roles: ["admin"] } });
-    expect(r.data).toMatchObject({ status: 200, body: { staff_note: "staff only" } });
-    const fake = await tool(t.token, "query_data", { path: "/api/notes", as: { userId: "no-such-user", roles: ["admin"] } });
-    expect(fake.data.status).toBe(200);
+  it("pin: remote `as` never takes explicit roles and never falls back for an unknown user (ADR 0061 amendment 2026-10-11)", async () => {
+    // ARCHITECTURE §5 says "no scope grants admin". Before the amendment, data:read:any_user + explicit
+    // roles evaluated as ANY role set (admin-only fields readable by a non-admin owner). Now roles always
+    // come from _castra_roles on /mcp, and an unknown user id is an error.
+    const t = await createMcpToken(env.DB, { userId: USERS.bob, scopes: "data:read access:check data:read:any_user" });
+    for (const as of [{ userId: USERS.bob, roles: ["admin"] }, { roles: ["admin"] }, { userId: USERS.alice, roles: [] }]) {
+      const r = await tool(t.token, "query_data", { path: `/api/notes/${NOTES.alicePub}`, as });
+      expect(r.isError).toBe(true);
+      expect(r.data).toMatchObject({ status: 400, type: "https://castra.dev/problems/roles_not_allowed" });
+      expect(r.text).not.toContain("staff only");
+    }
+    const check = await tool(t.token, "check_access", { table: "notes", op: "delete", as: { userId: USERS.bob, roles: ["admin"] } });
+    expect(check.data).toMatchObject({ status: 400, type: "https://castra.dev/problems/roles_not_allowed" });
+    const fake = await tool(t.token, "query_data", { path: "/api/notes", as: { userId: "no-such-user" } });
+    expect(fake.isError).toBe(true);
+    expect(fake.data).toMatchObject({ status: 400, type: "https://castra.dev/problems/unknown_user" });
+    // The token's own user and existing users still work, with their stored roles.
+    expect((await tool(t.token, "query_data", { path: `/api/notes/${NOTES.alicePub}`, as: { userId: USERS.bob } })).data.status).toBe(200);
+    expect((await tool(t.token, "query_data", { path: `/api/notes/${NOTES.alicePub}` })).text).not.toContain("staff only");
   });
 
   it("pin: access:check reveals hidden:true column names (explanation + planned SQL), never their values", async () => {
