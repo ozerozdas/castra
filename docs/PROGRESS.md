@@ -223,6 +223,12 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
 - **M6: SECURITY.md** (2026-10-11, signed off by the final review + fixes): `docs/SECURITY.md` threat model,
   guarantees, known issues and operator checklist.
 
+## Problem type pages
+Live since 2026-10-11 at https://castra.mehmetozer.dev/problems/ (static-assets Worker `castra-site`, account Nuvo
+Code, custom domain). Built from `site/problems.json` by `pnpm site:build`, deployed by `pnpm site:deploy`
+(wrangler login or a token with Workers Scripts Edit + Zone Workers Routes Edit). A core test fails when an emitted
+code has no page.
+
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
 
@@ -252,9 +258,6 @@ Other decisions:
 - pnpm `onlyBuiltDependencies` allows `esbuild` and `workerd` postinstall scripts.
 
 ## Open issues
-- Problem `type` URIs (`https://castra.mehmetozer.dev/problems/<code>`, ADR 0067): pages are built by
-  `pnpm site:build` into `site/dist` from `site/problems.json` (a core test fails if an emitted code has no page),
-  but they are not hosted yet.
 - `custom()` / `where()` predicates may contain subqueries that read reserved tables (Better Auth, `_castra_*`).
   The engine cannot see inside raw `sql` and only validates table names it can walk; reading such tables in a
   predicate is the config author's responsibility. Documented in `docs/SECURITY.md` section 3.
