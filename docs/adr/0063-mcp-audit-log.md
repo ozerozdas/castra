@@ -42,3 +42,17 @@ path is not an audit log.
 - An audit outage makes `/mcp` unavailable rather than unaudited.
 - The local stdio server writes no audit rows. It is a developer tool on the developer's own local database.
 - No retention policy yet; operators prune `_castra_audit` by `at`.
+
+## Amendment (2026-10-11): per-message outcome and real status
+Review 4 found three ways the audited outcome could differ from what happened. Each row now gets its own outcome:
+
+| Case | `outcome` | `status` |
+| --- | --- | --- |
+| The tool ran | the tool's outcome (`ok`, `error`, `denied`) | the tool's status |
+| Batch with duplicate ids (ADR 0062) | `rejected` for every message | 400 |
+| The transport refused the request, such as 406 `Accept` or 415 `Content-Type` | `rejected`, or `invalid` for a 400 | the real HTTP status |
+| `tools/call` whose tool never ran (unknown tool, invalid arguments, notification) | `invalid` | 400 |
+| Other method whose JSON-RPC response has an `error` member | `error` | 404 for `-32601`, 400 for `-32700`/`-32600`/`-32602`, else 500 |
+| Other method that succeeded | `ok` | 200 |
+
+A 413 from the `Content-Length` check is one `rejected` row, like any other request refused before parsing.

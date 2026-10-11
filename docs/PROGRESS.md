@@ -32,6 +32,21 @@
     - Stdio MCP against the remote D1 via the API token (ARCHITECTURE §5 "Local").
     - Audit retention.
     - A `castra mcp token list` command.
+- **M4 review fixes** (review 4, 2026-10-11)
+  - Audit (ADR 0063 amendment):
+    - Every message of a batch is audited with its own outcome.
+    - A batch with duplicate request ids is refused before any tool runs, and each message is audited as
+      `rejected`.
+    - Transport rejections (406, 415, ...) are audited with the real HTTP status.
+    - JSON-RPC error responses are audited as `error`, not `ok`.
+  - `/mcp` refuses a `Content-Length` over 1 MiB with 413 before reading the body. The read body is still checked
+    (ADR 0062 amendment).
+  - `check_access` validates `row` as a plain object and passes it to the engine unchanged. An own `__proto__`
+    key now gets the same 400 as REST.
+  - Remote `as` (ADR 0061 amendment): explicit roles are rejected, and roles always come from `_castra_roles`.
+    An unknown `userId` is a 400 `unknown_user`. Local stdio is unchanged.
+  - Tests: 4 reviewer BUG tests in `packages/mcp/test/review4.test.ts` now pass. The design pin for explicit roles
+    asserts the new behaviour. 5 regression tests were added in `packages/mcp/test/remote.test.ts`.
 - **M2 REST API (pending review)**
   - `castra` core `src/api`: `parseRequest` → `planRequest` (compiled SQL + explanations, no execution) →
     `executePlan`; `createRestRouter` (Hono, problem+json, `beforeRequest` hook), `generateOpenApi` (3.1),
@@ -166,3 +181,13 @@ Other decisions:
 - Better Auth `/api/auth/*` errors are not `application/problem+json`.
 - One-to-many includes are truncated at 25 rows per parent and the response does not signal it.
 - Writing a `visibleTo` column without the role answers 403, which reveals the column exists (ADR 0007 amendment 2).
+- MCP `access:check` tokens can learn the names of `hidden: true` columns. `check_access` explanations list them in
+  `hiddenFields`, and `explain_query` shows them in the planned SELECT. Their values are never shown. This is by
+  design (ARCHITECTURE §3, "which fields were hidden"), and pinned in `packages/mcp/test/review4.test.ts`.
+- `_castra_audit` growth: a request with a known MCP token id and a wrong secret writes one audit row per request
+  (ADR 0063), and `/mcp` has no rate limit. Anyone who knows a token id can grow the table. There is no retention
+  policy yet.
+- `_castra_audit.arguments` stores tool arguments verbatim, up to 4 KB. Filters, paths and `check_access` rows can
+  contain PII, so operators should treat the table as sensitive and prune it.
+- No rate limiting on `/mcp` (or REST, ADR 0003). Put a Cloudflare rate-limiting rule (WAF) in front of `/mcp`,
+  for example keyed on the `Authorization` header or the IP address.
