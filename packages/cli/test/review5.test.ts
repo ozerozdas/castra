@@ -10,6 +10,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { doctor } from "../src/commands/doctor.js";
 import type { DoctorCheck } from "../src/commands/doctor.js";
 import { provision } from "../src/commands/provision.js";
+import { ProblemError } from "../src/problems.js";
+import { run } from "../src/run.js";
 import type { FetchFn } from "../src/cloudflare/api.js";
 import { FAKE_TOKEN, FakeCloudflare, forbidRealNetwork } from "./fake-cloudflare.js";
 import { BLOG_CONFIG, PROVISIONED_CONFIG } from "./fixtures.js";
@@ -136,18 +138,52 @@ describe("R5-3 CI does not run on pushes to the default branch", () => {
   });
 });
 
-describe("design notes (not failing tests)", () => {
-  it.todo(
-    "R5-4 spawnExec: child.stdin has no 'error' listener; an EPIPE (child exits before reading stdin) is an unhandled " +
-      "error that crashes the CLI. Not reachable with today's inputs (43-byte secret, empty stdin), reproducible with a large input.",
-  );
-  it.todo(
-    "R5-5 deploy/migrate: wrangler steps take CLOUDFLARE_API_TOKEN from process.env, provision/drift from deps.env; " +
-      "programmatic callers passing a different env get two different identities.",
-  );
-  it.todo(
-    "R5-6 provision: a real D1 database_id whose database_name differs is silently repointed to a NEW empty database " +
-      "(warning only, ADR 0030); KV prefers the configured id. Consider refusing instead of repointing.",
-  );
-  it.todo("R5-7 run(): CliError is exit 2 ('usage') but is also thrown for runtime problems (config not found, unprovisioned binding).");
+describe("R5-6 provision refuses a real D1 database_id that is not the named database", () => {
+  const D1_ID = "11111111-2222-3333-4444-555555555555";
+  const config = () => BLOG_CONFIG.replace(/"database_id": "[^"]*"/, `"database_id": "${D1_ID}"`);
+  const runProvision = () =>
+    provision(
+      { cwd: dir, config: "wrangler.jsonc" },
+      { fetch: cf.fetch, env: { CLOUDFLARE_API_TOKEN: FAKE_TOKEN }, log: (l) => out.push(l), error: (l) => err.push(l) },
+    );
+
+  it("no database with that name: refuses instead of creating a new empty one; nothing is written", async () => {
+    await writeFile(join(dir, "wrangler.jsonc"), config());
+    await expect(runProvision()).rejects.toMatchObject({ type: "d1-id-mismatch" });
+    expect(cf.posts).toEqual([]);
+    expect(await readFile(join(dir, "wrangler.jsonc"), "utf8")).toBe(config());
+  });
+
+  it("the name belongs to another database: refuses with both ids and how to resolve it", async () => {
+    cf.d1.push({ uuid: "other-uuid", name: "castra-blog" });
+    await writeFile(join(dir, "wrangler.jsonc"), config());
+    const e = await runProvision().catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(ProblemError);
+    const problem = e as ProblemError;
+    expect(problem.detail).toContain(D1_ID);
+    expect(problem.detail).toContain("other-uuid");
+    expect(problem.fix).toMatch(/database_name/);
+    expect(problem.fix).toMatch(/00000000-0000-0000-0000-000000000000/);
+    expect(cf.posts).toEqual([]);
+  });
+
+  it("the configured id IS the named database: accepted unchanged", async () => {
+    cf.d1.push({ uuid: D1_ID, name: "castra-blog" });
+    await writeFile(join(dir, "wrangler.jsonc"), config());
+    const result = await runProvision();
+    expect(result.resources.find((r) => r.kind === "d1")).toMatchObject({ id: D1_ID, created: false });
+  });
+
+  it("exit code via run(): 1 (a problem, not a usage error)", async () => {
+    await writeFile(join(dir, "wrangler.jsonc"), config());
+    const code = await run(["provision"], {
+      cwd: dir,
+      fetch: cf.fetch,
+      env: { CLOUDFLARE_API_TOKEN: FAKE_TOKEN },
+      log: (l) => out.push(l),
+      error: (l) => err.push(l),
+    });
+    expect(code).toBe(1);
+    expect(err.join("\n")).toContain("d1-id-mismatch");
+  });
 });

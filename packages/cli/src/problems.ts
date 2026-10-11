@@ -67,4 +67,15 @@ export const problems = {
       `Cloudflare refused to ${action}.`,
       `Edit the token and add Account > ${permission}. Run \`castra doctor\` to list every missing permission (${TOKEN_DOCS}).`,
     ),
+  d1Mismatch: (binding: string, configuredId: string, name: string, actualId: string | undefined, configPath: string) =>
+    new ProblemError(
+      "d1-id-mismatch",
+      `D1 binding ${binding} points at a different database than "${name}"`,
+      actualId === undefined
+        ? `database_id is ${configuredId}, but the account has no database named "${name}".`
+        : `database_id is ${configuredId}, but the database named "${name}" is ${actualId}.`,
+      `Nothing was changed. In ${configPath}, either set database_name to the name of database ${configuredId} ` +
+        `(keep using it), or set database_id to "00000000-0000-0000-0000-000000000000" to let \`castra provision\` ` +
+        `adopt or create "${name}".`,
+    ),
 };

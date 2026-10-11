@@ -7,7 +7,7 @@ export type { RunEnv } from "./run.js";
 // Commands (each takes plain options + injectable side effects; reusable by create-castra).
 export { generate } from "./commands/generate.js";
 export type { GenerateDeps, GenerateOptions } from "./commands/generate.js";
-export { provision, KV_BINDING, R2_BINDING } from "./commands/provision.js";
+export { provision, defaultBucketName, KV_BINDING, R2_BINDING, R2_BUCKET_NAME_MAX } from "./commands/provision.js";
 export type {
   CloudflareDeps,
   ProvisionOptions,

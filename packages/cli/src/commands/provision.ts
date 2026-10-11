@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { CloudflareApiError } from "../cloudflare/api.js";
@@ -54,6 +55,28 @@ export interface ProvisionResult {
   session: CloudflareSession;
 }
 
+/** R2 bucket name length limit (https://developers.cloudflare.com/r2/buckets/create-buckets/, checked 2026-10-11). */
+export const R2_BUCKET_NAME_MAX = 63;
+
+/**
+ * Default R2 bucket name for a Worker: `<worker>-storage`, made valid for R2 (lowercase a-z, 0-9 and `-`, no
+ * leading/trailing `-`, 3-63 characters). When too long, the Worker part is truncated and an 8-hex-digit SHA-256
+ * prefix of the full Worker name is appended, so the name is deterministic and re-runs stay idempotent.
+ */
+export function defaultBucketName(workerName: string): string {
+  const suffix = "-storage";
+  const clean = workerName
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const base = clean || "castra";
+  if (base.length + suffix.length <= R2_BUCKET_NAME_MAX && base === workerName) return `${base}${suffix}`;
+  const hash = createHash("sha256").update(workerName).digest("hex").slice(0, 8);
+  const room = R2_BUCKET_NAME_MAX - suffix.length - hash.length - 1;
+  const head = base.slice(0, room).replace(/-+$/, "");
+  return `${head}-${hash}${suffix}`;
+}
+
 async function readConfigText(path: string): Promise<string> {
   try {
     return await readFile(path, "utf8");
@@ -78,7 +101,8 @@ async function guarded<T>(permission: string, action: string, fn: () => Promise<
  * bucket, then write their ids into the wrangler config with `jsonc-parser` edits, preserving comments.
  *
  * Idempotent: resources are looked up by name first, so a second run issues no create call and leaves the file
- * untouched. Placeholder ids (all zeros) count as "not provisioned". Pass `session` to reuse a verified client.
+ * untouched. Placeholder ids (all zeros) count as "not provisioned". A real D1 `database_id` that does not belong
+ * to the database named `database_name` is refused (`d1-id-mismatch` problem) before anything is created. Pass `session` to reuse a verified client.
  */
 export async function provision(
   options: ProvisionOptions,
@@ -104,11 +128,13 @@ export async function provision(
     const found = (await guarded("D1 Edit", "list D1 databases", () => api.listD1(accountId, name))).find(
       (d) => d.name === name,
     );
+    // A real database_id that is not the database named `name` is never repointed (ADR 0030, amendment 2026-10-11):
+    // that would silently switch the Worker to another (possibly new, empty) database.
+    if (!isPlaceholderId(db.databaseId) && db.databaseId !== found?.uuid) {
+      throw problems.d1Mismatch(db.binding, db.databaseId!, name, found?.uuid, configPath);
+    }
     const target = found ?? (await guarded("D1 Edit", `create D1 database "${name}"`, () => api.createD1(accountId, name)));
     if (!found) deps.log(`Created D1 database ${name} (${target.uuid})`);
-    if (!isPlaceholderId(db.databaseId) && db.databaseId !== target.uuid) {
-      deps.error(`warning: ${db.binding} pointed at ${db.databaseId}, which is not "${name}"; using ${target.uuid}.`);
-    }
     if (db.databaseId !== target.uuid) text = setJsoncValue(text, ["d1_databases", db.index, "database_id"], target.uuid);
     resources.push({ kind: "d1", binding: db.binding, name, id: target.uuid, created: !found });
   }
@@ -138,7 +164,7 @@ export async function provision(
   if (options.storage || config.r2.length > 0) {
     const entries = config.r2.length > 0 ? config.r2 : [{ index: -1, binding: R2_BINDING, bucketName: undefined }];
     for (const entry of entries) {
-      const name = entry.bucketName ?? `${workerName}-storage`;
+      const name = entry.bucketName ?? defaultBucketName(workerName);
       const found = (
         await guarded("Workers R2 Storage Edit", "list R2 buckets", () => api.listR2(accountId, name))
       ).find((b) => b.name === name);

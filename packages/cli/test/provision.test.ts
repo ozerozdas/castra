@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parse } from "jsonc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { defaultBucketName } from "../src/commands/provision.js";
 import { run } from "../src/run.js";
 import { isPlaceholderId, readWranglerConfig, setJsoncValue } from "../src/wrangler-config.js";
 import { FAKE_TOKEN, FakeCloudflare, fakeExec, forbidRealNetwork } from "./fake-cloudflare.js";
@@ -121,6 +122,44 @@ describe("castra provision", () => {
     cf.tokenKind = "account";
     expect(await castra(["provision"], { CLOUDFLARE_API_TOKEN: FAKE_TOKEN, CLOUDFLARE_ACCOUNT_ID: "acc1" })).toBe(0);
     expect(cf.calls.map((c) => c.path)).toContain("/accounts/acc1/tokens/verify");
+  });
+});
+
+describe("derived resource names (R5-2)", () => {
+  const R2_NAME = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/;
+
+  it("keeps <worker>-storage when it fits R2's rules", () => {
+    expect(defaultBucketName("castra-blog")).toBe("castra-blog-storage");
+    expect(defaultBucketName("a".repeat(55))).toBe(`${"a".repeat(55)}-storage`);
+  });
+
+  it("truncates long Worker names with a stable hash suffix, always a valid 3-63 char bucket name", () => {
+    for (const worker of ["a".repeat(56), `a${"b".repeat(58)}c`, `x${"-y".repeat(31)}`, "z".repeat(63)]) {
+      const name = defaultBucketName(worker);
+      expect(name.length).toBeLessThanOrEqual(63);
+      expect(name).toMatch(R2_NAME);
+      expect(name).toMatch(/-[0-9a-f]{8}-storage$/);
+      expect(defaultBucketName(worker)).toBe(name); // deterministic
+    }
+    // Two long names sharing a prefix do not collide.
+    expect(defaultBucketName(`${"a".repeat(60)}x`)).not.toBe(defaultBucketName(`${"a".repeat(60)}y`));
+  });
+
+  it("sanitizes characters R2 does not allow", () => {
+    expect(defaultBucketName("My_App")).toMatch(/^my-app-[0-9a-f]{8}-storage$/);
+  });
+
+  it("provision --storage with a long Worker name is idempotent", async () => {
+    const worker = "w".repeat(60);
+    await writeFile(join(dir, "wrangler.jsonc"), BLOG_CONFIG.replace(`"name": "castra-blog"`, `"name": "${worker}"`));
+    expect(await castra(["provision", "--storage"])).toBe(0);
+    expect(cf.r2).toEqual([{ name: defaultBucketName(worker) }]);
+    expect((await configJson()).r2_buckets[0].bucket_name).toBe(defaultBucketName(worker));
+    cf.calls = [];
+    expect(await castra(["provision", "--storage"])).toBe(0);
+    expect(cf.posts).toEqual([]);
+    // D1 (no documented name limit) and KV titles (max 512) keep the plain derivation.
+    expect(cf.kv[0]!.title).toBe(`${worker}-cache`);
   });
 });
 
