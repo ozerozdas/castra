@@ -24,3 +24,11 @@ them as ordered SQL files in one directory (`0001_init.sql`, `0002_auth.sql` wit
 - Generating new auth/internal migrations into that directory is the job of `create-castra` / future
   `castra init`, not of `migrate`.
 - A failed migration is rolled back by wrangler; `castra migrate` returns wrangler's exit code.
+
+## Amendment (2026-10-11): token passed explicitly
+
+Remote runs (`castra migrate --remote`, and every wrangler step of `castra deploy`) now pass
+`CLOUDFLARE_API_TOKEN` from the CLI's injected environment (`deps.env`) into wrangler's environment, next to
+`CLOUDFLARE_ACCOUNT_ID`, instead of relying on wrangler inheriting it from `process.env` (M5 review R5-5). A
+programmatic caller that passes its own env therefore gets one identity for both the API calls and wrangler. Local
+runs pass no Cloudflare variables. The token is still never put on the command line.
