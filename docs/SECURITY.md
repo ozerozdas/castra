@@ -34,7 +34,7 @@ denial of service (see "No rate limiting" below).
 ## 2. Guarantees
 
 Each item names where it is enforced and which tests cover it. Test paths are relative to the repository root.
-"Allow and deny tests per rule type" is a project rule (CLAUDE.md rule 6); run them with `pnpm test:policies`.
+"Allow and deny tests per rule type" is a project rule (CLAUDE.md rule 6); run them with `pnpm test:policies` in this repository, or `castra test policies` in a Castra project.
 
 1. **Default closed.** A table without a policy has no routes, and an undefined operation is closed. Reserved tables
    cannot be configured at all. Enforced in `packages/core/src/config.ts` (`defineConfig`) and
@@ -166,8 +166,8 @@ operations, multi-level include, R2 storage, multi-tenancy, plugin SDK and custo
 read-only and exposes no write tool.
 
 Also not done: stdio MCP against the remote D1 via the API token, audit retention, a `castra mcp token list`
-command, HTTP endpoints for API key management, and `castra test` / `castra init` (the CLI prints "not implemented
-yet").
+command, HTTP endpoints for API key management, and `castra init` (the CLI prints "not implemented yet",
+[ADR 0038](adr/0038-castra-init-deferred.md)).
 
 ## 4. Operator checklist
 
@@ -182,8 +182,8 @@ yet").
 - [ ] Add Cloudflare rate limiting rules for `/mcp`, `/api/auth/*` and write routes.
 - [ ] Restrict `trustedOrigins` for Better Auth to your real front-end origins.
 - [ ] Review every `custom()` and `where()` rule and give each allow and deny tests.
-- [ ] Run the policy tests in CI. Today that is `pnpm test:policies` in this repository; the `castra test policies`
-      command is planned but not implemented yet.
+- [ ] Run the policy tests in CI with `castra test policies` ([ADR 0037](adr/0037-castra-test-policies.md)); it fails when no
+      policy test file exists. It does not check that every rule has an allow and a deny test, so review that yourself.
 - [ ] Do not expose tables you have not reviewed; leaving a table out of `tables` keeps it closed.
 
 ## 5. Reporting a vulnerability
