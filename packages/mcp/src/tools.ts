@@ -69,6 +69,25 @@ const queryInput = z
   .optional()
   .describe('Query parameters: "status=eq.draft&sort=-created_at" or { "status": "eq.draft" }.');
 
+/** True for a JSON object (`{...}` from `JSON.parse`), not an array, `null` or a class instance. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const proto: unknown = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * Candidate row for `check_access`. Validated as a plain object but passed through UNCHANGED: a zod
+ * record/object parse copies keys into a new object, where an own `"__proto__"` key from `JSON.parse`
+ * becomes the prototype and disappears. The engine must see exactly the keys REST would see.
+ */
+const rowInput = z
+  .unknown()
+  .refine((v) => v === undefined || isPlainObject(v), { message: "row must be a JSON object" })
+  .optional()
+  .meta({ type: "object" })
+  .describe("Candidate row (create: the input; update: the row after the update).");
+
 const pathInput = z
   .string()
   .min(1)
@@ -262,7 +281,7 @@ export function castraTools(options: CastraToolsOptions): ToolDefinition[] {
         table: z.string().min(1).max(256),
         op: z.enum(["read", "create", "update", "delete"]),
         as: asSchema.optional(),
-        row: z.record(z.string(), z.unknown()).optional().describe("Candidate row (create: the input; update: the row after the update)."),
+        row: rowInput,
       },
       run: guard(async (args, access) => {
         const ctx = await access.authorize("check_access", args.as as AsInput | undefined);
