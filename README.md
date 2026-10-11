@@ -8,6 +8,8 @@ A self-hosted backend on Cloudflare: one Worker and one D1 database in **your** 
 your tables. Every endpoint is protected by policies written in TypeScript and compiled to SQL. An MCP server lets AI
 agents inspect exactly what production enforces.
 
+![A policy in castra.config.ts, then curl: anonymous users see only public rows, cannot write or set owner_id, and a table without a policy returns 404](docs/images/demo.gif)
+
 - **Closed by default.** A table without a policy has no routes.
 - **Policies are SQL.** Rules become `WHERE` clauses, so pagination and counts stay correct.
 - **Checked writes.** Every create and update is verified on the stored row, atomically.
