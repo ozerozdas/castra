@@ -12,13 +12,15 @@
     "test:policies": "pnpm --filter castra test:policies",
     "lint": "eslint .",
     "typecheck": "pnpm -r typecheck",
-    "site:build": "node site/build.mjs"
+    "site:build": "node site/build.mjs",
+    "site:deploy": "node site/build.mjs && wrangler deploy --config site/wrangler.jsonc"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "22.20.5",
     "eslint": "10.12.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.1"
+    "typescript-eslint": "8.71.1",
+    "wrangler": "4.149.0"
   }
 }

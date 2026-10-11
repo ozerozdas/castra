@@ -1,0 +1,16 @@
+// Static problem-type pages at https://castra.mehmetozer.dev (ADR 0067). No Worker script: assets only.
+// Deploy: pnpm site:deploy (token needs Account > Workers Scripts Edit and Zone mehmetozer.dev > Workers Routes Edit).
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "castra-site",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    // /problems/<code> serves <code>.html; /problems/ serves problems/index.html.
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "routes": [{ "pattern": "castra.mehmetozer.dev", "custom_domain": true }]
+}
