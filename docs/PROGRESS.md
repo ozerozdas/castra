@@ -252,8 +252,9 @@ Other decisions:
 - pnpm `onlyBuiltDependencies` allows `esbuild` and `workerd` postinstall scripts.
 
 ## Open issues
-- Problem `type` URIs (`https://castra.mehmetozer.dev/problems/<code>`, ADR 0067) do not resolve yet. Serve a
-  page or redirect per code before publishing.
+- Problem `type` URIs (`https://castra.mehmetozer.dev/problems/<code>`, ADR 0067): pages are built by
+  `pnpm site:build` into `site/dist` from `site/problems.json` (a core test fails if an emitted code has no page),
+  but they are not hosted yet.
 - `custom()` / `where()` predicates may contain subqueries that read reserved tables (Better Auth, `_castra_*`).
   The engine cannot see inside raw `sql` and only validates table names it can walk; reading such tables in a
   predicate is the config author's responsibility. Documented in `docs/SECURITY.md` section 3.

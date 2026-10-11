@@ -1,0 +1,223 @@
+{
+  "not_found": {
+    "status": 404,
+    "summary": "The table, row or route does not exist, or you are not allowed to know that it exists.",
+    "causes": [
+      "The table has no policy for this operation. Castra is default closed, and a closed table looks exactly like a missing one.",
+      "The row id does not exist, or the read policy filters it out for you.",
+      "The table was added to the database but `castra generate` has not refreshed `castra/schema.json` yet.",
+      "Reserved tables (`_castra_*`, Better Auth tables, `d1_migrations`) are never reachable."
+    ],
+    "fix": "Check the table name and id. If you own the app, open the operation in `castra.config.ts`, run `castra generate`, and redeploy."
+  },
+  "method_not_allowed": {
+    "status": 405,
+    "summary": "The HTTP method is not supported on this path.",
+    "causes": [
+      "`POST` to `/api/<table>/<id>` (create only on the collection).",
+      "`PATCH` or `DELETE` without an id (bulk updates and deletes are not supported).",
+      "Anything other than `POST` to `/mcp` (stateless Streamable HTTP)."
+    ],
+    "fix": "Use `POST /api/<table>`, `PATCH /api/<table>/<id>` or `DELETE /api/<table>/<id>`."
+  },
+  "unauthenticated": {
+    "status": 401,
+    "summary": "This operation needs a signed-in user, API key or MCP token, and the request had none (or an invalid one).",
+    "causes": [
+      "No `Authorization: Bearer ...` header, or the session token expired or was revoked.",
+      "On `/mcp`: no valid `castra_mcp_...` token."
+    ],
+    "fix": "Sign in again or send a valid bearer token."
+  },
+  "forbidden": {
+    "status": 403,
+    "summary": "You are signed in, but the policy does not allow this operation for you.",
+    "causes": [
+      "The rule needs a role you do not have (`role(\"admin\")`).",
+      "The row is not yours (`owner(...)`).",
+      "The row you are creating or the result of your update would fall outside the create or update policy."
+    ],
+    "fix": "Use an account with the required role, or change only rows the policy lets you change."
+  },
+  "insufficient_scope": {
+    "status": 403,
+    "summary": "The MCP token does not have the scope this tool needs.",
+    "causes": [
+      "`describe_schema` needs `schema:read`, `check_access` and `explain_query` need `access:check`, `query_data` needs `data:read`.",
+      "Acting as another user (`as: { userId }`) needs `data:read:any_user`."
+    ],
+    "fix": "Create a token with the missing scope: `castra mcp token create --scopes ...`. The response names the missing scope."
+  },
+  "invalid_request": {
+    "status": 400,
+    "summary": "The query string or request shape is not valid.",
+    "causes": [
+      "A malformed parameter such as `limit` or `offset`, or too many filter values in one request (D1 allows 100 bound parameters)."
+    ],
+    "fix": "Read `detail` for the exact parameter, and see the REST section of the README for the query syntax."
+  },
+  "invalid_filter": {
+    "status": 400,
+    "summary": "A filter in the query string cannot be used.",
+    "causes": [
+      "Unknown operator or malformed value (PostgREST style: `?title=eq.hello`).",
+      "The column cannot be filtered on by you (hidden or not readable).",
+      "A `like` pattern over the limits (256 characters, 10 wildcards) or too complex for SQLite.",
+      "Comparing a BLOB column."
+    ],
+    "fix": "Filter only on columns you can read, with a supported operator."
+  },
+  "invalid_sort": {
+    "status": 400,
+    "summary": "The `order` parameter names a column you cannot sort on.",
+    "causes": ["Unknown or hidden column, or a malformed `order` value (`order=created_at.desc`)."],
+    "fix": "Sort only on columns you can read."
+  },
+  "invalid_cursor": {
+    "status": 400,
+    "summary": "The pagination cursor is not valid for this request.",
+    "causes": [
+      "The cursor was edited, or comes from a request with a different `order`.",
+      "The table cannot use keyset pagination (no usable key); use `offset` instead."
+    ],
+    "fix": "Pass back `nextCursor` unchanged with the same `order`, or page with `offset`."
+  },
+  "invalid_include": {
+    "status": 400,
+    "summary": "An `include` names a relation that is not available to you.",
+    "causes": [
+      "No foreign key links the two tables.",
+      "The included table is closed for reading (includes obey their own table's read policy)."
+    ],
+    "fix": "Include only related tables you can read. Castra supports one level of includes."
+  },
+  "invalid_body": {
+    "status": 400,
+    "summary": "The request body is not usable.",
+    "causes": ["The body is not valid JSON, is not an object, or an update has no columns."],
+    "fix": "Send a JSON object with at least one writable column."
+  },
+  "invalid_value": {
+    "status": 400,
+    "summary": "A value does not match its column type.",
+    "causes": ["A string where an integer is expected, a non-finite number, or a value of the wrong type in a filter."],
+    "fix": "Send values that match the column types listed in `/openapi.json`."
+  },
+  "invalid_input": {
+    "status": 400,
+    "summary": "The policy engine rejected the input before checking any rule.",
+    "causes": ["The body is not a plain object, or contains a value Castra cannot store (nested object, array, unsupported type)."],
+    "fix": "Send a flat JSON object of column values."
+  },
+  "invalid_reference": {
+    "status": 400,
+    "summary": "A foreign key column points at a row that does not exist.",
+    "causes": ["The referenced id was deleted or never existed."],
+    "fix": "Reference an existing row."
+  },
+  "unknown_column": {
+    "status": 400,
+    "summary": "The body or query names a column that does not exist for you.",
+    "causes": ["A typo, or a hidden column. Hidden columns are reported exactly like unknown ones, so their existence does not leak."],
+    "fix": "Use the column names from `/openapi.json`."
+  },
+  "missing_column": {
+    "status": 400,
+    "summary": "A required column (NOT NULL, no default) is missing from the create body.",
+    "causes": ["The body leaves out a column the table requires."],
+    "fix": "Add the column named in `detail`."
+  },
+  "readonly_column": {
+    "status": 400,
+    "summary": "The body tries to change a column that cannot be changed.",
+    "causes": ["Updating the primary key, or another column that cannot change after create."],
+    "fix": "Leave that column out of the body."
+  },
+  "server_column": {
+    "status": 400,
+    "summary": "The body sets a column the server fills in.",
+    "causes": ["Columns with `setBy: \"server\"` and `owner(...)` columns are always set by Castra, never taken from input."],
+    "fix": "Leave the column out; Castra sets it (for example `owner_id` becomes the signed-in user)."
+  },
+  "write_check_failed": {
+    "status": 403,
+    "summary": "The row as stored would not satisfy the policy, so the write was rolled back.",
+    "causes": [
+      "The database changed the row (defaults, collation, type affinity) into something the policy does not allow.",
+      "A concurrent change moved the row out of the policy."
+    ],
+    "fix": "Nothing was written. Check the values you send against the policy and retry."
+  },
+  "unsafe_schema": {
+    "status": 403,
+    "summary": "Creates and updates are disabled on this table for everyone, because its schema can silently delete rows.",
+    "causes": ["The table has a `UNIQUE` or `PRIMARY KEY` constraint with `ON CONFLICT REPLACE`, which deletes conflicting rows without the delete policy running (ADR 0066)."],
+    "fix": "Remove `ON CONFLICT REPLACE` from the table in a migration, then run `castra generate`."
+  },
+  "constraint": {
+    "status": 409,
+    "summary": "The write violates a database constraint.",
+    "causes": ["A duplicate value in a UNIQUE column, a failed CHECK, or a foreign key that does not match."],
+    "fix": "Change the conflicting value and retry."
+  },
+  "conflict": {
+    "status": 409,
+    "summary": "The row changed while your update was running.",
+    "causes": ["Another request updated or deleted the row between the check and the write."],
+    "fix": "Read the row again and retry."
+  },
+  "payload_too_large": {
+    "status": 413,
+    "summary": "The request body is larger than the limit (1 MiB for REST and `/mcp`).",
+    "causes": ["A body over the limit, or a `Content-Length` header that announces one."],
+    "fix": "Send a smaller body."
+  },
+  "unsupported_media_type": {
+    "status": 415,
+    "summary": "The request body is not JSON.",
+    "causes": ["The `Content-Type` header is missing or is not `application/json`."],
+    "fix": "Send `Content-Type: application/json`."
+  },
+  "unknown_role": {
+    "status": 400,
+    "summary": "MCP `as.roles` names a role that is not in the config.",
+    "causes": ["A typo, or a role that `castra.config.ts` does not declare. Applies to the local stdio server only."],
+    "fix": "Use a role listed in `roles` in `castra.config.ts`."
+  },
+  "unknown_user": {
+    "status": 400,
+    "summary": "MCP `as.userId` does not name an existing user.",
+    "causes": ["A wrong id. Unknown users are an error, never an anonymous fallback."],
+    "fix": "Use an existing user id, or `\"anonymous\"`."
+  },
+  "invalid_identity": {
+    "status": 400,
+    "summary": "The MCP `as` argument is not a valid identity.",
+    "causes": ["On the local stdio server, roles were given without `as.userId`."],
+    "fix": "Pass `\"anonymous\"` or `{ \"userId\": \"...\" }`."
+  },
+  "roles_not_allowed": {
+    "status": 400,
+    "summary": "The remote `/mcp` server does not accept `as.roles`.",
+    "causes": ["Roles always come from `_castra_roles` on the remote server (ADR 0061)."],
+    "fix": "Pass only `as: \"anonymous\"` or `as: { \"userId\": \"...\" }`."
+  },
+  "write_unavailable": {
+    "status": 500,
+    "summary": "Writes are disabled because the Worker has no D1 binding.",
+    "causes": ["`wrangler.jsonc` has no `d1_databases` entry, or it was not deployed with the Worker."],
+    "fix": "Run `castra provision` and redeploy."
+  },
+  "audit_failed": {
+    "status": 500,
+    "summary": "The MCP call could not be written to the audit log, so it was not served.",
+    "causes": ["`_castra_audit` is missing (MCP migration not applied) or D1 refused the write."],
+    "fix": "Apply the migrations (`castra migrate --remote`) and retry."
+  },
+  "internal": {
+    "status": 500,
+    "summary": "An unexpected error. The response never contains SQL, parameters or stack traces.",
+    "causes": ["A bug, or a platform error from D1 or the runtime."],
+    "fix": "Retry. If it persists, the operator can find the error in the Worker logs (`wrangler tail`)."
+  }
+}
