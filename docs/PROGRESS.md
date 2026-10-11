@@ -129,6 +129,8 @@
     (`PolicyEngine.canReadColumn`).
   - `d1_migrations` is a reserved table.
 
+- **M6: SECURITY.md** (2026-10-11): `docs/SECURITY.md` threat model, guarantees, known issues and operator checklist.
+
 ## Decisions
 Versions chosen (verified with `npm view` on 2026-10-10):
 
