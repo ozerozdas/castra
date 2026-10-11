@@ -2,6 +2,12 @@
 
 All `@castra-kit/*` packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## Unreleased
+
+### Added
+- `GET /` answers a welcome instead of a 404: name, version and links as JSON, or a small HTML page for browsers.
+  Turn it off with `api.welcome: false` ([ADR 0071](docs/adr/0071-welcome-route.md), #14).
+
 ## 0.1.1 (2026-10-11)
 
 ### Added

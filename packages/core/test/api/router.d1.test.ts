@@ -364,6 +364,36 @@ describe("OpenAPI route", () => {
   });
 });
 
+describe("welcome route (ADR 0071)", () => {
+  it("answers JSON with the OpenAPI info and links, and no table names", async () => {
+    const res = await app.request("/");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("vary")).toMatch(/accept/i);
+    const text = await res.text();
+    seen.push(text);
+    expect(JSON.parse(text)).toEqual({ name: "Castra API", version: "0.1.0", openapi: "/openapi.json", api: "/api", docs: "https://github.com/ozerozdas/castra" });
+    expect(text).not.toMatch(/posts|comments/);
+  });
+
+  it("answers a browser with escaped, script-free HTML", async () => {
+    const via = createRestRouter({ config, snapshot, engine: makeEngine(), getDb: () => db, getContext: () => anon(), openapi: { title: "<b>My</b> app" } });
+    const res = await via.request("/", { headers: { accept: "text/html,application/xhtml+xml" } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/^text\/html/);
+    const html = await res.text();
+    seen.push(html);
+    expect(html).toContain("&lt;b&gt;My&lt;/b&gt; app");
+    expect(html).not.toContain("<b>");
+    expect(html).not.toMatch(/<script|posts|comments/);
+  });
+
+  it("is a 404 problem when api.welcome is false", async () => {
+    const off = defineConfig({ ...config, api: { ...config.api, welcome: false } });
+    const via = createRestRouter({ config: off, snapshot, engine: createPolicyEngine({ config: off, snapshot }), getDb: () => db, getContext: () => anon() });
+    expect((await call("GET", "/", { via })).status).toBe(404);
+  });
+});
+
 describe("no leaks across every response in this file", () => {
   it("hidden values never appear; internal_notes only in admin responses", () => {
     const all = seen.join("\n");

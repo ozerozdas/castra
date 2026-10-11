@@ -97,6 +97,8 @@ describe("defineConfig", () => {
   it("validates database, api.maxLimit and field flag values", () => {
     expect(() => defineConfig({ database: "postgres", roles: [], tables: {} } as never)).toThrow(/d1/);
     expect(() => defineConfig({ ...cfg({}), api: { maxLimit: 0 } })).toThrow(/maxLimit/);
+    expect(() => defineConfig({ ...cfg({}), api: { welcome: "no" as never } })).toThrow(/welcome/);
+    expect(() => defineConfig({ ...cfg({}), api: { welcome: false } })).not.toThrow();
     expect(() => defineConfig(cfg({ posts: { fields: { title: { setBy: "client" as never } } } }))).toThrow(/setBy/);
     expect(() => defineConfig(cfg({ posts: { fields: { title: { hidden: false as never } } } }))).toThrow(/hidden/);
   });

@@ -11,6 +11,23 @@ import { parseRequest } from "./parse.js";
 import { executePlan, planRequest } from "./plan.js";
 import { ApiError, notFound, problemResponse, toProblem, withProblemHandlers } from "./problem.js";
 
+const DOCS_URL = "https://github.com/ozerozdas/castra";
+
+const escapeHtml = (s: string): string =>
+  s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]!);
+
+/** The static page a browser gets at `/`: no scripts, no external assets. */
+function welcomeHtml(title: string, version: string, basePath: string): string {
+  const t = escapeHtml(title);
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${t}</title><style>body{font:16px/1.5 system-ui,sans-serif;max-width:36rem;margin:4rem auto;padding:0 1rem;color:#1f2328;background:#fff}
+@media (prefers-color-scheme:dark){body{color:#e6edf3;background:#0d1117}a{color:#58a6ff}}code{font-size:.9em}small{opacity:.7}</style></head>
+<body><h1>${t}</h1><p>This API is running. <small>v${escapeHtml(version)}</small></p><ul>
+<li><a href="/openapi.json">OpenAPI document</a> (<code>/openapi.json</code>)</li>
+<li>Table routes under <code>${escapeHtml(basePath)}/</code></li>
+<li><a href="${DOCS_URL}">Built with Castra</a></li></ul></body></html>`;
+}
+
 /** Default request body limit: 1 MiB. */
 export const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
 
@@ -62,7 +79,7 @@ const OP_BY_METHOD: Record<string, (hasId: boolean) => Operation | undefined> = 
 
 /**
  * The auto-CRUD REST router (ARCHITECTURE §4): `GET/POST {basePath}/:table`,
- * `GET/PATCH/DELETE {basePath}/:table/:id` and `GET /openapi.json`. A table × operation without a
+ * `GET/PATCH/DELETE {basePath}/:table/:id`, `GET /openapi.json` and a welcome at `GET /` (ADR 0071). A table × operation without a
  * policy answers exactly like an unknown table (404 problem). Every request goes
  * `parseRequest → planRequest → executePlan`, the same path MCP uses. Errors are
  * `application/problem+json` and never contain SQL, stack traces or policy explanations.
@@ -81,6 +98,15 @@ export function createRestRouter<E extends Env = Env>(options: RestRouterOptions
     openapi ??= generateOpenApi({ config, snapshot, engine, basePath, ...options.openapi });
     return c.json(openapi);
   });
+
+  if (config.api?.welcome !== false) {
+    const info = { title: options.openapi?.title ?? "Castra API", version: options.openapi?.version ?? "0.1.0" };
+    app.get("/", (c) => {
+      c.header("vary", "Accept");
+      if ((c.req.header("accept") ?? "").includes("text/html")) return c.html(welcomeHtml(info.title, info.version, basePath));
+      return c.json({ name: info.title, version: info.version, openapi: "/openapi.json", api: basePath, docs: DOCS_URL });
+    });
+  }
 
   const limit = bodyLimit({
     maxSize: maxBodyBytes,

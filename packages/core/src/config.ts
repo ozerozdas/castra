@@ -46,7 +46,8 @@ export interface CastraConfig {
   database: "d1";
   auth?: AuthConfig;
   storage?: boolean;
-  api?: { maxLimit?: number };
+  /** `maxLimit` caps `?limit` (default 100). `welcome: false` turns off the `GET /` response (ADR 0071). */
+  api?: { maxLimit?: number; welcome?: boolean };
   /** All role names used anywhere in the config. `"self"` is reserved. */
   roles: string[];
   /** Tables exposed through the API. Tables not listed here are closed. */
@@ -97,6 +98,7 @@ export function defineConfig(config: CastraConfig): CastraConfig {
     if (!isPlainObject(config.api)) fail("api must be an object");
     const max = config.api.maxLimit;
     if (max !== undefined && (!Number.isInteger(max) || max < 1)) fail("api.maxLimit must be a positive integer");
+    if (config.api.welcome !== undefined && typeof config.api.welcome !== "boolean") fail("api.welcome must be a boolean");
   }
   if (config.auth !== undefined && !isPlainObject(config.auth)) fail("auth must be an object");
 

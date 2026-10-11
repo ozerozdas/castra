@@ -69,6 +69,7 @@ export default defineConfig({
 | `auth` | `{ provider?: "better-auth"; methods?: string[] }` | none | Validated as an object only; **not read by v0.1 code**. Email+password is always on; GitHub turns on when `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set. |
 | `storage` | `boolean` | none | Must be a boolean; **not read by v0.1 code**. R2 is provisioned by `castra provision --storage` or existing `r2_buckets` ([ADR 0031](adr/0031-storage-flag-for-r2.md)). R2 storage routes are not built. |
 | `api.maxLimit` | positive integer | `100` | Cap for `?limit`. |
+| `api.welcome` | boolean | `true` | `GET /` answers a welcome (JSON, or HTML for browsers). `false` makes `/` a 404. |
 
 `TableConfig`:
 

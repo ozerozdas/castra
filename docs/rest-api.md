@@ -10,6 +10,7 @@ Only operations with a rule exist. Everything else, including closed and unknown
 | Update | `PATCH /api/:table/:id` |
 | Delete | `DELETE /api/:table/:id` (204) |
 | Docs | `GET /openapi.json` (OpenAPI 3.1, lists exactly the operations REST serves) |
+| Welcome | `GET /`: name, version and links as JSON, or a small HTML page for browsers. Off with `api.welcome: false` ([ADR 0071](adr/0071-welcome-route.md)). |
 
 Query parameters on lists ([ADR 0040](adr/0040-rest-pagination-and-request-pipeline.md),
 [0041](adr/0041-filters-validation-and-types.md), [0042](adr/0042-includes.md)):
