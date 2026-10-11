@@ -104,11 +104,14 @@ export function generateOpenApi(options: OpenApiOptions): JsonObject {
   const tableNames = [...model.tables.keys()].sort();
   for (const name of tableNames) {
     const t = model.tables.get(name)!;
+    // Advertise exactly what REST serves (plan.ts): creates need a single-column primary key; item
+    // routes (/{id}) also need a key column that is not hidden (a hidden key always answers 404).
+    const itemPk = t.pk !== undefined && !t.hidden.has(t.pk.name);
     const open = {
       read: engine.isOpen(name, "read"),
-      create: engine.isOpen(name, "create"),
-      update: engine.isOpen(name, "update") && t.pk !== undefined,
-      delete: engine.isOpen(name, "delete") && t.pk !== undefined,
+      create: engine.isOpen(name, "create") && t.pk !== undefined,
+      update: engine.isOpen(name, "update") && itemPk,
+      delete: engine.isOpen(name, "delete") && itemPk,
     };
     if (!open.read && !open.create && !open.update && !open.delete) continue;
     const comp = componentName(name);
@@ -230,7 +233,7 @@ export function generateOpenApi(options: OpenApiOptions): JsonObject {
         requestBody: { required: true, content: { "application/json": { schema: { $ref: `#/components/schemas/${comp}Create` } } } },
         responses: {
           "201": {
-            description: "Created. The row as the caller may read it, or only its primary key when the caller cannot read it.",
+            description: "Created. The row as the caller may read it; only its primary key when the caller cannot read the row; {} when the key is not readable either.",
             content: { "application/json": { schema: { type: "object" } } },
           },
           ...errors(400, 401, 403, 404, 409, 413, 415),
@@ -239,7 +242,7 @@ export function generateOpenApi(options: OpenApiOptions): JsonObject {
     }
     if (Object.keys(collection).length) paths[`${basePath}/${name}`] = collection;
 
-    if (t.pk && (open.read || open.update || open.delete)) {
+    if (t.pk && itemPk && (open.read || open.update || open.delete)) {
       const item: JsonObject = {
         parameters: [{ name: "id", in: "path", required: true, schema: valueSchema({ ...t.pk, notNull: true }, false) }],
       };
@@ -260,7 +263,7 @@ export function generateOpenApi(options: OpenApiOptions): JsonObject {
           requestBody: { required: true, content: { "application/json": { schema: { $ref: `#/components/schemas/${comp}Update` } } } },
           responses: {
             "200": {
-              description: "Updated. The row as the caller may read it, or only its primary key.",
+              description: "Updated. The row as the caller may read it, only its primary key, or {} when the key is not readable either.",
               content: { "application/json": { schema: { type: "object" } } },
             },
             ...errors(400, 401, 403, 404, 409, 413, 415),
