@@ -21,6 +21,22 @@ current status.
   - Scopes: `schema:read`, `access:check`, `data:read`, `data:read:any_user`. There are no write or admin scopes.
   - Every call is written to `_castra_audit`.
 
+## Create a project (pending review)
+
+`create-castra` scaffolds a Workers + D1 project with a `notes` table, policies with allow/deny tests, Better Auth,
+REST + OpenAPI and `/mcp`. Nothing is on npm yet, so `npx create-castra` does not work. From a built checkout,
+scaffold outside the repository (a project inside it would be taken for part of the pnpm workspace):
+
+```
+cd ~/projects
+node <castra>/packages/create-castra/dist/cli.js my-app --local-packages <castra>
+cd my-app && pnpm run typecheck && pnpm test && pnpm run test:policies
+```
+
+`pnpm --filter create-castra test:e2e` does exactly that in a temp directory and also runs `wrangler dev`.
+
+`castra init` (add Castra to an existing project) is not part of v0.1 (ADR 0038).
+
 ## Develop
 
 ```
