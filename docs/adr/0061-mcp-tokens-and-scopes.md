@@ -59,3 +59,19 @@ narrowed, and can never grant admin or writes.
 - Tokens are bound to a user, so deleting the user deletes their tokens.
 - Scope strings are validated both on create and on every read. A hand-edited row with an unknown scope fails
   closed.
+
+## Amendment (2026-10-11): remote `as` takes no explicit roles
+Review 4 found that `data:read:any_user` plus `as: {roles: ["admin"]}` evaluated as any role set, so a non-admin
+token owner could read admin-only fields. That contradicts ARCHITECTURE §5 ("no scope grants admin").
+
+- **Remote `/mcp`:** `as` may only be omitted, `"anonymous"`, or `{userId}`.
+  - Explicit `roles` are rejected with a 400 problem (`roles_not_allowed`) returned as a tool error. Roles
+    always come from `_castra_roles` at call time.
+  - The scope check runs first. Without `data:read:any_user`, `as` with roles is still
+    `missing scope: data:read:any_user` (403), as before.
+  - A `userId` that is not in the Better Auth `user` table is a 400 problem (`unknown_user`). It never falls back
+    to a profile-less user with no roles.
+- **Local stdio is unchanged.** It is a trusted developer tool on the local database, so `{userId, roles}` still
+  evaluates hypothetical role sets and unknown user ids, with roles checked against `config.roles`.
+  The Decision section above lists `{roles: [...]}` for stdio. The code has always required a `userId` with it
+  (400 `invalid_identity` otherwise), and a test covers that. The correct form is `{userId, roles?}`.

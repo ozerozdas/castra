@@ -34,3 +34,9 @@ Workers are stateless and short-lived. The MCP SDK (`@modelcontextprotocol/sdk` 
 ## Consequences
 - No server-initiated messages or resumability. That is acceptable for four request/response tools.
 - The blog Worker bundle grows by the SDK: 3387 KiB, 586 KiB gzip with `wrangler deploy --dry-run`.
+
+## Amendment (2026-10-11): body size and duplicate ids
+- A `Content-Length` header above 1 MiB gets 413 before the body is read. The size of the read body is still
+  checked, because the header can be absent or wrong.
+- A batch where two requests share an id is refused as a whole with a JSON-RPC `-32600` error (HTTP 400) before any
+  tool runs. Per-id results and audit outcomes would otherwise be ambiguous. Ids `1` and `"1"` are distinct.
