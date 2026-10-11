@@ -326,8 +326,10 @@ Environment: `CLOUDFLARE_API_TOKEN` (provision, doctor, deploy, `migrate --remot
 Works (locally, covered by tests): policy engine, REST, OpenAPI, Better Auth, roles, API keys, read-only MCP (stdio and
 `/mcp`), `generate`, `migrate`, `test policies`, `create-castra` with `--local-packages`.
 
-Not verified: `provision`, `doctor`, `deploy` and `migrate --remote` are tested against a fake Cloudflare API and fake
-wrangler only; no real-account deploy has been done. GitHub sign-in is only unit-tested (no network). `create-castra` is
+Verified once on a real account (2026-10-11): `castra deploy` of a `create-castra` project (provision D1 + KV,
+`migrate --remote`, secret, deploy to `workers.dev`); the live `/health`, `/api/notes`, `/openapi.json` and `/mcp`
+answered as documented. Otherwise `provision`, `doctor`, `deploy` and `migrate --remote` are tested against a fake
+Cloudflare API and fake wrangler; `doctor` and `--storage` (R2) have not run against a real account. GitHub sign-in is only unit-tested (no network). `create-castra` is
 not in CI (its e2e needs the registry). Known issues are listed in [docs/SECURITY.md](docs/SECURITY.md) section 3.
 
 ## What Castra is not

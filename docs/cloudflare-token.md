@@ -9,6 +9,24 @@ Never commit the token; in CI store it as a secret.
 Create a **Custom token** (dashboard → My Profile → API Tokens → Create Token → Create Custom Token, or an
 account-owned token under Manage Account → Account API Tokens). Scope every row to the one account you deploy to.
 
+![Create Custom Token in the Cloudflare dashboard with the Castra permissions](images/cloudflare-custom-token.png)
+
+In **Account Resources** pick `Include → <your account>`, not `All accounts` as in the screenshot. With
+`All accounts` the token sees every account you belong to, and the CLI stops with `multiple-accounts` until
+`CLOUDFLARE_ACCOUNT_ID` is set. The last two rows (Account Settings Read, API Tokens Read) are optional, see below.
+
+### Which kind of token
+
+The prefix tells you what you copied ([token formats](https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/)):
+
+| Prefix | Kind | Where it is created | Use with Castra |
+| --- | --- | --- | --- |
+| `cfut_` | User API token | My Profile → API Tokens | Yes. `CLOUDFLARE_ACCOUNT_ID` only if it sees more than one account. |
+| `cfat_` | Account API token | Manage Account → API Tokens | Yes, but `CLOUDFLARE_ACCOUNT_ID` is **required**: Cloudflare verifies it per account. |
+| `cfk_` | Global API Key | My Profile → API Tokens → Global API Key | No. Full account access; the CLI refuses it. |
+
+Tokens created before the prefixed format are 40 plain characters and still work.
+
 | Scope | Permission group | Level | Needed for |
 | --- | --- | --- | --- |
 | Account | **Workers Scripts** | Edit | `wrangler deploy`, `wrangler secret put`, listing secrets, workers.dev subdomain |
@@ -75,5 +93,6 @@ that account lists (ADR 0033, amendment 2026-10-11).
   `wrangler-dist/cli.js`, see ADR 0032 and ADR 0034.
 
 The account list endpoint (https://developers.cloudflare.com/api/resources/accounts/methods/list/) documents no
-permission requirement. All calls are covered by mocked tests only; nothing has been run against a real account
-yet.
+permission requirement. All calls are covered by mocked tests. A real-account `castra deploy` of a project scaffolded
+with `create-castra` was verified on 2026-10-11 (user token, D1 + KV provisioned, migrations applied, Worker live on
+`workers.dev`).

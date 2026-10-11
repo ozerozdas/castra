@@ -19,14 +19,19 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
 | `castra` (core, Workers pool) | 28 | 779 |
 | `@castra/auth` (Node) | 2 | 20 |
 | `@castra/mcp` (Workers pool) | 5 | 83 |
-| `@castra/cli` | 10 | 100 |
+| `@castra/cli` | 10 | 102 |
 | `create-castra` | 5 (1 skipped: opt-in e2e) | 48 (43 passed, 5 skipped) |
 | `create-castra` template (`test:template`) | 2 | 28 |
 | `examples/blog` (Workers pool) | 7 | 103 |
 
 **Remaining human-only steps:**
-- A real-account deploy of `examples/blog`. `provision`, `doctor`, `migrate --remote` and `deploy` are only tested
-  against a fake Cloudflare API and fake wrangler. Nothing has run against a real account.
+- Real-account deploy: done 2026-10-11 by the human with a project scaffolded by `create-castra` (same template
+  and migrations as `examples/blog`). `castra deploy` provisioned D1 + KV, applied the 3 migrations remotely, set
+  `BETTER_AUTH_SECRET` and deployed to `workers.dev`. Live checks: `/health` 200, `/api/notes` 200 (empty),
+  `/openapi.json` lists only `notes`, `/api/users` and `/api/_castra_audit` 404, anonymous `POST /api/notes` 401,
+  `/mcp` without a token 401. Hit on the way: an account token (`cfat_`) without `CLOUDFLARE_ACCOUNT_ID` was
+  reported as invalid, and an `All accounts` token stopped at `multiple-accounts`; the CLI now names the
+  `cfat_` case before any call and refuses `cfk_` Global API Keys; docs/cloudflare-token.md shows the token form.
 - Push, publish and package-name decisions. Nothing is pushed or published, and `npx create-castra` needs a
   published package (ADR 0004).
 
@@ -182,7 +187,7 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
   - Doctor: read-only probes (+ token policies if "API Tokens Read"), binding and local drift checks (ADR 0033).
   - Minimum token permissions with sources: `docs/cloudflare-token.md`. ADRs 0030–0034.
   - Tests: fake Cloudflare API + fake wrangler; global `fetch` stubbed to fail. Nothing run against a real account.
-  - Not done: real-account deploy (human), `env.*` overrides in wrangler.jsonc, `castra init` (deferred, ADR 0038), `--persist-to`,
+  - Not done: `env.*` overrides in wrangler.jsonc, `castra init` (deferred, ADR 0038), `--persist-to`,
     custom domains/routes in the printed URL beyond what wrangler prints.
 
 - **M1/M3 security review findings fixed** (2026-10-10)
