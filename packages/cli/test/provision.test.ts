@@ -179,6 +179,19 @@ describe("provision errors (problem-style, exit 1, nothing written)", () => {
     expect(err.join("\n")).toContain("Invalid API Token");
   });
 
+  it("account API token without an account id is refused before any call", async () => {
+    expect(await castra(["provision"], { CLOUDFLARE_API_TOKEN: "cfat_abc" })).toBe(1);
+    expect(err[0]).toBe("error[account-token-needs-account-id]: Account API token needs an account id");
+    expect(err.join("\n")).toContain("CLOUDFLARE_ACCOUNT_ID");
+    expect(cf.calls).toEqual([]);
+  });
+
+  it("global API key is refused before any call", async () => {
+    expect(await castra(["provision"], { CLOUDFLARE_API_TOKEN: "cfk_abc", CLOUDFLARE_ACCOUNT_ID: "acc1" })).toBe(1);
+    expect(err[0]).toBe("error[global-api-key]: Global API Key is not supported");
+    expect(cf.calls).toEqual([]);
+  });
+
   it("inactive token", async () => {
     cf.tokenStatus = "expired";
     expect(await castra(["provision"])).toBe(1);

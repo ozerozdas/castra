@@ -39,6 +39,20 @@ export const problems = {
       `Cloudflare rejected CLOUDFLARE_API_TOKEN (${reason}).`,
       `Check the token was copied completely, is not expired or disabled, and (for an account-owned token) set CLOUDFLARE_ACCOUNT_ID. See ${TOKEN_DOCS}.`,
     ),
+  accountTokenNeedsAccountId: () =>
+    new ProblemError(
+      "account-token-needs-account-id",
+      "Account API token needs an account id",
+      "CLOUDFLARE_API_TOKEN is an account API token (cfat_...), which Cloudflare only verifies per account.",
+      "Set CLOUDFLARE_ACCOUNT_ID (dashboard > Workers & Pages > Account ID) or pass --account-id.",
+    ),
+  globalApiKey: () =>
+    new ProblemError(
+      "global-api-key",
+      "Global API Key is not supported",
+      "CLOUDFLARE_API_TOKEN looks like a Global API Key (cfk_...), which has full access to your account.",
+      `Create a scoped API token instead (My Profile > API Tokens > Create Custom Token) with the permissions in ${TOKEN_DOCS}.`,
+    ),
   inactiveToken: (status: string) =>
     new ProblemError(
       "inactive-token",

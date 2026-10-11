@@ -26,6 +26,10 @@ export async function connect(options: { env: CloudflareEnv; fetch: FetchFn; acc
 
   const explicitAccount = options.accountId ?? (options.env.CLOUDFLARE_ACCOUNT_ID?.trim() || undefined);
 
+  // ponytail: token prefixes per Cloudflare's token formats page; legacy unprefixed tokens skip these checks.
+  if (token.startsWith("cfk_")) throw problems.globalApiKey();
+  if (token.startsWith("cfat_") && explicitAccount === undefined) throw problems.accountTokenNeedsAccountId();
+
   let verification: TokenVerification;
   try {
     verification = await api.verifyToken(explicitAccount);
