@@ -1,7 +1,7 @@
 # Castra — Current state
 
-Date: 2026-10-11. **v0.1.1 is released** (npm and GitHub; see `CHANGELOG.md`). `master` and tag `v0.1.0` are on `origin`; CI green. No open worktrees.
-Details: `docs/PROGRESS.md`, `docs/SECURITY.md`, `README.md`, ADRs 0001–0069.
+Date: 2026-10-11. **v0.1.1 is released; 0.1.2 is prepared** (see `CHANGELOG.md`). `master` and tags `v0.1.0`, `v0.1.1` are on `origin`. No open worktrees.
+Details: `docs/PROGRESS.md`, `docs/SECURITY.md`, `README.md`, ADRs 0001–0075.
 
 ## Released
 
@@ -11,8 +11,8 @@ Details: `docs/PROGRESS.md`, `docs/SECURITY.md`, `README.md`, ADRs 0001–0069.
 - Problem type pages: https://castra.mehmetozer.dev/problems/ (`pnpm site:deploy`, ADR 0067).
 - Real account: `mehmetozer-blog` runs on the npm packages at `mehmetozer-blog.nuvocode.workers.dev`.
 
-Last full run on master: core 782 · auth 20 · mcp 83 · cli 102 · create 43 (+5 opt-in e2e skipped) + 28 template ·
-blog 103 · test:policies 517.
+Last full run on master: core 796 · auth 25 · mcp 84 · cli 105 · create 43 (+5 opt-in e2e skipped) + 28 template ·
+blog 105 · test:policies 521.
 
 ## Releasing a new version
 
@@ -22,11 +22,9 @@ Publishing, tagging and releases need explicit human approval.
 
 ## Next (v0.1.x hardening)
 
-- Rate limiting for `/mcp` (at least a documented WAF rule).
 - PII in audit arguments.
-- Better Auth `/api/auth/*` errors as problem+json.
-- Signal truncated one-to-many includes (25 rows per parent).
-- Collations in the snapshot so `check_access` matches the guarded write.
+- Done in 0.1.2: welcome at `/` (#14), write rate limiting (#6), auth errors as problem+json (#7), `$truncated`
+  includes (#8), collations in the snapshot (#9). Planned work lives in GitHub issues and milestones.
 
 Then v0.2 (MCP writes, migrations, `propose_policy`) per ARCHITECTURE §8. A read-only admin UI in v0.3 is an open
 proposal (needs an ADR).

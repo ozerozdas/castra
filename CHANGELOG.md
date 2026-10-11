@@ -2,7 +2,11 @@
 
 All `@castra-kit/*` packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/).
 
-## Unreleased
+## 0.1.2 (2026-10-11)
+
+Upgrading an existing project: bump the `@castra-kit/*` packages, add the `RATE_LIMITER` binding and the
+`rateLimitWrites` middleware ([docs/rate-limiting.md](docs/rate-limiting.md)), and run `castra generate` so the
+snapshot picks up column collations.
 
 ### Added
 - `castra generate` records `COLLATE NOCASE` and `COLLATE RTRIM` columns in the snapshot (`collation`), and

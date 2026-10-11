@@ -265,8 +265,8 @@ Other decisions:
   predicate is the config author's responsibility. Documented in `docs/SECURITY.md` section 3.
 - Very deep rule nesting (~5000 alternating `and`/`or` levels) overflows the stack while the config is built
   (rule copy, validation, compilation). Fails at startup, never at request time; accepted.
-- Column collations are not in the snapshot, so `checkRow` (dry run) compares with BINARY; only the guarded
-  write (ADR 0050) is exact. MCP `check_access` answers may differ from the real write for NOCASE/RTRIM columns.
+- `checkRow` (dry run) cannot reproduce non-literal defaults, rowid assignment or non-numeric text in numeric
+  columns and says "approximate" then; only the guarded write (ADR 0050) is exact. Collations are applied (ADR 0075, 0.1.2).
 - `prepareWrite` does not reject primary-key changes on update; with `runGuardedWrite` the guard must be given the
   new key, otherwise the write fails closed (403).
 - Contract types: `ColumnSnapshot.notNull` for INTEGER PRIMARY KEY columns follows `PRAGMA table_info`; Schema agent should confirm.
@@ -286,16 +286,15 @@ Other decisions:
 - The keyset cursor always compares on the primary key even when the PK is not in `filterable`. The PK is visible
   to anyone who can open item routes (they are 404 otherwise), so nothing leaks.
 - The example config makes `comments` public, including comments on draft posts (intended, ARCHITECTURE §7).
-- Better Auth `/api/auth/*` errors are not `application/problem+json`.
-- One-to-many includes are truncated at 25 rows per parent and the response does not signal it.
+- One-to-many includes stop at 25 rows per parent; the parent row lists the cut include in `$truncated` (ADR 0074, 0.1.2).
 - Writing a `visibleTo` column without the role answers 403, which reveals the column exists (ADR 0007 amendment 2).
 - MCP `access:check` tokens can learn the names of `hidden: true` columns. `check_access` explanations list them in
   `hiddenFields`, and `explain_query` shows them in the planned SELECT. Their values are never shown. This is by
   design (ARCHITECTURE §3, "which fields were hidden"), and pinned in `packages/mcp/test/review4.test.ts`.
 - `_castra_audit` growth: a request with a known MCP token id and a wrong secret writes one audit row per request
-  (ADR 0063), and `/mcp` has no rate limit. Anyone who knows a token id can grow the table. Retention is manual: `castra mcp audit prune
+  (ADR 0063). `/mcp` is rate limited per IP (ADR 0072, 0.1.2), which slows but does not stop this. Retention is manual: `castra mcp audit prune
   --older-than <days>` (ADR 0070, 0.1.1).
 - `_castra_audit.arguments` stores tool arguments verbatim, up to 4 KB. Filters, paths and `check_access` rows can
   contain PII, so operators should treat the table as sensitive and prune it.
-- No rate limiting on `/mcp` (or REST, ADR 0003). Put a Cloudflare rate-limiting rule (WAF) in front of `/mcp`,
-  for example keyed on the `Authorization` header or the IP address.
+- Writes (sign-in, sign-up, `/mcp`, table writes) are rate limited per IP by the Workers binding (ADR 0072, 0.1.2).
+  Reads are not; `docs/rate-limiting.md` has a WAF rule for custom domains.
