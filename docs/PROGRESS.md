@@ -13,6 +13,7 @@
   - GitHub Actions CI, ADRs 0001-0004, README stub.
 
 ## In progress
+- **M6 README (pending review)**: v0.1 `README.md` (quickstart, concepts, config/REST/CLI reference, D1 limits cited from Cloudflare docs); `docs/SECURITY.md` now points to `castra test policies`.
 - **M5 create-castra + `castra test policies` (pending review)**
   - `create-castra <name> [--template default] [--package-manager pnpm|npm] [--no-install] [--local-packages <repo>]`:
     copies `template/`, renames `_gitignore` / `_dev.vars.example`, substitutes the name in `package.json`,
