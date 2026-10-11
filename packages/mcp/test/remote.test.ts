@@ -242,3 +242,95 @@ describe("audit", () => {
     expect(JSON.stringify(r.json)).not.toContain("Alice public");
   });
 });
+
+describe("review 4 fixes", () => {
+  const rawPost = async (token: string, body: string, headers: Record<string, string> = {}) => {
+    const req = new Request("http://localhost/mcp", {
+      method: "POST",
+      headers: { accept: "application/json, text/event-stream", "content-type": "application/json", authorization: `Bearer ${token}`, ...headers },
+      body,
+    });
+    const res = await handleMcpRequest(req, env.DB, { config, snapshot });
+    return { status: res.status, text: await res.text() };
+  };
+  const rowsFor = async (tokenId: string) =>
+    (await env.DB.prepare("SELECT tool, outcome, status FROM _castra_audit WHERE token_id = ? ORDER BY rowid").bind(tokenId).all<{ tool: string | null; outcome: string; status: number }>()).results;
+
+  it("D3: a declared Content-Length over the limit is 413 before the body is read, and audited", async () => {
+    const t = await createMcpToken(env.DB, { userId: USERS.alice, scopes: "data:read" });
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("{}"));
+        controller.close();
+      },
+    });
+    const req = new Request("http://localhost/mcp", {
+      method: "POST",
+      headers: { accept: "application/json, text/event-stream", "content-type": "application/json", authorization: `Bearer ${t.token}`, "content-length": String(2 * 1024 * 1024) },
+      body: stream,
+      duplex: "half",
+    } as RequestInit);
+    const res = await handleMcpRequest(req, env.DB, { config, snapshot });
+    expect(res.status).toBe(413);
+    expect(req.bodyUsed).toBe(false);
+    expect(await rowsFor(t.id)).toEqual([{ tool: null, outcome: "rejected", status: 413 }]);
+  });
+
+  it("F1/F3: each message of a served batch is audited with its own outcome, JSON-RPC errors are not ok", async () => {
+    const t = await createMcpToken(env.DB, { userId: USERS.alice, scopes: "schema:read data:read" });
+    const r = await rawPost(
+      t.token,
+      JSON.stringify([
+        { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "describe_schema", arguments: {} } },
+        { jsonrpc: "2.0", id: "1", method: "tools/call", params: { name: "query_data", arguments: { path: "/api/notes/missing" } } },
+        { jsonrpc: "2.0", id: 3, method: "prompts/list" },
+        { jsonrpc: "2.0", id: 4, method: "ping" },
+      ]),
+    );
+    expect(r.status).toBe(200);
+    expect(await rowsFor(t.id)).toEqual([
+      { tool: "describe_schema", outcome: "ok", status: 200 },
+      { tool: "query_data", outcome: "error", status: 404 },
+      { tool: "prompts/list", outcome: "error", status: 404 },
+      { tool: "ping", outcome: "ok", status: 200 },
+    ]);
+  });
+
+  it("F1: a batch with duplicate ids runs no tool and every message is audited as rejected", async () => {
+    const t = await createMcpToken(env.DB, { userId: USERS.alice, scopes: "data:read" });
+    const call = (id: number) => ({ jsonrpc: "2.0", id, method: "tools/call", params: { name: "query_data", arguments: { path: "/api/notes" } } });
+    const r = await rawPost(t.token, JSON.stringify([call(5), call(6), call(5)]));
+    expect(r.status).toBe(400);
+    expect(JSON.parse(r.text)).toMatchObject({ error: { code: -32600 } });
+    expect(r.text).not.toContain("Alice");
+    expect((await rowsFor(t.id)).map((x) => [x.outcome, x.status])).toEqual([
+      ["rejected", 400],
+      ["rejected", 400],
+      ["rejected", 400],
+    ]);
+  });
+
+  it("F4: check_access advertises row as an object and rejects a non-object row", async () => {
+    const t = await createMcpToken(env.DB, { userId: USERS.alice, scopes: "access:check" });
+    const list = await rawPost(t.token, JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }));
+    const tools = (JSON.parse(list.text) as { result: { tools: { name: string; inputSchema: { properties: Record<string, { type?: string }> } }[] } }).result.tools;
+    expect(tools.find((x) => x.name === "check_access")!.inputSchema.properties.row!.type).toBe("object");
+    for (const row of [[1], "x", null, 3]) {
+      const r = await tool(t.token, "check_access", { table: "notes", op: "create", row });
+      expect(r.isError, JSON.stringify(row)).toBe(true);
+    }
+    const ok = await tool(t.token, "check_access", { table: "notes", op: "create", row: { title: "x" } });
+    expect(ok.isError).toBe(false);
+  });
+
+  it("D1: remote `as` with explicit roles is rejected even with data:read:any_user; unknown users are errors", async () => {
+    const t = await createMcpToken(env.DB, { userId: USERS.alice, scopes: "data:read access:check data:read:any_user" });
+    const roles = await tool(t.token, "check_access", { table: "notes", op: "read", as: { userId: USERS.admin, roles: ["admin"] } });
+    expect(roles.data).toMatchObject({ status: 400, detail: expect.stringContaining("as.roles") });
+    expect(await lastAudit()).toMatchObject({ tool: "check_access", outcome: "error", status: 400 });
+    const unknown = await tool(t.token, "explain_query", { method: "GET", path: "/api/notes", as: { userId: "nobody" } });
+    expect(unknown.data).toMatchObject({ status: 400, type: "https://castra.dev/problems/unknown_user" });
+    const admin = await tool(t.token, "check_access", { table: "notes", op: "read", as: { userId: USERS.admin } });
+    expect(admin.data.as).toEqual({ userId: USERS.admin, roles: ["admin"] });
+  });
+});
