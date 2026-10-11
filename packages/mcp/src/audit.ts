@@ -1,4 +1,5 @@
-import { AUDIT_ARGUMENTS_MAX, type AuditTable, type McpDb } from "./db.js";
+import type { CompiledQuery } from "kysely";
+import { AUDIT_ARGUMENTS_MAX, compileOnly, type AuditTable, type McpDb } from "./db.js";
 
 /** One audit row before it is stored (`id` and `at` are filled by {@link writeAudit}). */
 export type AuditEntry = Omit<AuditTable, "id" | "at">;
@@ -36,4 +37,21 @@ export async function writeAudit(db: McpDb, entries: AuditEntry[], now: Date = n
   for (let i = 0; i < rows.length; i += ROWS_PER_INSERT) {
     await db.insertInto("_castra_audit").values(rows.slice(i, i + ROWS_PER_INSERT)).execute();
   }
+}
+
+/** Rows deleted per {@link pruneAuditQuery} statement, so one statement stays short on D1. */
+export const AUDIT_PRUNE_BATCH = 5000;
+
+/**
+ * Deletes up to {@link AUDIT_PRUNE_BATCH} `_castra_audit` rows older than `before` and returns their ids.
+ * Run it until it returns no rows. `at` is an ISO-8601 UTC string, so string order is time order.
+ */
+export function pruneAuditQuery(before: Date): CompiledQuery {
+  return compileOnly
+    .deleteFrom("_castra_audit")
+    .where("id", "in", (eb) =>
+      eb.selectFrom("_castra_audit").select("id").where("at", "<", before.toISOString()).limit(AUDIT_PRUNE_BATCH),
+    )
+    .returning("id")
+    .compile();
 }

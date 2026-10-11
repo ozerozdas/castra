@@ -13,6 +13,7 @@ Exit codes: 0 success, 1 check or runtime failure, 2 usage error or not implemen
 | `castra test policies` | Run the project's `vitest run policies` (files whose path contains `policies`); no matching file fails ([ADR 0037](adr/0037-castra-test-policies.md)) | extra vitest args after `--` |
 | `castra mcp` | Local stdio MCP server | `--config <castra.config.ts>`, `--wrangler <path>`, `--binding`, `--out` |
 | `castra mcp token create` / `revoke <id>` | Manage `/mcp` tokens | `--user`, `--scopes`, `--name`, `--expires-in`, `--local`, `--remote`, `--config`, `--binding`, `--account-id` |
+| `castra mcp audit prune` | Delete `_castra_audit` rows older than N days ([ADR 0070](adr/0070-audit-prune-command.md)) | `--older-than <days>` (required), `--local`, `--remote`, `--config`, `--binding`, `--account-id` |
 | `castra init` | Add Castra to an existing project | Deferred, prints "not implemented yet" and exits 2 ([ADR 0038](adr/0038-castra-init-deferred.md)). Copy the migrations, config and `src/index.ts` wiring from a scaffold by hand. |
 
 Environment: `CLOUDFLARE_API_TOKEN` (provision, doctor, deploy, `migrate --remote`, `mcp token --remote`),

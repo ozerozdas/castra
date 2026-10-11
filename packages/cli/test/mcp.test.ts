@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { introspect } from "@castra-kit/core";
+import { AUDIT_PRUNE_BATCH } from "@castra-kit/mcp";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { openLocalD1, type OpenDatabaseFn } from "../src/local-d1.js";
 import { run } from "../src/run.js";
@@ -91,6 +92,33 @@ describe("castra mcp token (local)", () => {
     expect(await run(["mcp", "token", "revoke", id], { cwd: dir, openDatabase, ...io })).toBe(0);
     expect(await run(["mcp", "token", "revoke", id], { cwd: dir, openDatabase, ...io })).toBe(1);
     expect(await run(["mcp", "token", "revoke"], { cwd: dir, openDatabase, ...io })).toBe(2);
+  });
+});
+
+describe("castra mcp audit prune", () => {
+  it("deletes in batches until a short batch, and prints the total", async () => {
+    const batches = [AUDIT_PRUNE_BATCH, 3];
+    const seen: unknown[][] = [];
+    const openDatabase: OpenDatabaseFn = async () => ({
+      query: async (_sql: string, params: unknown[] = []) => {
+        seen.push(params);
+        return Array.from({ length: batches.shift() ?? 0 }, (_, i) => ({ id: String(i) }));
+      },
+      close: async () => {},
+    });
+    const io = capture();
+    expect(await run(["mcp", "audit", "prune", "--older-than", "30"], { cwd: dir, openDatabase, ...io })).toBe(0);
+    expect(seen).toHaveLength(2);
+    expect(String(seen[0]![0])).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(io.out.join()).toMatch(new RegExp(`Deleted ${AUDIT_PRUNE_BATCH + 3} audit rows`));
+  });
+  it("requires a whole, positive --older-than", async () => {
+    const openDatabase: OpenDatabaseFn = async () => ({ query: async () => [], close: async () => {} });
+    const io = capture();
+    for (const bad of [[], ["--older-than", "0"], ["--older-than", "1.5"], ["--older-than", "x"]]) {
+      expect(await run(["mcp", "audit", "prune", ...bad], { cwd: dir, openDatabase, ...io })).toBe(2);
+    }
+    expect(await run(["mcp", "audit", "nope"], { cwd: dir, openDatabase, ...io })).toBe(2);
   });
 });
 

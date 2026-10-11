@@ -5,7 +5,7 @@ import type { CloudflareEnv } from "./cloudflare/connect.js";
 import { deploy } from "./commands/deploy.js";
 import { doctor } from "./commands/doctor.js";
 import { generate } from "./commands/generate.js";
-import { createMcpTokenCommand, revokeMcpTokenCommand } from "./commands/mcp-token.js";
+import { createMcpTokenCommand, pruneMcpAuditCommand, revokeMcpTokenCommand } from "./commands/mcp-token.js";
 import { mcp } from "./commands/mcp.js";
 import { migrate } from "./commands/migrate.js";
 import { provision } from "./commands/provision.js";
@@ -32,7 +32,7 @@ Commands:
   migrate    Apply migrations with wrangler (--local by default, or --remote)
   doctor     Check the API token, its permissions, bindings and schema drift
   deploy     provision -> migrate --remote -> drift check -> secrets -> wrangler deploy
-  mcp        Serve the read-only MCP tools over stdio against the local D1; \`mcp token\` manages /mcp tokens
+  mcp        Serve the read-only MCP tools over stdio against the local D1; \`mcp token\` and \`mcp audit\` manage /mcp
   test       \`test policies\`: run the project's policy allow/deny tests (vitest, local D1)
   ${PLANNED.join(", ")}   (not implemented yet)
 
@@ -97,6 +97,7 @@ Options:
 const MCP_USAGE = `Usage: castra mcp [options]
        castra mcp token create --user <id> --scopes "<scopes>" [--name <n>] [--expires-in <days>] [--local | --remote]
        castra mcp token revoke <id> [--local | --remote]
+       castra mcp audit prune --older-than <days> [--local | --remote]
 
 castra mcp serves describe_schema, check_access, explain_query and query_data over stdio against the LOCAL D1
 database. It is a developer tool: \`as\` may impersonate ANY user or role, with no token and no audit log.
@@ -347,6 +348,7 @@ async function runTest(args: string[], env: RunEnv): Promise<number> {
 
 async function runMcp(args: string[], env: RunEnv): Promise<number> {
   if (args[0] === "token") return runMcpToken(args.slice(1), env);
+  if (args[0] === "audit") return runMcpAudit(args.slice(1), env);
   const values = parse(
     args,
     {
@@ -365,6 +367,43 @@ async function runMcp(args: string[], env: RunEnv): Promise<number> {
   // stdout carries the protocol; anything else that logs (wrangler, user config) goes to stderr.
   console.log = console.info = console.debug = (...a: unknown[]) => console.error(...a);
   return mcp({ cwd: env.cwd, config: values.config, wrangler: values.wrangler, binding: values.binding, out: values.out });
+}
+
+async function runMcpAudit(args: string[], env: RunEnv): Promise<number> {
+  const [action, ...rest] = args;
+  if (action !== "prune") throw new UsageError(`Expected \`mcp audit prune --older-than <days>\`.\n\n${MCP_USAGE}`);
+  let values;
+  try {
+    ({ values } = parseArgs({
+      args: rest,
+      strict: true,
+      options: {
+        ...COMMON,
+        binding: { type: "string" },
+        local: { type: "boolean", default: false },
+        remote: { type: "boolean", default: false },
+        "account-id": { type: "string" },
+        "older-than": { type: "string" },
+      },
+    }));
+  } catch (e) {
+    throw new UsageError(`${e instanceof Error ? e.message : String(e)}\n\n${MCP_USAGE}`);
+  }
+  if (values.help) {
+    env.log(MCP_USAGE);
+    return 0;
+  }
+  if (values.local && values.remote) throw new UsageError(`Pass either --local or --remote, not both.\n\n${MCP_USAGE}`);
+  if (values["older-than"] === undefined) throw new UsageError(`--older-than <days> is required.\n\n${MCP_USAGE}`);
+  let openDatabase = env.openDatabase;
+  if (values.remote) {
+    const session = await connect({ env: env.env, fetch: env.fetch, accountId: values["account-id"] });
+    openDatabase = remoteD1Opener(session.api, session.accountId);
+  }
+  return pruneMcpAuditCommand(
+    { cwd: env.cwd, config: values.config, binding: values.binding, olderThanDays: Number(values["older-than"]) },
+    { openDatabase, log: env.log, error: env.error },
+  );
 }
 
 async function runMcpToken(args: string[], env: RunEnv): Promise<number> {

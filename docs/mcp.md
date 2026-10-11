@@ -11,6 +11,7 @@ and request pipeline as REST. There are no write or admin tools in v0.1.
   ```sh
   castra mcp token create --user <id> --scopes "schema:read data:read" [--name <n>] [--expires-in <days>] [--local|--remote]
   castra mcp token revoke <id> [--local|--remote]
+  castra mcp audit prune --older-than <days> [--local|--remote]
   ```
 
   | Scope | Grants |
@@ -22,7 +23,9 @@ and request pipeline as REST. There are no write or admin tools in v0.1.
 
   `as` on `/mcp` is the token's user by default; `"anonymous"` or `{ userId }` of an existing user need
   `data:read:any_user`. Explicit roles are rejected: roles always come from `_castra_roles`. MCP tokens are accepted only
-  on `/mcp`, and sessions or API keys are not. Every call writes a `_castra_audit` row. There is no rate limiting
+  on `/mcp`, and sessions or API keys are not. Every call writes a `_castra_audit` row. Nothing deletes them
+  automatically; prune old rows with `castra mcp audit prune --older-than <days> [--local|--remote]`
+  ([ADR 0070](adr/0070-audit-prune-command.md)), or call `pruneAuditQuery` from a Cron Trigger. There is no rate limiting
   on `/mcp`: add a Cloudflare rate limiting rule in front of it.
 
 Details: [ADR 0060](adr/0060-mcp-shared-tools.md), [0061](adr/0061-mcp-tokens-and-scopes.md),

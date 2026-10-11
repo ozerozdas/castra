@@ -293,8 +293,8 @@ Other decisions:
   `hiddenFields`, and `explain_query` shows them in the planned SELECT. Their values are never shown. This is by
   design (ARCHITECTURE §3, "which fields were hidden"), and pinned in `packages/mcp/test/review4.test.ts`.
 - `_castra_audit` growth: a request with a known MCP token id and a wrong secret writes one audit row per request
-  (ADR 0063), and `/mcp` has no rate limit. Anyone who knows a token id can grow the table. There is no retention
-  policy yet.
+  (ADR 0063), and `/mcp` has no rate limit. Anyone who knows a token id can grow the table. Retention is manual: `castra mcp audit prune
+  --older-than <days>` (ADR 0070, 0.1.1).
 - `_castra_audit.arguments` stores tool arguments verbatim, up to 4 KB. Filters, paths and `check_access` rows can
   contain PII, so operators should treat the table as sensitive and prune it.
 - No rate limiting on `/mcp` (or REST, ADR 0003). Put a Cloudflare rate-limiting rule (WAF) in front of `/mcp`,

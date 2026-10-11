@@ -14,7 +14,7 @@ agents inspect exactly what production enforces.
 - **Auth included.** Better Auth (email, GitHub), roles and API keys.
 - **Agent-safe MCP.** Read-only tools on the same engine as REST, with scoped tokens and an audit log.
 
-> **Status: v0.1.0** ([release notes](https://github.com/ozerozdas/castra/releases/tag/v0.1.0)). Early, but deployed
+> **Status: v0.1.1** ([changelog](CHANGELOG.md)). Early, but deployed
 > and working. Read [Status and limits](docs/limits.md) before using it for anything important.
 
 ## Quick start

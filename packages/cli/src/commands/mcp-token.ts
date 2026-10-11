@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { insertMcpTokenQuery, mintMcpToken, parseScopes, revokeMcpTokenQuery } from "@castra-kit/mcp";
+import { AUDIT_PRUNE_BATCH, insertMcpTokenQuery, mintMcpToken, parseScopes, pruneAuditQuery, revokeMcpTokenQuery } from "@castra-kit/mcp";
 import type { OpenDatabaseFn } from "../local-d1.js";
 import { CliError, readD1Target, UsageError } from "../wrangler-config.js";
 
@@ -84,6 +84,34 @@ export async function revokeMcpTokenCommand(options: McpTokenTarget & { id: stri
       return 1;
     }
     deps.log(`Revoked MCP token ${options.id}.`);
+    return 0;
+  } finally {
+    await db.close();
+  }
+}
+
+/**
+ * Deletes `_castra_audit` rows older than `olderThanDays` days, in batches of {@link AUDIT_PRUNE_BATCH}, and prints
+ * how many were removed. The audit table has no automatic retention (ADR 0070).
+ */
+export async function pruneMcpAuditCommand(
+  options: McpTokenTarget & { olderThanDays: number; now?: Date },
+  deps: McpTokenDeps,
+): Promise<number> {
+  if (!Number.isInteger(options.olderThanDays) || options.olderThanDays < 1) {
+    throw new UsageError("--older-than must be a whole number of days, at least 1.");
+  }
+  const before = new Date((options.now ?? new Date()).getTime() - options.olderThanDays * 86_400_000);
+  const db = await open(options, deps);
+  try {
+    const q = pruneAuditQuery(before);
+    let deleted = 0;
+    for (;;) {
+      const rows = await db.query(q.sql, [...q.parameters]);
+      deleted += rows.length;
+      if (rows.length < AUDIT_PRUNE_BATCH) break;
+    }
+    deps.log(`Deleted ${deleted} audit row${deleted === 1 ? "" : "s"} older than ${before.toISOString()}.`);
     return 0;
   } finally {
     await db.close();

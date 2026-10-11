@@ -24,7 +24,7 @@ export { mcp, loadCastraConfig } from "./commands/mcp.js";
 export type { McpOptions } from "./commands/mcp.js";
 export { testPolicies, POLICY_TEST_FILTER } from "./commands/test-policies.js";
 export type { TestPoliciesDeps, TestPoliciesOptions } from "./commands/test-policies.js";
-export { createMcpTokenCommand, revokeMcpTokenCommand } from "./commands/mcp-token.js";
+export { createMcpTokenCommand, pruneMcpAuditCommand, revokeMcpTokenCommand } from "./commands/mcp-token.js";
 export type { CreateMcpTokenOptions, McpTokenDeps, McpTokenTarget } from "./commands/mcp-token.js";
 
 // Cloudflare API client and session.

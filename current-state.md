@@ -1,6 +1,6 @@
 # Castra — Current state
 
-Date: 2026-10-11. **v0.1.0 is released.** `master` and tag `v0.1.0` are on `origin`; CI green. No open worktrees.
+Date: 2026-10-11. **v0.1.0 is released; 0.1.1 is prepared** (see `CHANGELOG.md`). `master` and tag `v0.1.0` are on `origin`; CI green. No open worktrees.
 Details: `docs/PROGRESS.md`, `docs/SECURITY.md`, `README.md`, ADRs 0001–0069.
 
 ## Released
@@ -22,7 +22,6 @@ Publishing, tagging and releases need explicit human approval.
 
 ## Next (v0.1.x hardening)
 
-- `_castra_audit` retention and a prune command.
 - Rate limiting for `/mcp` (at least a documented WAF rule).
 - PII in audit arguments.
 - Better Auth `/api/auth/*` errors as problem+json.

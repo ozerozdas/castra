@@ -152,9 +152,10 @@ Each item names where it is enforced and which tests cover it. Test paths are re
   same 400 `invalid_reference`.
 - **Audit table growth.** A request with a known MCP token id and a wrong secret writes one `_castra_audit` row per
   request. Anyone who learns a token id (it is part of the token and appears in `_castra_mcp_tokens`) can grow the
-  table. There is no retention policy.
+  table. There is no automatic retention; prune with `castra mcp audit prune --older-than <days>`
+  ([ADR 0070](adr/0070-audit-prune-command.md)).
 - **Audit rows may contain PII.** `_castra_audit.arguments` stores tool arguments verbatim up to 4 KB (filters,
-  paths, `check_access` rows). Treat the table as sensitive and prune it.
+  paths, `check_access` rows). Treat the table as sensitive and prune it regularly.
 - **No rate limiting.** Neither REST nor `/mcp` limits request rates ([ADR 0003](adr/0003-rate-limiting-hook-only.md)).
   Use a Cloudflare rate limiting rule in front of the Worker, in particular for `/mcp` and `/api/auth/*`.
 - **Includes truncate silently.** One-to-many includes return at most 25 rows per parent and the response does not
@@ -188,7 +189,7 @@ Out of scope until v1.0 and therefore not protected by anything here: PostgreSQL
 operations, multi-level include, R2 storage, multi-tenancy, plugin SDK and custom hooks, admin UI. Remote MCP is
 read-only and exposes no write tool.
 
-Also not done: stdio MCP against the remote D1 via the API token, audit retention, a `castra mcp token list`
+Also not done: stdio MCP against the remote D1 via the API token, automatic audit retention, a `castra mcp token list`
 command, HTTP endpoints for API key management, and `castra init` (the CLI prints "not implemented yet",
 [ADR 0038](adr/0038-castra-init-deferred.md)).
 
@@ -201,7 +202,7 @@ command, HTTP endpoints for API key management, and `castra init` (the CLI print
 - [ ] Give each MCP token only the scopes it needs, a user with minimal roles, and an expiry. Avoid `data:read:any_user`
       for anything except trusted verification tooling.
 - [ ] Revoke a token with `castra mcp token revoke <id> [--remote]`. Revoking a user's role takes effect on the next call.
-- [ ] Review `_castra_audit` regularly (`outcome` of `denied`, `unauthorized:*`, `rejected`), and prune old rows by `at`.
+- [ ] Review `_castra_audit` regularly (`outcome` of `denied`, `unauthorized:*`, `rejected`), and prune old rows with `castra mcp audit prune --older-than <days> --remote`.
 - [ ] Add Cloudflare rate limiting rules for `/mcp`, `/api/auth/*` and write routes.
 - [ ] Restrict `trustedOrigins` for Better Auth to your real front-end origins.
 - [ ] Review every `custom()` and `where()` rule and give each allow and deny tests.

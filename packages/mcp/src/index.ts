@@ -29,7 +29,7 @@ export { createCastraMcpServer, SERVER_VERSION } from "./server.js";
 export type { CastraMcpServerOptions, ToolCallRecord } from "./server.js";
 export { createMcpRoute, handleMcpRequest, MCP_MAX_BODY_BYTES, MCP_MAX_MESSAGES } from "./remote.js";
 export type { McpHandlerOptions, McpRouteOptions } from "./remote.js";
-export { auditArguments, writeAudit } from "./audit.js";
+export { AUDIT_PRUNE_BATCH, auditArguments, pruneAuditQuery, writeAudit } from "./audit.js";
 export type { AuditEntry } from "./audit.js";
 export { AUDIT_ARGUMENTS_MAX, compileOnly, mcpDb } from "./db.js";
 export type { AuditTable, D1Like, McpDatabase, McpDb, McpDbInput, McpTokensTable } from "./db.js";

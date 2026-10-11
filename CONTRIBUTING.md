@@ -54,8 +54,8 @@ A change that deviates from ARCHITECTURE.md starts with an ADR in `docs/adr/NNNN
 
 ## Releasing (maintainer)
 
-All five packages share one version. Bump them together, run the full pipeline, `pnpm -r publish`, tag `vX.Y.Z` and
-create a GitHub release.
+All five packages share one version. Bump them together, add a `CHANGELOG.md` entry, run the full pipeline,
+`pnpm -r publish`, tag `vX.Y.Z` and create a GitHub release.
 
 By contributing you agree that your contributions are licensed under the [MIT License](LICENSE) and that you follow the
 [Code of Conduct](CODE_OF_CONDUCT.md).
