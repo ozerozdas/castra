@@ -5,6 +5,9 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 ## Unreleased
 
 ### Added
+- Better Auth `/api/auth/*` errors are `application/problem+json` (type `auth_error`, or `rate_limited` for 429),
+  keeping Better Auth's `code` and `message`. 5xx bodies are replaced by a generic detail
+  ([ADR 0073](docs/adr/0073-auth-errors-problem-json.md), #7).
 - Writes (sign-in, sign-up, `/mcp`, table writes) are rate limited per IP: `rateLimitWrites` in `@castra-kit/core`
   over the Workers Rate Limiting binding, wired into the template and `examples/blog`. New problem type
   `rate_limited` (429). Existing projects: see [docs/rate-limiting.md](docs/rate-limiting.md)

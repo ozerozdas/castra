@@ -166,6 +166,12 @@
     "causes": ["Another request updated or deleted the row between the check and the write."],
     "fix": "Read the row again and retry."
   },
+  "auth_error": {
+    "status": 400,
+    "summary": "A sign-up, sign-in or other `/api/auth/*` request failed. The status varies (400, 401, 403, 422 or 5xx); `code` holds Better Auth's error code.",
+    "causes": ["Wrong email or password (`INVALID_EMAIL_OR_PASSWORD`, 401).", "A missing or malformed field, such as an invalid email (400).", "An email that is already registered (422).", "A 5xx: the auth tables are missing (local D1 not migrated) or `BETTER_AUTH_SECRET` is not set."],
+    "fix": "Read `code` and `detail`, fix the request and retry. For a 5xx, run the migrations and check the Worker secrets."
+  },
   "rate_limited": {
     "status": 429,
     "summary": "Too many write requests (sign-in, sign-up, `/mcp` or table writes) from one address in a short time.",

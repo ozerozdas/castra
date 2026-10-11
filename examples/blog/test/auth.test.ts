@@ -86,6 +86,29 @@ describe("email + password", () => {
     const { email } = await signUp();
     const res = await signIn(email, "wrong-password-123");
     expect(res.status).toBe(401);
+    expect(res.headers.get("content-type")).toBe("application/problem+json");
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      type: "https://castra.mehmetozer.dev/problems/auth_error",
+      title: "Unauthorized",
+      status: 401,
+      code: "INVALID_EMAIL_OR_PASSWORD",
+    });
+    expect(body.detail).toBe(body.message);
+  });
+
+  it("returns a malformed auth request as problem+json", async () => {
+    const res = await fetchApp("/api/auth/sign-up/email", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: BASE },
+      body: JSON.stringify({ email: "not-an-email" }),
+    });
+    expect(res.status).toBe(400);
+    expect(res.headers.get("content-type")).toBe("application/problem+json");
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body).toMatchObject({ type: "https://castra.mehmetozer.dev/problems/auth_error", status: 400 });
+    expect(typeof body.detail).toBe("string");
+    expect(JSON.stringify(body)).not.toMatch(/stack|at \w+ \(/);
   });
 
   it("anonymous request resolves to user null and no roles", async () => {

@@ -42,4 +42,4 @@ read the key column either.
 
 Errors are `application/problem+json` `{type,title,status,detail}`: 400 validation, 401 anonymous / 403 authenticated
 when a rule can never allow, 403 for spoofing, `write_check_failed` or `unsafe_schema`, 404 unknown/closed/not visible, 409 constraint
-violation or concurrent change, 500 generic (no SQL or stack). Better Auth's own `/api/auth/*` errors are not problem+json.
+violation or concurrent change, 500 generic (no SQL or stack). Better Auth's `/api/auth/*` errors are problem+json too, type `auth_error` with Better Auth's `code`.

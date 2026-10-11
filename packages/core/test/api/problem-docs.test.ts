@@ -24,7 +24,7 @@ function emittedCodes(): Set<string> {
   for (const f of files) {
     const text = readFileSync(f, "utf8");
     for (const m of text.matchAll(/\(\s*(?:\d{3}|status)\s*,\s*"([a-z][a-z_]+)"/g)) codes.add(m[1]!);
-    for (const m of text.matchAll(/(?:problem|problemBody|problemResponse)\(\s*\d{3}\s*,[^;]*?,\s*"([a-z][a-z_]+)"/g)) codes.add(m[1]!);
+    for (const m of text.matchAll(/(?:problem|problemBody|problemResponse)\(\s*(?:\d{3}|[\w.]*status)\s*,[^;]*?,\s*"([a-z][a-z_]+)"/g)) codes.add(m[1]!);
     for (const m of text.matchAll(/bad\([^;]*?,\s*"([a-z][a-z_]+)"\)/g)) codes.add(m[1]!);
   }
   const union = readFileSync(join(repo, "packages/core/src/policy/errors.ts"), "utf8").match(/PolicyErrorCode =([\s\S]*?);/)![1]!;
@@ -41,7 +41,7 @@ describe("problem type pages", () => {
 
   it("the scan finds the codes it should (sanity check of the scanner)", () => {
     const codes = emittedCodes();
-    for (const c of ["not_found", "invalid_cursor", "payload_too_large", "insufficient_scope", "unsafe_schema", "audit_failed", "invalid_include"]) {
+    for (const c of ["not_found", "invalid_cursor", "payload_too_large", "insufficient_scope", "unsafe_schema", "audit_failed", "invalid_include", "auth_error"]) {
       expect(codes).toContain(c);
     }
   });

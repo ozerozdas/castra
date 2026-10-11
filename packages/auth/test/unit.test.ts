@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import {
   anonymousContext,
+  authProblem,
   API_KEY_PREFIX,
   assertKnownRoles,
   buildAuthOptions,
@@ -169,5 +170,51 @@ describe("problem", () => {
     expect(res.status).toBe(418);
     expect(res.headers.get("content-type")).toBe("application/problem+json");
     expect(await res.json()).toEqual({ type: "about:blank", title: "Teapot", status: 418, detail: "short and stout" });
+  });
+});
+
+describe("authProblem (ADR 0073)", () => {
+  const json = (status: number, body: unknown, headers: Record<string, string> = {}) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
+
+  it("passes success responses through untouched", async () => {
+    const ok = json(200, { user: {} });
+    expect(await authProblem(ok)).toBe(ok);
+  });
+
+  it("rewrites a 4xx as auth_error, keeping code, message and headers", async () => {
+    const res = await authProblem(
+      json(401, { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" }, { "set-cookie": "a=b" }),
+    );
+    expect(res.status).toBe(401);
+    expect(res.headers.get("content-type")).toBe("application/problem+json");
+    expect(res.headers.get("set-cookie")).toBe("a=b");
+    expect(await res.json()).toEqual({
+      type: "https://castra.mehmetozer.dev/problems/auth_error",
+      title: "Unauthorized",
+      status: 401,
+      detail: "Invalid email or password",
+      code: "INVALID_EMAIL_OR_PASSWORD",
+      message: "Invalid email or password",
+    });
+  });
+
+  it("maps 429 to rate_limited and keeps Retry-After", async () => {
+    const res = await authProblem(json(429, { message: "Too many requests" }, { "retry-after": "10" }));
+    expect(res.headers.get("retry-after")).toBe("10");
+    expect(((await res.json()) as { type: string }).type).toBe("https://castra.mehmetozer.dev/problems/rate_limited");
+  });
+
+  it("never echoes a 5xx body", async () => {
+    const res = await authProblem(json(500, { message: "D1_ERROR: no such table: session", code: "X" }));
+    const body = (await res.json()) as { detail: string; code?: string };
+    expect(body.detail).toBe("The authentication service failed. Try again later.");
+    expect(JSON.stringify(body)).not.toContain("D1_ERROR");
+    expect(body.code).toBeUndefined();
+  });
+
+  it("handles an empty or non-JSON error body", async () => {
+    const res = await authProblem(new Response("nope", { status: 403 }));
+    expect(await res.json()).toMatchObject({ status: 403, title: "Forbidden", detail: "The authentication request failed." });
   });
 });

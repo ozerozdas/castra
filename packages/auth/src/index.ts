@@ -34,6 +34,7 @@ export {
   type ResolveContextDeps,
 } from "./context.js";
 export {
+  authProblem,
   authRoutes,
   castraContext,
   getAuth,

@@ -117,7 +117,9 @@ Each item names where it is enforced and which tests cover it. Test paths are re
     `packages/core/src/api/router.ts`, `parse.ts`, `plan.ts`, `packages/mcp/src/remote.ts`.
     Tests: `packages/core/test/api/parse.test.ts`, `review3.d1.test.ts`, `packages/mcp/test/remote.test.ts`.
 17. **Errors are `application/problem+json`** for unmatched routes and uncaught exceptions; 500s are generic and do
-    not include SQL or stack traces. Better Auth's own `/api/auth/*` errors are not (see section 3).
+    not include SQL or stack traces. Better Auth's `/api/auth/*` errors are rewritten as `auth_error` problems that keep
+    its `code` and `message`; a 5xx body is never echoed ([ADR 0073](adr/0073-auth-errors-problem-json.md)).
+    `packages/auth/src/hono.ts`. Tests: `packages/auth/test/unit.test.ts`, `examples/blog/test/auth.test.ts`.
 18. **A create or update never deletes another row.** Castra's write path issues only plain `INSERT` and `UPDATE`
     statements: no `INSERT OR REPLACE`, `REPLACE` or upsert. A schema-level `ON CONFLICT REPLACE` on a `UNIQUE` or
     `PRIMARY KEY` constraint would make a colliding write delete the other row without the delete policy. Introspection
@@ -166,7 +168,6 @@ Each item names where it is enforced and which tests cover it. Test paths are re
 - **Reserved table list is hard-coded.** `isReservedTable` knows the four Better Auth tables. A Better Auth plugin
   that adds tables must also add them to `AUTH_TABLES` or the engine could expose them. v0.1 uses only the `bearer`
   plugin, which adds none.
-- **Better Auth `/api/auth/*` errors** are not problem+json.
 - **Very deep rule nesting** (thousands of levels) overflows the stack at startup. It fails when the config is
   built, never at request time.
 - **The example config is intentionally permissive in places:** `comments` is public, including comments on draft posts.
