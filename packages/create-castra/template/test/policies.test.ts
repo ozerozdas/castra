@@ -156,16 +156,20 @@ describe("notes.delete = owner(owner_id) | role(admin)", () => {
   });
 });
 
+const CLOSED = ["users", "user", "session", "account", "verification", "_castra_roles", "_castra_api_keys", "_castra_mcp_tokens", "_castra_audit"];
+
 describe("default closed", () => {
-  it.each(["users", "user", "session", "account", "verification", "_castra_roles", "_castra_api_keys", "_castra_mcp_tokens", "_castra_audit"])(
-    "%s has no route",
-    async (table) => {
-      expect((await call("GET", `/api/${table}`, admin)).status).toBe(404);
-    },
-  );
-  it("OpenAPI lists only notes", async () => {
+  it.each(CLOSED)("%s has no route", async (table) => {
+    expect((await call("GET", `/api/${table}`, admin)).status).toBe(404);
+  });
+  // Checks notes and the closed tables only, so a table you open later does not break this test.
+  it("OpenAPI lists notes (allow) and none of the closed tables (deny)", async () => {
     const r = await call("GET", "/openapi.json");
     expect(r.status).toBe(200);
-    expect(Object.keys(r.body.paths).sort()).toEqual(["/api/notes", "/api/notes/{id}"]);
+    const paths = Object.keys(r.body.paths);
+    expect(paths).toEqual(expect.arrayContaining(["/api/notes", "/api/notes/{id}"]));
+    for (const table of CLOSED) {
+      expect(paths.filter((p) => p === `/api/${table}` || p.startsWith(`/api/${table}/`))).toEqual([]);
+    }
   });
 });
