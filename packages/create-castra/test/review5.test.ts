@@ -34,5 +34,7 @@ describe("R5-8 generated .gitignore misses the other env files wrangler loads", 
     // wrangler reads `.dev.vars.<env>` for `--env <env>` and `.env.local` / `.env.<env>` files; today all are committable.
     expect(ignored(project, ".dev.vars.staging")).toBe(true);
     expect(ignored(project, ".env.local")).toBe(true);
+    expect(ignored(project, ".env")).toBe(true);
+    expect(ignored(project, ".env.example")).toBe(false);
   });
 });

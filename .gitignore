@@ -3,7 +3,10 @@ dist/
 .wrangler/
 .DS_Store
 *.log
-.dev.vars
-.env
+# Local secrets: wrangler also reads .dev.vars.<env>, .env.local and .env.<env>.
+.dev.vars*
+.env*
+!.dev.vars.example
+!.env.example
 coverage/
 .claude/worktrees/

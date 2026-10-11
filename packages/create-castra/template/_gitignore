@@ -1,7 +1,10 @@
 node_modules/
 dist/
 .wrangler/
-.dev.vars
-.env
+# Local secrets: wrangler also reads .dev.vars.<env>, .env.local and .env.<env>.
+.dev.vars*
+.env*
+!.dev.vars.example
+!.env.example
 *.log
 .DS_Store
