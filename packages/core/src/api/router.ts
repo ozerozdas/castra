@@ -6,7 +6,7 @@ import { createPolicyEngine, type PolicyEngine } from "../policy/engine.js";
 import type { CastraContext, Operation, SchemaSnapshot } from "../types.js";
 import type { D1DatabaseLike } from "../db/guarded-write.js";
 import { apiModel } from "./model.js";
-import { generateOpenApi, type JsonObject } from "./openapi.js";
+import { generateOpenApi, trimEnd, type JsonObject } from "./openapi.js";
 import { parseRequest } from "./parse.js";
 import { executePlan, planRequest } from "./plan.js";
 import { ApiError, notFound, problemResponse, toProblem, withProblemHandlers } from "./problem.js";
@@ -71,7 +71,7 @@ export function createRestRouter<E extends Env = Env>(options: RestRouterOptions
   const { config, snapshot } = options;
   const engine = options.engine ?? createPolicyEngine({ config, snapshot });
   apiModel(config, snapshot); // validate identifiers at startup
-  const basePath = (options.basePath ?? "/api").replace(/\/+$/, "");
+  const basePath = trimEnd(options.basePath ?? "/api", "/");
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
   let openapi: JsonObject | undefined;
 

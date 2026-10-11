@@ -106,7 +106,7 @@ export function parseRestPath(path: string, basePath: string, query: unknown): {
       for (const one of Array.isArray(v) ? v : [v]) params.append(k, one);
     }
   }
-  const base = basePath.replace(/\/+$/, "");
+  const base = trimTrailingSlashes(basePath);
   if (!pathname.startsWith(`${base}/`)) throw notFound();
   const segments = pathname.slice(base.length + 1).split("/");
   if (segments.length > 2 || segments.some((s) => s.length === 0)) throw notFound();
@@ -328,4 +328,11 @@ export function castraTools(options: CastraToolsOptions): ToolDefinition[] {
       }),
     },
   ];
+}
+
+/** `basePath` without trailing slashes, without a backtracking regex. */
+function trimTrailingSlashes(s: string): string {
+  let end = s.length;
+  while (end > 0 && s[end - 1] === "/") end--;
+  return s.slice(0, end);
 }

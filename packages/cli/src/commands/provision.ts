@@ -6,6 +6,7 @@ import type { FetchFn } from "../cloudflare/api.js";
 import { connect } from "../cloudflare/connect.js";
 import type { CloudflareEnv, CloudflareSession } from "../cloudflare/connect.js";
 import { problems } from "../problems.js";
+import { trimEnd } from "../text.js";
 import { CliError, isPlaceholderId, readWranglerConfig, setJsoncValue } from "../wrangler-config.js";
 
 /** Binding name of the KV namespace every Castra project gets. */
@@ -65,15 +66,13 @@ export const R2_BUCKET_NAME_MAX = 63;
  */
 export function defaultBucketName(workerName: string): string {
   const suffix = "-storage";
-  const clean = workerName
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  const dashed = workerName.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
+  const clean = trimEnd(dashed, "-").replace(/^-+/, "");
   const base = clean || "castra";
   if (base.length + suffix.length <= R2_BUCKET_NAME_MAX && base === workerName) return `${base}${suffix}`;
   const hash = createHash("sha256").update(workerName).digest("hex").slice(0, 8);
   const room = R2_BUCKET_NAME_MAX - suffix.length - hash.length - 1;
-  const head = base.slice(0, room).replace(/-+$/, "");
+  const head = trimEnd(base.slice(0, room), "-");
   return `${head}-${hash}${suffix}`;
 }
 

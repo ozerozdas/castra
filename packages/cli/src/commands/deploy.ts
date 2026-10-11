@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { dirname } from "node:path";
 import type { ExecFn } from "../exec.js";
+import { trimEnd } from "../text.js";
 import type { OpenDatabaseFn } from "../local-d1.js";
 import { remoteD1Opener } from "../remote-d1.js";
 import { CloudflareApiError } from "../cloudflare/api.js";
@@ -48,8 +49,21 @@ const defaultSecret = () => randomBytes(32).toString("base64url");
 /** Pick the first `https://...` URL from `wrangler deploy` output, preferring `*.workers.dev`. */
 export function parseDeployedUrl(output: string): string | undefined {
   const urls = output.match(/https:\/\/[^\s"'<>()]+/g) ?? [];
-  const clean = urls.map((u) => u.replace(/[.,;]+$/, ""));
-  return clean.find((u) => /\.workers\.dev\/?$/.test(u)) ?? clean.find((u) => !u.includes("cloudflare.com"));
+  const clean = urls.map((u) => trimEnd(u, ".,;"));
+  return clean.find((u) => hostname(u)?.endsWith(".workers.dev")) ?? clean.find((u) => !isCloudflareHost(hostname(u)));
+}
+
+function hostname(url: string): string | undefined {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Dashboard and docs links in wrangler output, which are never the deployed Worker. */
+function isCloudflareHost(host: string | undefined): boolean {
+  return host === "cloudflare.com" || !!host?.endsWith(".cloudflare.com");
 }
 
 /**

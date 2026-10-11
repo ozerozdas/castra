@@ -210,6 +210,12 @@ describe("parseDeployedUrl", () => {
     );
     expect(parseDeployedUrl("nothing here")).toBeUndefined();
   });
+
+  it("matches hosts, not substrings, and strips trailing punctuation", () => {
+    expect(parseDeployedUrl("https://dash.cloudflare.com/x https://app.example.com/cloudflare.com.")).toBe(
+      "https://app.example.com/cloudflare.com",
+    );
+  });
 });
 
 describe("castra migrate", () => {

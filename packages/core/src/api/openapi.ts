@@ -4,6 +4,13 @@ import type { ColumnSnapshot, SchemaSnapshot } from "../types.js";
 import { apiModel, INCLUDE_MANY_PER_PARENT, isBlobColumn, type ApiModel, type TableModel } from "./model.js";
 import { FILTER_OPERATORS } from "./parse.js";
 
+/** Removes trailing `char`s without a regex (`/x+$/` backtracks quadratically on long runs of `x`). */
+export function trimEnd(s: string, chars: string): string {
+  let end = s.length;
+  while (end > 0 && chars.includes(s[end - 1]!)) end--;
+  return s.slice(0, end);
+}
+
 /** Options of {@link generateOpenApi}. */
 export interface OpenApiOptions {
   config: CastraConfig;
@@ -70,7 +77,7 @@ export function generateOpenApi(options: OpenApiOptions): JsonObject {
   const { config, snapshot } = options;
   const engine = options.engine ?? createPolicyEngine({ config, snapshot });
   const model = apiModel(config, snapshot);
-  const basePath = (options.basePath ?? "/api").replace(/\/+$/, "");
+  const basePath = trimEnd(options.basePath ?? "/api", "/");
   const schemas: JsonObject = {
     Problem: {
       type: "object",
