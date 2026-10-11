@@ -9,8 +9,14 @@ export interface D1Target {
   databaseName?: string;
 }
 
-/** Thrown for problems the user can fix (missing file, ambiguous binding); printed without a stack. */
+/**
+ * Thrown for runtime problems the user can fix (missing file, ambiguous or unprovisioned binding); printed without
+ * a stack. `castra` exits 1.
+ */
 export class CliError extends Error {}
+
+/** A {@link CliError} caused by the command line itself (unknown flag, missing/conflicting argument). Exit 2. */
+export class UsageError extends CliError {}
 
 /**
  * Pick the D1 binding out of a `wrangler.jsonc` / `wrangler.json` document. JSONC (comments, trailing

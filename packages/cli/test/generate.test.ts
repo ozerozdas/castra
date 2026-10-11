@@ -110,14 +110,15 @@ describe("castra generate", () => {
   });
 
   it("fails clearly on a missing config, bad flags and unknown bindings", async () => {
-    expect(await exec(["generate", "--config", "nope.jsonc"], opener(fakeDb()))).toBe(2);
+    // Runtime errors exit 1, usage errors exit 2 (R5-7).
+    expect(await exec(["generate", "--config", "nope.jsonc"], opener(fakeDb()))).toBe(1);
     expect(err.join("\n")).toContain("Wrangler config not found");
 
     err.length = 0;
     expect(await exec(["generate", "--bogus"], opener(fakeDb()))).toBe(2);
 
     err.length = 0;
-    expect(await exec(["generate", "--binding", "OTHER"], opener(fakeDb()))).toBe(2);
+    expect(await exec(["generate", "--binding", "OTHER"], opener(fakeDb()))).toBe(1);
     expect(err.join("\n")).toContain('No D1 binding named "OTHER"');
   });
 

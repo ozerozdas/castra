@@ -17,7 +17,7 @@ import { openLocalD1 } from "./local-d1.js";
 import type { OpenDatabaseFn } from "./local-d1.js";
 import { ProblemError } from "./problems.js";
 import { remoteD1Opener } from "./remote-d1.js";
-import { CliError } from "./wrangler-config.js";
+import { CliError, UsageError } from "./wrangler-config.js";
 
 /** Commands that are planned (ARCHITECTURE section 6) but not built yet. */
 const PLANNED = ["init"] as const;
@@ -147,8 +147,9 @@ const defaultEnv = (): RunEnv => ({
 /**
  * Entry point of the `castra` binary. Dispatches the first argument to a subcommand.
  *
- * Exit codes: `0` success, `1` check failed, runtime error or Cloudflare problem (token, permission, account),
- * `2` usage error or command not implemented.
+ * Exit codes: `0` success, `1` check failed, runtime error (e.g. config not found, unprovisioned binding: a
+ * {@link CliError}) or Cloudflare problem (token, permission, account), `2` usage error ({@link UsageError}: bad
+ * flags or arguments) or command not implemented.
  *
  * @param argv Arguments without the `node` and script path.
  */
@@ -193,7 +194,7 @@ export async function run(argv: string[], overrides: Partial<RunEnv> = {}): Prom
     }
     if (e instanceof CliError) {
       env.error(`error: ${e.message}`);
-      return 2;
+      return e instanceof UsageError ? 2 : 1;
     }
     env.error(`error: ${e instanceof Error ? e.message : String(e)}`);
     return 1;
@@ -211,7 +212,7 @@ function parse<O extends Options>(args: string[], options: O, usage: string) {
   try {
     return parseArgs({ args, options, strict: true, allowPositionals: false }).values;
   } catch (e) {
-    throw new CliError(`${e instanceof Error ? e.message : String(e)}\n\n${usage}`);
+    throw new UsageError(`${e instanceof Error ? e.message : String(e)}\n\n${usage}`);
   }
 }
 
@@ -267,7 +268,7 @@ async function runMigrate(args: string[], env: RunEnv): Promise<number> {
     env.log(MIGRATE_USAGE);
     return 0;
   }
-  if (values.local && values.remote) throw new CliError(`Pass either --local or --remote, not both.\n\n${MIGRATE_USAGE}`);
+  if (values.local && values.remote) throw new UsageError(`Pass either --local or --remote, not both.\n\n${MIGRATE_USAGE}`);
   return migrate(
     {
       cwd: env.cwd,
@@ -340,7 +341,7 @@ async function runTest(args: string[], env: RunEnv): Promise<number> {
     env.log(TEST_USAGE);
     return 0;
   }
-  if (own.length !== 1 || own[0] !== "policies") throw new CliError(`Expected \`castra test policies\`.\n\n${TEST_USAGE}`);
+  if (own.length !== 1 || own[0] !== "policies") throw new UsageError(`Expected \`castra test policies\`.\n\n${TEST_USAGE}`);
   return testPolicies({ cwd: env.cwd, extraArgs }, env);
 }
 
@@ -368,7 +369,7 @@ async function runMcp(args: string[], env: RunEnv): Promise<number> {
 
 async function runMcpToken(args: string[], env: RunEnv): Promise<number> {
   const [action, ...rest] = args;
-  if (action !== "create" && action !== "revoke") throw new CliError(`Expected \`mcp token create\` or \`mcp token revoke <id>\`.\n\n${MCP_USAGE}`);
+  if (action !== "create" && action !== "revoke") throw new UsageError(`Expected \`mcp token create\` or \`mcp token revoke <id>\`.\n\n${MCP_USAGE}`);
   let parsed;
   try {
     parsed = parseArgs({
@@ -388,14 +389,14 @@ async function runMcpToken(args: string[], env: RunEnv): Promise<number> {
       },
     });
   } catch (e) {
-    throw new CliError(`${e instanceof Error ? e.message : String(e)}\n\n${MCP_USAGE}`);
+    throw new UsageError(`${e instanceof Error ? e.message : String(e)}\n\n${MCP_USAGE}`);
   }
   const { values, positionals } = parsed;
   if (values.help) {
     env.log(MCP_USAGE);
     return 0;
   }
-  if (values.local && values.remote) throw new CliError(`Pass either --local or --remote, not both.\n\n${MCP_USAGE}`);
+  if (values.local && values.remote) throw new UsageError(`Pass either --local or --remote, not both.\n\n${MCP_USAGE}`);
   let openDatabase = env.openDatabase;
   if (values.remote) {
     const session = await connect({ env: env.env, fetch: env.fetch, accountId: values["account-id"] });
@@ -404,10 +405,10 @@ async function runMcpToken(args: string[], env: RunEnv): Promise<number> {
   const target = { cwd: env.cwd, config: values.config, binding: values.binding };
   const deps = { openDatabase, log: env.log, error: env.error };
   if (action === "revoke") {
-    if (positionals.length !== 1) throw new CliError(`Usage: castra mcp token revoke <id>\n\n${MCP_USAGE}`);
+    if (positionals.length !== 1) throw new UsageError(`Usage: castra mcp token revoke <id>\n\n${MCP_USAGE}`);
     return revokeMcpTokenCommand({ ...target, id: positionals[0]! }, deps);
   }
-  if (!values.user || !values.scopes) throw new CliError(`--user and --scopes are required.\n\n${MCP_USAGE}`);
+  if (!values.user || !values.scopes) throw new UsageError(`--user and --scopes are required.\n\n${MCP_USAGE}`);
   return createMcpTokenCommand(
     {
       ...target,

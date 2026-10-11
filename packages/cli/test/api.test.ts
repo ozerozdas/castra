@@ -65,7 +65,7 @@ describe("CloudflareApi", () => {
       error: (l) => err.push(l),
       env: { CLOUDFLARE_API_TOKEN: FAKE_TOKEN },
     });
-    expect(code).toBe(2); // config missing: fails before any request
+    expect(code).toBe(1); // config missing (runtime error, R5-7): fails before any request
     await expect(globalThis.fetch("https://api.cloudflare.com/client/v4/user/tokens/verify")).rejects.toThrow(
       /Real network access/,
     );

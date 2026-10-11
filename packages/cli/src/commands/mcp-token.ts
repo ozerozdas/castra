@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { insertMcpTokenQuery, mintMcpToken, parseScopes, revokeMcpTokenQuery } from "@castra/mcp";
 import type { OpenDatabaseFn } from "../local-d1.js";
-import { CliError, readD1Target } from "../wrangler-config.js";
+import { CliError, readD1Target, UsageError } from "../wrangler-config.js";
 
 /** Options shared by `castra mcp token create|revoke`. */
 export interface McpTokenTarget {
@@ -49,9 +49,9 @@ export async function createMcpTokenCommand(options: CreateMcpTokenOptions, deps
   try {
     scopes = parseScopes(options.scopes.replaceAll(",", " "));
   } catch (e) {
-    throw new CliError((e as Error).message);
+    throw new UsageError((e as Error).message);
   }
-  if (options.expiresInDays !== undefined && !(options.expiresInDays > 0)) throw new CliError("--expires-in must be a positive number of days.");
+  if (options.expiresInDays !== undefined && !(options.expiresInDays > 0)) throw new UsageError("--expires-in must be a positive number of days.");
   const expiresAt = options.expiresInDays === undefined ? undefined : new Date(Date.now() + options.expiresInDays * 86_400_000);
 
   const db = await open(options, deps);

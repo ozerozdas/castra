@@ -206,9 +206,9 @@ export default defineConfig({
     expect(await exited, stderr).toBe(0);
   }, 60_000);
 
-  it("reports a missing snapshot as a usage error", async () => {
+  it("reports a missing snapshot as a runtime error (exit 1, R5-7)", async () => {
     const io = capture();
-    expect(await run(["mcp", "--out", "nowhere"], { cwd: project, ...io })).toBe(2);
+    expect(await run(["mcp", "--out", "nowhere"], { cwd: project, ...io })).toBe(1);
     expect(io.err.join()).toMatch(/castra generate/);
   });
 });

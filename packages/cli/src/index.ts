@@ -48,6 +48,7 @@ export { spawnExec } from "./exec.js";
 export type { ExecFn, ExecOptions, ExecResult } from "./exec.js";
 export {
   CliError,
+  UsageError,
   isPlaceholderId,
   readD1Target,
   readWranglerConfig,

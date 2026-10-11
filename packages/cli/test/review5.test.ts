@@ -187,3 +187,35 @@ describe("R5-6 provision refuses a real D1 database_id that is not the named dat
     expect(err.join("\n")).toContain("d1-id-mismatch");
   });
 });
+
+describe("R5-7 run() exit codes: runtime CliError is 1, usage error is 2", () => {
+  const castra = (argv: string[]) =>
+    run(argv, {
+      cwd: dir,
+      fetch: cf.fetch,
+      env: { CLOUDFLARE_API_TOKEN: FAKE_TOKEN, CLOUDFLARE_ACCOUNT_ID: "acc1" },
+      log: (l) => out.push(l),
+      error: (l) => err.push(l),
+      openDatabase: async () => {
+        throw new Error("no database");
+      },
+    });
+
+  it("config not found: exit 1", async () => {
+    expect(await castra(["provision", "--config", "missing.jsonc"])).toBe(1);
+    expect(err.join("\n")).toContain("Wrangler config not found");
+    expect(await castra(["migrate", "--config", "missing.jsonc"])).toBe(1);
+  });
+
+  it("unprovisioned binding: exit 1", async () => {
+    await writeFile(join(dir, "wrangler.jsonc"), BLOG_CONFIG); // placeholder database_id
+    expect(await castra(["mcp", "token", "revoke", "t1", "--remote"])).toBe(1);
+    expect(err.join("\n")).toContain("castra provision");
+  });
+
+  it("bad flags and conflicting arguments: exit 2", async () => {
+    expect(await castra(["provision", "--bogus"])).toBe(2);
+    expect(await castra(["migrate", "--local", "--remote"])).toBe(2);
+    expect(await castra(["test", "unit"])).toBe(2);
+  });
+});
