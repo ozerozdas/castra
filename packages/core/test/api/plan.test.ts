@@ -125,7 +125,7 @@ describe("includes", () => {
     expect(author.parameters).toEqual(["$parentKeys"]);
     const comments = stmt(p, "include:comments");
     expect(comments.sql).toContain("row_number() over (partition by");
-    expect(comments.parameters).toEqual(["$parentKeys", 25]);
+    expect(comments.parameters).toEqual(["$parentKeys", 26]); // 25 + 1 to detect truncation (ADR 0074)
     expect(p.explanations.map((e) => e.table)).toEqual(["posts", "users", "comments"]);
   });
   it("anonymous author include compiles to an empty filter", () => {

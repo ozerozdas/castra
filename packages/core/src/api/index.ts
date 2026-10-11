@@ -3,7 +3,7 @@
  * execution, OpenAPI and the Hono router. MCP reuses `parseRequest` → `planRequest` → `executePlan`.
  * See docs/ARCHITECTURE.md §4 and ADRs 0040–0044.
  */
-export { apiModel, DEFAULT_MAX_LIMIT, DEFAULT_PAGE_SIZE, INCLUDE_MANY_PER_PARENT } from "./model.js";
+export { apiModel, DEFAULT_MAX_LIMIT, DEFAULT_PAGE_SIZE, INCLUDE_MANY_PER_PARENT, TRUNCATED_KEY } from "./model.js";
 export type { ApiModel, Relation, TableModel } from "./model.js";
 export { generateOpenApi } from "./openapi.js";
 export type { JsonObject, OpenApiOptions } from "./openapi.js";

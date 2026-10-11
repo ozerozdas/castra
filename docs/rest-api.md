@@ -23,7 +23,7 @@ Query parameters on lists ([ADR 0040](adr/0040-rest-pagination-and-request-pipel
 | Keyset cursor | response `{ data, nextCursor }`; pass `?cursor=<nextCursor>`. `null` when there is no next page. |
 | Offset | `?offset=` (<= 100000), not combinable with `cursor` |
 | Count | `?count=exact` adds `count` to the response |
-| Includes | `?include=author,comments`: one level, derived from foreign keys (`author_id` -> `author`; a child table with one FK to the base table), each under its own `read` policy. One-to-many includes return at most 25 rows per parent, silently. |
+| Includes | `?include=author,comments`: one level, derived from foreign keys (`author_id` -> `author`; a child table with one FK to the base table), each under its own `read` policy. One-to-many includes return at most 25 rows per parent; when there were more, the parent row gets `"$truncated": ["comments"]` ([ADR 0074](adr/0074-include-truncation-marker.md)). |
 
 Limits: bodies <= 1 MiB (413), JSON only (415), unknown body keys 400, <= 20 filters, <= 100 `in` values, <= 10 includes,
 100 bound parameters per statement, `like` patterns <= 256 characters and 10 wildcards. Text primary keys are

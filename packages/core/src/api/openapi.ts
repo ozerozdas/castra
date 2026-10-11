@@ -1,7 +1,7 @@
 import type { CastraConfig } from "../config.js";
 import { createPolicyEngine, type PolicyEngine } from "../policy/engine.js";
 import type { ColumnSnapshot, SchemaSnapshot } from "../types.js";
-import { apiModel, INCLUDE_MANY_PER_PARENT, isBlobColumn, type ApiModel, type TableModel } from "./model.js";
+import { apiModel, INCLUDE_MANY_PER_PARENT, isBlobColumn, TRUNCATED_KEY, type ApiModel, type TableModel } from "./model.js";
 import { FILTER_OPERATORS } from "./parse.js";
 
 /** Removes trailing `char`s without a regex (`/x+$/` backtracks quadratically on long runs of `x`). */
@@ -142,7 +142,19 @@ export function generateOpenApi(options: OpenApiOptions): JsonObject {
       properties[r.name] =
         r.kind === "one"
           ? { description: `Present with ?include=${r.name}.`, oneOf: [targetRef, { type: "null" }] }
-          : { description: `Present with ?include=${r.name}; at most ${INCLUDE_MANY_PER_PARENT} rows.`, type: "array", items: targetRef };
+          : {
+              description: `Present with ?include=${r.name}; at most ${INCLUDE_MANY_PER_PARENT} rows. If there were more, "${r.name}" is listed in ${TRUNCATED_KEY}.`,
+              type: "array",
+              items: targetRef,
+            };
+    }
+    const many = rels.filter((r) => r.kind === "many").map((r) => r.name);
+    if (many.length > 0) {
+      properties[TRUNCATED_KEY] = {
+        description: `Present only when a one-to-many include was cut at ${INCLUDE_MANY_PER_PARENT} rows: the names of those includes.`,
+        type: "array",
+        items: { type: "string", enum: many },
+      };
     }
     schemas[comp] = { type: "object", properties, required };
 

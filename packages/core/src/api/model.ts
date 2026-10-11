@@ -13,6 +13,8 @@ export const DEFAULT_MAX_LIMIT = 100;
 export const DEFAULT_PAGE_SIZE = 25;
 /** Max children loaded per parent row for a one-to-many include (ADR 0042). */
 export const INCLUDE_MANY_PER_PARENT = 25;
+/** Key on a parent row listing the one-to-many includes cut at {@link INCLUDE_MANY_PER_PARENT} rows (ADR 0074). */
+export const TRUNCATED_KEY = "$truncated";
 
 /** A relation reachable through `?include=`. Derived from foreign keys in the snapshot (ADR 0042). */
 export interface Relation {

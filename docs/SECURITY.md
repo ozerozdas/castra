@@ -161,8 +161,6 @@ Each item names where it is enforced and which tests cover it. Test paths are re
 - **Rate limiting covers writes only.** Sign-in, sign-up, `/mcp` and table writes are limited per IP (60 per minute by
   default, per Cloudflare location, approximate). Reads are not; use a WAF rule on a custom domain
   ([rate limiting](rate-limiting.md), [ADR 0072](adr/0072-rate-limit-binding.md)).
-- **Includes truncate silently.** One-to-many includes return at most 25 rows per parent and the response does not
-  say so. This is a completeness issue, not a leak.
 - **Primary key changes on update** are not rejected by `prepareWrite`; the guard needs the new key and otherwise
   fails closed with 403.
 - **Reserved table list is hard-coded.** `isReservedTable` knows the four Better Auth tables. A Better Auth plugin

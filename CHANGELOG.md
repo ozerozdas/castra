@@ -5,6 +5,8 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 ## Unreleased
 
 ### Added
+- A one-to-many include cut at 25 rows marks its parent row with `"$truncated": ["<include>"]`. Only rows the caller
+  may read are counted. Documented in OpenAPI ([ADR 0074](docs/adr/0074-include-truncation-marker.md), #8).
 - Better Auth `/api/auth/*` errors are `application/problem+json` (type `auth_error`, or `rate_limited` for 429),
   keeping Better Auth's `code` and `message`. 5xx bodies are replaced by a generic detail
   ([ADR 0073](docs/adr/0073-auth-errors-problem-json.md), #7).

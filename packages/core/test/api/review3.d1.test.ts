@@ -470,10 +470,26 @@ describe("review3: includes obey the included table's own policy", () => {
     const r = await call("GET", "/api/r3_posts/pub3?include=r3_comments");
     expect(r.status).toBe(200);
     expect(r.body.r3_comments.length).toBe(25);
+    expect(r.body.$truncated).toEqual(["r3_comments"]);
     // A draft's children never surface through a parent the caller cannot see.
     const list = await call("GET", "/api/r3_posts?include=r3_comments&limit=50");
     for (const p of list.body.data) for (const cm of p.r3_comments) expect(cm.post_id).toBe(p.id);
     expect(list.text).not.toContain("on alice draft");
+  });
+
+  it("exactly 25 children are not marked truncated; the 26th marks the parent (ADR 0074)", async () => {
+    const c = env.DB.prepare("INSERT INTO r3_comments (id, post_id, user_id, body) VALUES (?, ?, ?, ?)");
+    await env.DB.batch(Array.from({ length: 25 }, (_, i) => c.bind(`t${String(i).padStart(2, "0")}`, "pub3", BOB, `b${i}`)));
+    const at25 = await call("GET", "/api/r3_posts/pub3?include=r3_comments");
+    expect(at25.body.r3_comments.length).toBe(25);
+    expect(at25.body).not.toHaveProperty("$truncated");
+    await c.bind("t25", "pub3", BOB, "b25").run();
+    const at26 = await call("GET", "/api/r3_posts?include=r3_comments&limit=50");
+    const pub3 = at26.body.data.find((p: { id: string }) => p.id === "pub3");
+    expect(pub3.r3_comments.length).toBe(25);
+    expect(pub3.$truncated).toEqual(["r3_comments"]);
+    // Other parents in the same page are not marked.
+    for (const p of at26.body.data) if (p.id !== "pub3") expect(p).not.toHaveProperty("$truncated");
   });
 
   it("duplicate include names are de-duplicated (one key, one query)", async () => {

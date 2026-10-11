@@ -62,6 +62,27 @@ beforeAll(async () => {
   ]);
 });
 
+describe("include truncation (ADR 0074)", () => {
+  it("counts only children the caller may read", async () => {
+    const author = await signUp();
+    const insert = env.DB.prepare("INSERT INTO posts (id, author_id, title, body, status) VALUES (?, ?, ?, ?, ?)");
+    await env.DB.batch([
+      ...Array.from({ length: 25 }, (_, i) => insert.bind(crypto.randomUUID(), author.id, `pub ${i}`, "b", "published")),
+      ...Array.from({ length: 3 }, (_, i) => insert.bind(crypto.randomUUID(), author.id, `draft ${i}`, "b", "draft")),
+    ]);
+    // bob sees the 25 published posts only: nothing was cut for him.
+    const other = await call("GET", `/api/users/${author.id}?include=posts`, bob);
+    expect(other.status).toBe(200);
+    expect(other.body.posts.length).toBe(25);
+    expect(other.body).not.toHaveProperty("$truncated");
+    expect(other.body.posts.every((p: { status: string }) => p.status === "published")).toBe(true);
+    // The author also reads the drafts: 28 rows, cut at 25 and marked.
+    const own = await call("GET", `/api/users/${author.id}?include=posts`, author);
+    expect(own.body.posts.length).toBe(25);
+    expect(own.body.$truncated).toEqual(["posts"]);
+  });
+});
+
 describe("routes that must not exist", () => {
   it.each(["audit_logs", "user", "session", "account", "verification", "_castra_roles", "_castra_api_keys", "nope"])("%s → 404", async (t) => {
     const list = await call("GET", `/api/${t}`, admin);

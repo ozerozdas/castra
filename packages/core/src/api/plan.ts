@@ -24,6 +24,7 @@ import {
   DEFAULT_PAGE_SIZE,
   evaluateDefault,
   INCLUDE_MANY_PER_PARENT,
+  TRUNCATED_KEY,
   isBlobColumn,
   validateValues,
   type ApiModel,
@@ -293,7 +294,7 @@ function planIncludes(engine: PolicyEngine, model: ApiModel, t: TableModel, name
       return builder
         .selectFrom(inner.as("__castra_inc"))
         .selectAll()
-        .where(sql.id("__castra_rn"), "<=", INCLUDE_MANY_PER_PARENT)
+        .where(sql.id("__castra_rn"), "<=", INCLUDE_MANY_PER_PARENT + 1) // one extra row detects truncation
         .orderBy(sql.id("__castra_rn"))
         .compile();
     };
@@ -314,7 +315,7 @@ function planRead(
   const includes = planIncludes(engine, model, t, parsed.include, ctx);
   const explanations = [engine.explain(policy), ...includes.map((i) => engine.explain(i.filter))];
   const includeStatements = includes.map((i) =>
-    show(`include:${i.rel.name}`, i.build([PARENT_KEYS]), i.rel.kind === "many" ? `at most ${INCLUDE_MANY_PER_PARENT} rows per parent` : undefined),
+    show(`include:${i.rel.name}`, i.build([PARENT_KEYS]), i.rel.kind === "many" ? `at most ${INCLUDE_MANY_PER_PARENT} rows per parent, plus one to detect truncation` : undefined),
   );
 
   if (parsed.kind === "get") {
@@ -425,7 +426,11 @@ function jsonSafe(row: Record<string, unknown>): Record<string, unknown> {
   return row;
 }
 
-/** Projects base rows and attaches includes, each loaded in one query under its own read policy. */
+/**
+ * Projects base rows and attaches includes, each loaded in one query under its own read policy.
+ * A one-to-many include cut at {@link INCLUDE_MANY_PER_PARENT} readable rows is named in the parent's
+ * {@link TRUNCATED_KEY} array (ADR 0074).
+ */
 async function attach(
   db: AnyDb,
   engine: PolicyEngine,
@@ -449,7 +454,13 @@ async function attach(
     }
     rows.forEach((r, i) => {
       const found = byKey.get(r[inc.rel.localColumn]) ?? [];
-      out[i]![inc.rel.name] = inc.rel.kind === "one" ? (found[0] ?? null) : found;
+      if (inc.rel.kind === "one") {
+        out[i]![inc.rel.name] = found[0] ?? null;
+        return;
+      }
+      out[i]![inc.rel.name] = found.slice(0, INCLUDE_MANY_PER_PARENT);
+      // ponytail: a column literally named "$truncated" would be overwritten; it needs a quoted identifier, so it is not checked.
+      if (found.length > INCLUDE_MANY_PER_PARENT) ((out[i]![TRUNCATED_KEY] ??= []) as string[]).push(inc.rel.name);
     });
   }
   return out;
