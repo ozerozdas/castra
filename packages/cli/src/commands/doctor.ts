@@ -97,7 +97,42 @@ export const PERMISSIONS = {
 const addPermission = (p: PermissionSpec) =>
   `Edit the token: add Account > ${p.name} (needed to ${p.why}). See ${TOKEN_DOCS}.`;
 
-/** Allowed permission group names in the token's policies, or `null` if the token cannot read itself. */
+/** Account-level resource keys of a token policy (https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/). */
+const ACCOUNT_RESOURCE = "com.cloudflare.api.account.";
+
+/**
+ * Whether a policy's `resources` grant its (account-scoped) permission groups on `accountId`: a key
+ * `com.cloudflare.api.account.<accountId>` or `com.cloudflare.api.account.*` whose value is `"*"`. A nested object
+ * value (e.g. `{ "com.cloudflare.api.account.zone.*": "*" }`) selects zones inside the account, not the account
+ * itself, so it does not count. Zone and user keys never cover an account. Cloudflare documents no
+ * organization-level resource key for token policies (checked 2026-10-11), so none is recognised.
+ */
+export function policyCoversAccount(resources: TokenPolicy["resources"], accountId: string): boolean {
+  if (!resources || typeof resources !== "object") return false;
+  for (const key of [`${ACCOUNT_RESOURCE}${accountId}`, `${ACCOUNT_RESOURCE}*`]) {
+    if (resources[key] === "*") return true;
+  }
+  return false;
+}
+
+/**
+ * Permission group names the token's policies grant on `accountId` (allow policies covering the account, minus
+ * deny policies covering it; Cloudflare evaluates explicit deny before allow).
+ */
+export function grantedGroupNames(policies: TokenPolicy[], accountId: string): Set<string> {
+  const allowed = new Set<string>();
+  const denied = new Set<string>();
+  for (const p of policies) {
+    if (!policyCoversAccount(p.resources, accountId)) continue;
+    const target = p.effect === "allow" ? allowed : p.effect === "deny" ? denied : undefined;
+    if (!target) continue;
+    for (const g of p.permission_groups) if (g.name) target.add(g.name);
+  }
+  for (const name of denied) allowed.delete(name);
+  return allowed;
+}
+
+/** {@link grantedGroupNames} for the session's token, or `null` if the token cannot read its own policies. */
 async function readGrantedNames(session: CloudflareSession): Promise<Set<string> | null> {
   let policies: TokenPolicy[];
   try {
@@ -105,16 +140,13 @@ async function readGrantedNames(session: CloudflareSession): Promise<Set<string>
   } catch {
     return null; // Needs "API Tokens Read"; deploy tokens normally lack it. Fall back to probing.
   }
-  const names = new Set<string>();
-  for (const p of policies) {
-    if (p.effect !== "allow") continue;
-    for (const g of p.permission_groups) if (g.name) names.add(g.name);
-  }
-  return names;
+  return grantedGroupNames(policies, session.accountId);
 }
 
 /**
- * Check one permission: a read-only probe, refined by the token's own policy list when it is readable.
+ * Check one permission. The read-only probe always runs: a refusal (401/403) is `missing` whatever the policy
+ * list says. When the token's policies are readable they then tell Edit (`ok`) from Read only (`missing`);
+ * otherwise a successful probe is `readable`.
  */
 async function checkPermission(
   spec: PermissionSpec,
@@ -123,16 +155,22 @@ async function checkPermission(
   required: boolean,
 ): Promise<DoctorCheck> {
   const row = (status: CheckStatus, fix = ""): DoctorCheck => ({ check: spec.name, status, required, fix });
-  if (granted !== null) {
-    if (spec.editNames.some((n) => granted.has(n))) return row("ok");
-    if (granted.has(spec.readName)) return row("missing", `Token has only ${spec.readName}. ${addPermission(spec)}`);
-  }
   try {
     await spec.probe(session.api, session.accountId);
   } catch (e) {
     if (e instanceof CloudflareApiError && e.isAuthError) return row("missing", addPermission(spec));
     const msg = e instanceof Error ? e.message : String(e);
     return row("missing", `Probe failed: ${msg}`);
+  }
+  if (granted !== null) {
+    if (spec.editNames.some((n) => granted.has(n))) return row("ok");
+    if (granted.has(spec.readName)) return row("missing", `Token has only ${spec.readName}. ${addPermission(spec)}`);
+    // The probe worked but no recognised policy covers this account (e.g. a resource format Castra does not parse):
+    // do not guess Edit either way.
+    return row(
+      "readable",
+      `Read access works, but no token policy recognised by doctor grants ${spec.name} on account ${session.accountId}. Make sure the token has it.`,
+    );
   }
   return row("readable", `Read access works; Edit cannot be verified read-only. Make sure the token has ${spec.name}.`);
 }

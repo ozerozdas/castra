@@ -81,7 +81,13 @@ export class FakeCloudflare {
       if (this.policyNames === null) return this.fail(403, 9109, "Unauthorized to access requested resource");
       return this.ok({
         id: "tok1",
-        policies: [{ effect: "allow", permission_groups: this.policyNames.map((name, i) => ({ id: `g${i}`, name })) }],
+        policies: [
+          {
+            effect: "allow",
+            resources: { [`com.cloudflare.api.account.${this.accounts[0]!.id}`]: "*" },
+            permission_groups: this.policyNames.map((name, i) => ({ id: `g${i}`, name })),
+          },
+        ],
       });
     }
     if (method === "GET" && path === "/accounts") return this.deny("accounts") ?? this.ok(this.accounts);

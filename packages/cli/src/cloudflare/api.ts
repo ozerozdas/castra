@@ -62,6 +62,11 @@ export interface R2Bucket {
 
 export interface TokenPolicy {
   effect: "allow" | "deny" | string;
+  /**
+   * Resource keys the policy applies to, e.g. `{ "com.cloudflare.api.account.<id>": "*" }`; a value may be a
+   * nested object selecting zones inside an account.
+   */
+  resources?: Record<string, unknown>;
   permission_groups: { id: string; name?: string }[];
 }
 

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { QueryFn } from "castra";
-import { doctor } from "../src/commands/doctor.js";
+import { doctor, grantedGroupNames, policyCoversAccount } from "../src/commands/doctor.js";
 import type { DoctorCheck } from "../src/commands/doctor.js";
 import { run } from "../src/run.js";
 import type { OpenDatabaseFn } from "../src/local-d1.js";
@@ -154,5 +154,69 @@ describe("castra doctor", () => {
     });
     expect(code).toBe(1);
     expect(out.join("\n")).toMatch(/Workers Scripts Edit\s+missing/);
+  });
+});
+
+describe("token policy evaluation (R5-1)", () => {
+  const groups = (...names: string[]) => names.map((name, i) => ({ id: `g${i}`, name }));
+
+  it("counts allow policies on the account id or the all-accounts wildcard only", () => {
+    expect(policyCoversAccount({ "com.cloudflare.api.account.acc1": "*" }, "acc1")).toBe(true);
+    expect(policyCoversAccount({ "com.cloudflare.api.account.*": "*" }, "acc1")).toBe(true);
+    expect(policyCoversAccount({ "com.cloudflare.api.account.acc2": "*" }, "acc1")).toBe(false);
+    // Zones inside the account (nested object) or all zones: not the account itself.
+    expect(policyCoversAccount({ "com.cloudflare.api.account.acc1": { "com.cloudflare.api.account.zone.*": "*" } }, "acc1")).toBe(false);
+    expect(policyCoversAccount({ "com.cloudflare.api.account.zone.*": "*" }, "acc1")).toBe(false);
+    expect(policyCoversAccount({ "com.cloudflare.api.user.u1": "*" }, "acc1")).toBe(false);
+    expect(policyCoversAccount(undefined, "acc1")).toBe(false);
+  });
+
+  it("removes groups denied on the account, ignores denies scoped elsewhere", () => {
+    const acc1 = { "com.cloudflare.api.account.acc1": "*" };
+    const all = { "com.cloudflare.api.account.*": "*" };
+    const other = { "com.cloudflare.api.account.acc2": "*" };
+    const granted = grantedGroupNames(
+      [
+        { effect: "allow", resources: all, permission_groups: groups("D1 Edit", "Workers Scripts Edit", "Workers KV Storage Edit") },
+        { effect: "deny", resources: acc1, permission_groups: groups("D1 Edit") },
+        { effect: "deny", resources: other, permission_groups: groups("Workers Scripts Edit") },
+        { effect: "allow", resources: other, permission_groups: groups("Workers R2 Storage Edit") },
+      ],
+      "acc1",
+    );
+    expect([...granted].sort()).toEqual(["Workers KV Storage Edit", "Workers Scripts Edit"]);
+    // A deny on all accounts removes the group too.
+    expect(
+      grantedGroupNames(
+        [
+          { effect: "allow", resources: acc1, permission_groups: groups("D1 Edit") },
+          { effect: "deny", resources: all, permission_groups: groups("D1 Edit") },
+        ],
+        "acc1",
+      ).size,
+    ).toBe(0);
+  });
+
+  it("allow: an Edit group granted on the target account is ok", async () => {
+    cf.policyNames = ["Workers Scripts Edit", "D1 Edit", "Workers KV Storage Edit"];
+    const { code, checks } = await runDoctor();
+    expect(code).toBe(0);
+    expect(row(checks, "D1 Edit")?.status).toBe("ok");
+  });
+
+  it("deny: a refused probe is missing even when the policies grant Edit", async () => {
+    cf.policyNames = ["Workers Scripts Edit", "D1 Edit", "Workers KV Storage Edit"];
+    cf.denied.add("kv");
+    const { code, checks } = await runDoctor();
+    expect(code).toBe(1);
+    expect(row(checks, "Workers KV Storage Edit")?.status).toBe("missing");
+    expect(row(checks, "D1 Edit")?.status).toBe("ok");
+  });
+
+  it("policies readable but silent about a group on this account: readable, not ok", async () => {
+    cf.policyNames = ["Workers Scripts Edit", "D1 Edit"];
+    const { code, checks } = await runDoctor();
+    expect(code).toBe(0);
+    expect(row(checks, "Workers KV Storage Edit")?.status).toBe("readable");
   });
 });
