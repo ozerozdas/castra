@@ -174,7 +174,7 @@ describe("FR-1 create/update are refused on a REPLACE table (deny), allowed else
     for (const who of [{ as: BOB }, { as: ADMIN, roles: ["admin"] }]) {
       const r = await call("POST", "/api/frx_replace_col", { ...who, body: { slug: `fresh-${who.as}`, body: "x" } });
       expect(r.status, r.text).toBe(403);
-      expect(r.body.type).toBe("https://castra.dev/problems/unsafe_schema");
+      expect(r.body.type).toBe("https://castra.mehmetozer.dev/problems/unsafe_schema");
     }
     const pk = await call("POST", "/api/frx_replace_pk", { as: BOB, body: { body: "x" } });
     expect(pk.status, pk.text).toBe(403);
@@ -185,7 +185,7 @@ describe("FR-1 create/update are refused on a REPLACE table (deny), allowed else
   it("deny: update of one's own row is 403 unsafe_schema and nothing changes", async () => {
     const r = await call("PATCH", "/api/frx_replace_col/alice-page", { as: ALICE, body: { body: "changed" } });
     expect(r.status, r.text).toBe(403);
-    expect(r.body.type).toBe("https://castra.dev/problems/unsafe_schema");
+    expect(r.body.type).toBe("https://castra.mehmetozer.dev/problems/unsafe_schema");
     expect((await env.DB.prepare("SELECT body FROM frx_replace_col WHERE id = 'alice-page'").first<{ body: string }>())!.body).toBe("ALICE");
   });
 

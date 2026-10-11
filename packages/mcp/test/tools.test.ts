@@ -58,7 +58,7 @@ describe("describe_schema", () => {
     for (const t of ["nope", "user", "_castra_mcp_tokens", "logs"]) {
       const r = await call(client, "describe_schema", { table: t });
       expect(r.isError).toBe(true);
-      expect(r.data).toEqual({ type: "https://castra.dev/problems/not_found", title: "Not Found", status: 404, detail: "The requested resource does not exist." });
+      expect(r.data).toEqual({ type: "https://castra.mehmetozer.dev/problems/not_found", title: "Not Found", status: 404, detail: "The requested resource does not exist." });
     }
   });
 });

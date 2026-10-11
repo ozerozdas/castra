@@ -329,7 +329,7 @@ describe("review 4 fixes", () => {
     expect(roles.data).toMatchObject({ status: 400, detail: expect.stringContaining("as.roles") });
     expect(await lastAudit()).toMatchObject({ tool: "check_access", outcome: "error", status: 400 });
     const unknown = await tool(t.token, "explain_query", { method: "GET", path: "/api/notes", as: { userId: "nobody" } });
-    expect(unknown.data).toMatchObject({ status: 400, type: "https://castra.dev/problems/unknown_user" });
+    expect(unknown.data).toMatchObject({ status: 400, type: "https://castra.mehmetozer.dev/problems/unknown_user" });
     const admin = await tool(t.token, "check_access", { table: "notes", op: "read", as: { userId: USERS.admin } });
     expect(admin.data.as).toEqual({ userId: USERS.admin, roles: ["admin"] });
   });

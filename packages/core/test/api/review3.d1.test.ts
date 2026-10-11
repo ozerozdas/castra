@@ -372,7 +372,7 @@ describe("review3: pagination and counts are computed under the policy (rule 2)"
       expect(r.text).not.toContain("ghost");
       details.add(r.body.type);
     }
-    expect([...details]).toEqual(["https://castra.dev/problems/invalid_cursor"]);
+    expect([...details]).toEqual(["https://castra.mehmetozer.dev/problems/invalid_cursor"]);
   });
 
   it("a cursor on a column the caller may sort by cannot reach rows outside the policy", async () => {

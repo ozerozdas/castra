@@ -272,14 +272,14 @@ describe("review4: identity and scopes (design pins)", () => {
     for (const as of [{ userId: USERS.bob, roles: ["admin"] }, { roles: ["admin"] }, { userId: USERS.alice, roles: [] }]) {
       const r = await tool(t.token, "query_data", { path: `/api/notes/${NOTES.alicePub}`, as });
       expect(r.isError).toBe(true);
-      expect(r.data).toMatchObject({ status: 400, type: "https://castra.dev/problems/roles_not_allowed" });
+      expect(r.data).toMatchObject({ status: 400, type: "https://castra.mehmetozer.dev/problems/roles_not_allowed" });
       expect(r.text).not.toContain("staff only");
     }
     const check = await tool(t.token, "check_access", { table: "notes", op: "delete", as: { userId: USERS.bob, roles: ["admin"] } });
-    expect(check.data).toMatchObject({ status: 400, type: "https://castra.dev/problems/roles_not_allowed" });
+    expect(check.data).toMatchObject({ status: 400, type: "https://castra.mehmetozer.dev/problems/roles_not_allowed" });
     const fake = await tool(t.token, "query_data", { path: "/api/notes", as: { userId: "no-such-user" } });
     expect(fake.isError).toBe(true);
-    expect(fake.data).toMatchObject({ status: 400, type: "https://castra.dev/problems/unknown_user" });
+    expect(fake.data).toMatchObject({ status: 400, type: "https://castra.mehmetozer.dev/problems/unknown_user" });
     // The token's own user and existing users still work, with their stored roles.
     expect((await tool(t.token, "query_data", { path: `/api/notes/${NOTES.alicePub}`, as: { userId: USERS.bob } })).data.status).toBe(200);
     expect((await tool(t.token, "query_data", { path: `/api/notes/${NOTES.alicePub}` })).text).not.toContain("staff only");

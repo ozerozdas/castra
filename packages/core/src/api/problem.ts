@@ -51,7 +51,7 @@ export function notFound(): ApiError {
 /** Builds a problem body. */
 export function problemBody(status: number, detail: string, code?: string): ProblemDetails {
   return {
-    type: code ? `https://castra.dev/problems/${code}` : "about:blank",
+    type: code ? `https://castra.mehmetozer.dev/problems/${code}` : "about:blank",
     title: TITLES[status] ?? "Error",
     status,
     detail,
