@@ -32,12 +32,12 @@ importers:
       '@castra-kit/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@castra-kit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@castra-kit/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp
-      castra:
-        specifier: workspace:*
-        version: link:../../packages/core
       hono:
         specifier: 4.13.13
         version: 4.13.13
@@ -69,12 +69,12 @@ importers:
 
   packages/auth:
     dependencies:
+      '@castra-kit/core':
+        specifier: workspace:*
+        version: link:../core
       better-auth:
         specifier: 1.7.7
         version: 1.7.7(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)))
-      castra:
-        specifier: workspace:*
-        version: link:../core
       hono:
         specifier: 4.13.13
         version: 4.13.13
@@ -100,12 +100,12 @@ importers:
 
   packages/cli:
     dependencies:
+      '@castra-kit/core':
+        specifier: workspace:*
+        version: link:../core
       '@castra-kit/mcp':
         specifier: workspace:*
         version: link:../mcp
-      castra:
-        specifier: workspace:*
-        version: link:../core
       jsonc-parser:
         specifier: 3.3.1
         version: 3.3.1
@@ -171,6 +171,9 @@ importers:
       '@castra-kit/cli':
         specifier: workspace:*
         version: link:../cli
+      '@castra-kit/core':
+        specifier: workspace:*
+        version: link:../core
       '@castra-kit/mcp':
         specifier: workspace:*
         version: link:../mcp
@@ -180,9 +183,6 @@ importers:
       '@cloudflare/workers-types':
         specifier: 5.20261010.1
         version: 5.20261010.1
-      castra:
-        specifier: workspace:*
-        version: link:../core
       hono:
         specifier: 4.13.13
         version: 4.13.13
@@ -210,12 +210,12 @@ importers:
       '@castra-kit/auth':
         specifier: workspace:*
         version: link:../auth
+      '@castra-kit/core':
+        specifier: workspace:*
+        version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: 1.32.1
         version: 1.32.1(zod@4.6.5)
-      castra:
-        specifier: workspace:*
-        version: link:../core
       hono:
         specifier: 4.13.13
         version: 4.13.13

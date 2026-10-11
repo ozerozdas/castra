@@ -3,7 +3,7 @@
 ## Objective
 
 Ship Castra v0.1 as described in `docs/ARCHITECTURE.md`: a developer runs
-`npx create-castra my-app`, then `castra deploy` with a Cloudflare API token, and gets a Worker on their
+`npm create @castra-kit@latest my-app`, then `castra deploy` with a Cloudflare API token, and gets a Worker on their
 own account with Better Auth, roles, policy-protected auto-CRUD over their D1 tables, OpenAPI, and a
 read-only MCP server (local + remote). The policy engine is the product; treat it as security code.
 
@@ -73,7 +73,7 @@ of feature code yourself.
 - Local stdio via `castra mcp`; remote `/mcp` with scoped tokens; every remote call in `_castra_audit`.
 
 ### M5 — CLI + provisioning
-- `npx create-castra my-app` scaffolds a working project.
+- `npm create @castra-kit@latest my-app` scaffolds a working project.
 - `castra provision` creates D1/KV (R2 only if enabled), is idempotent, writes `wrangler.jsonc` bindings.
 - `castra doctor` verifies token permissions and lists missing ones.
 - `castra deploy` = provision → migrate → deploy, prints API, OpenAPI and MCP URLs.

@@ -14,8 +14,8 @@ import {
 
 export const USAGE = `create-castra - scaffold a Castra app (Cloudflare Workers + D1 + Better Auth + MCP)
 
-Usage: create-castra <name> [options]
-       npx create-castra my-app
+Usage: npm create @castra-kit@latest <name> [options]
+       npm create @castra-kit@latest my-app
 
 <name> is the directory, the Worker name and the D1 database prefix (<name>-db): lowercase letters, digits
 and dashes, at most 63 characters.
@@ -24,7 +24,7 @@ Options:
   --template <name>            Template to use (default: default)
   --package-manager <pm>       pnpm | npm (default: the one running create-castra, else pnpm)
   --no-install                 Do not install dependencies
-  --local-packages <path>      Use castra/@castra-kit/* from a local Castra repository checkout (link:/file: paths)
+  --local-packages <path>      Use @castra-kit/* from a local Castra repository checkout (link:/file: paths)
   -h, --help                   Show this help`;
 
 /** Runs a program with inherited stdio and resolves with its exit code. Injected so tests never install. */

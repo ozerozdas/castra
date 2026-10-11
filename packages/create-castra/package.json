@@ -1,7 +1,7 @@
 {
-  "name": "create-castra",
+  "name": "@castra-kit/create",
   "version": "0.1.0",
-  "description": "Scaffold a new Castra app: npx create-castra <name>.",
+  "description": "Scaffold a new Castra app: npm create @castra-kit@latest <name>.",
   "license": "MIT",
   "author": "Özer Özdaş",
   "homepage": "https://github.com/ozerozdas/castra#readme",
@@ -52,7 +52,7 @@
     "@castra-kit/mcp": "workspace:*",
     "@cloudflare/vitest-plugin": "1.4.0",
     "@cloudflare/workers-types": "5.20261010.1",
-    "castra": "workspace:*",
+    "@castra-kit/core": "workspace:*",
     "hono": "4.13.13",
     "kysely": "0.29.6",
     "kysely-d1": "0.4.0",

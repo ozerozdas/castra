@@ -12,7 +12,7 @@ packages/
   auth/           # Better Auth wiring, roles table, ctx resolution
   mcp/            # MCP tools (shared), stdio entry + Worker /mcp route
   cli/            # `castra` binary: provision, generate, migrate, deploy, test, mcp, doctor
-  create-castra/  # `npx create-castra <name>` scaffolder
+  create-castra/  # `npm create @castra-kit@latest <name>` scaffolder
 examples/
   blog/           # reference app: posts, comments, users — the e2e test target
 docs/

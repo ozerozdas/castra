@@ -1,4 +1,4 @@
-import type { CastraContext } from "castra";
+import type { CastraContext } from "@castra-kit/core";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import {

@@ -21,7 +21,7 @@
     "@castra-kit/cli": "0.0.0",
     "@castra-kit/mcp": "0.0.0",
     "better-auth": "1.7.7",
-    "castra": "0.0.0",
+    "@castra-kit/core": "0.0.0",
     "hono": "4.13.13",
     "kysely": "0.29.6",
     "kysely-d1": "0.4.0"

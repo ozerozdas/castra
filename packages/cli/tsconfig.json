@@ -4,7 +4,7 @@
     // Workers types only so @castra-kit/mcp and @castra-kit/auth sources (D1Database) typecheck before a build.
     "types": ["node", "@cloudflare/workers-types"],
     "paths": {
-      "castra": ["../core/src/index.ts"],
+      "@castra-kit/core": ["../core/src/index.ts"],
       "@castra-kit/auth": ["../auth/src/index.ts"],
       "@castra-kit/mcp": ["../mcp/src/index.ts"],
       "@castra-kit/mcp/stdio": ["../mcp/src/stdio.ts"]

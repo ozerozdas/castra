@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { authenticated, defineConfig, introspect, isPublic, owner, role, type SchemaSnapshot } from "castra";
+import { authenticated, defineConfig, introspect, isPublic, owner, role, type SchemaSnapshot } from "@castra-kit/core";
 import { env } from "cloudflare:workers";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";

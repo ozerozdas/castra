@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { QueryFn } from "castra";
+import type { QueryFn } from "@castra-kit/core";
 import { run } from "../src/run.js";
 import type { OpenDatabaseFn } from "../src/local-d1.js";
 import { openLocalD1 } from "../src/local-d1.js";

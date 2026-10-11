@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["node", "@cloudflare/workers-types"],
-    "paths": { "castra": ["../core/src/index.ts"] }
+    "paths": { "@castra-kit/core": ["../core/src/index.ts"] }
   },
   "include": ["src", "test", "tsup.config.ts"]
 }

@@ -6,7 +6,7 @@ export default defineConfig({
   resolve: {
     // Run against core's and the CLI's sources so tests do not depend on a prior build of them.
     alias: {
-      castra: fileURLToPath(new URL("../core/src/index.ts", import.meta.url)),
+      "@castra-kit/core": fileURLToPath(new URL("../core/src/index.ts", import.meta.url)),
       "@castra-kit/cli": fileURLToPath(new URL("../cli/src/index.ts", import.meta.url)),
     },
   },

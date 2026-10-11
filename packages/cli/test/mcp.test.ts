@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { introspect } from "castra";
+import { introspect } from "@castra-kit/core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { openLocalD1, type OpenDatabaseFn } from "../src/local-d1.js";
 import { run } from "../src/run.js";
@@ -136,7 +136,7 @@ describe("castra mcp (stdio)", () => {
     await writeFile(join(project, "wrangler.jsonc"), BLOG_CONFIG.replace('"main": "src/index.ts",\n', ""));
     await writeFile(
       join(project, "castra.config.ts"),
-      `import { defineConfig, isPublic, owner } from "castra";
+      `import { defineConfig, isPublic, owner } from "@castra-kit/core";
 const secretColumn: string = "secret";
 export default defineConfig({
   database: "d1",

@@ -3,7 +3,7 @@
  * FR-1 (ADR 0066) an ON CONFLICT REPLACE table is reported as not writable. (FR-2 has no MCP surface:
  * the tools never execute a write, so no create response body exists there.)
  */
-import { authenticated, defineConfig, introspect, owner, type CastraContext, type SchemaSnapshot } from "castra";
+import { authenticated, defineConfig, introspect, owner, type CastraContext, type SchemaSnapshot } from "@castra-kit/core";
 import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import { castraTools, type ToolAccess, type ToolDefinition } from "../src/index.js";

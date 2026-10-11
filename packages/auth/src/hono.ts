@@ -1,4 +1,4 @@
-import type { CastraContext } from "castra";
+import type { CastraContext } from "@castra-kit/core";
 import type { Context, Hono, MiddlewareHandler } from "hono";
 import { anonymousContext, resolveContext } from "./context.js";
 import {

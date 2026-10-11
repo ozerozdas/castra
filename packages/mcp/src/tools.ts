@@ -16,7 +16,7 @@ import {
   type PolicyEngine,
   type ProblemDetails,
   type SchemaSnapshot,
-} from "castra";
+} from "@castra-kit/core";
 import type { Kysely } from "kysely";
 import { z } from "zod";
 import { asSchema, describeIdentity, ToolDenied, type AsInput, type ToolAccess } from "./identity.js";

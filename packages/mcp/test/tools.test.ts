@@ -3,7 +3,7 @@
  * Every tool: allow and deny. Hidden columns and reserved tables never leak.
  */
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import type { SchemaSnapshot } from "castra";
+import type { SchemaSnapshot } from "@castra-kit/core";
 import { beforeAll, describe, expect, it } from "vitest";
 import { localAccess, mcpDb, parseRestPath, TOOL_NAMES } from "../src/index.js";
 import { call, config, connect, count, NOTES, SECRET, setup, testDb, USERS } from "./fixtures.js";

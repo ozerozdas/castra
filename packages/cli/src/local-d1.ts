@@ -1,5 +1,5 @@
 import { dirname, join, resolve } from "node:path";
-import type { QueryFn } from "castra";
+import type { QueryFn } from "@castra-kit/core";
 
 /** An open handle on a database; `close` must always be called. */
 export interface OpenDatabase {

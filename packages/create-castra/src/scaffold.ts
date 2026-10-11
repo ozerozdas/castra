@@ -33,7 +33,7 @@ const SKIP = new Set(["node_modules", ".wrangler", "dist", ".dev.vars", ".DS_Sto
 
 /** Castra packages in the generated `package.json` and their directory in the Castra repository. */
 export const CASTRA_PACKAGES: Readonly<Record<string, string>> = {
-  castra: "packages/core",
+  "@castra-kit/core": "packages/core",
   "@castra-kit/auth": "packages/auth",
   "@castra-kit/mcp": "packages/mcp",
   "@castra-kit/cli": "packages/cli",
@@ -128,7 +128,7 @@ export function destinationName(rel: string): string {
 }
 
 /**
- * Resolves `castra`/`@castra-kit/*` dependency specifiers for a local Castra checkout.
+ * Resolves `@castra-kit/*` dependency specifiers for a local Castra checkout.
  * Throws {@link ScaffoldError} when the path is not a Castra repository.
  */
 export async function localPackageSpecs(

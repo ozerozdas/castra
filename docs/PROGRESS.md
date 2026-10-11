@@ -32,7 +32,7 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
   `/mcp` without a token 401. Hit on the way: an account token (`cfat_`) without `CLOUDFLARE_ACCOUNT_ID` was
   reported as invalid, and an `All accounts` token stopped at `multiple-accounts`; the CLI now names the
   `cfat_` case before any call and refuses `cfk_` Global API Keys; docs/cloudflare-token.md shows the token form.
-- Push, publish and package-name decisions. Nothing is pushed or published, and `npx create-castra` needs a
+- Push, publish and package-name decisions. Nothing is pushed or published, and `npm create @castra-kit@latest` needs a
   published package (ADR 0004).
 
 ## Done
@@ -97,11 +97,11 @@ Tests at sign-off (`pnpm -r test`, all passing, local D1 through the Workers poo
     `test/template-drift.test.ts` runs real `castra migrate --local` + `castra generate --check` on a scaffolded copy.
   - `castra test policies` runs the project's `vitest run policies` (ADR 0037). `castra init` deferred (ADR 0038).
   - `examples/blog`: `provision`, `doctor`, `migrate` (`--remote`), `deploy` scripts via `@castra-kit/cli`.
-  - E2E (opt-in, `pnpm --filter create-castra test:e2e`): scaffold with `--local-packages` → `pnpm install` →
+  - E2E (opt-in, `pnpm --filter @castra-kit/create test:e2e`): scaffold with `--local-packages` → `pnpm install` →
     typecheck → tests + `test:policies` → `db:migrate:local` + `castra generate --check` → `wrangler dev` on a free
     port, `/health` and `/api/notes` answer, the dev server's process group is stopped. Passed locally 2026-10-11;
     not in CI (needs the registry or a warm pnpm store).
-  - Not done: publishing (nothing is on npm, so plain `npx create-castra` does not work yet), npm-flavoured e2e,
+  - Not done: publishing (nothing is on npm, so plain `npm create @castra-kit@latest` does not work yet), npm-flavoured e2e,
     `castra init`.
 - **M2 REST API (signed off by review 3, findings fixed)**
 - **M4 MCP (signed off by review 4 + fixes)**
@@ -268,7 +268,9 @@ Other decisions:
 - `prepareWrite` does not reject primary-key changes on update; with `runGuardedWrite` the guard must be given the
   new key, otherwise the write fails closed (403).
 - Contract types: `ColumnSnapshot.notNull` for INTEGER PRIMARY KEY columns follows `PRAGMA table_info`; Schema agent should confirm.
-- npm names checked free on 2026-10-11 (`castra`, `create-castra`, `@castra-kit/auth|cli|mcp`). Before publish, create the npm org `castra-kit` (the `castra` org is taken) and re-check (ADRs 0004, 0068).
+- npm package names (ADRs 0004, 0068, 0069): everything is under the `castra-kit` org (created 2026-10-11):
+  `@castra-kit/core`, `@castra-kit/auth`, `@castra-kit/mcp`, `@castra-kit/cli`, `@castra-kit/create`. npm refused
+  `castra` as too similar to `astro`. The binary stays `castra`, the import is `@castra-kit/core`.
 - `pnpm install` emits no peer warnings, but two workerd versions are installed (wrangler vs the plugin's miniflare).
 - `isReservedTable` hard-codes the four Better Auth tables (`user`, `session`, `account`, `verification`). A Better Auth
   plugin that adds tables must also add them to `AUTH_TABLES`, or the policy engine could expose them. v0.1 uses only the

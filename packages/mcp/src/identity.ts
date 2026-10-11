@@ -1,5 +1,5 @@
 import { getRoles, type AuthDbInput } from "@castra-kit/auth";
-import { ApiError, type CastraConfig, type CastraContext, type ContextVia } from "castra";
+import { ApiError, type CastraConfig, type CastraContext, type ContextVia } from "@castra-kit/core";
 import { z } from "zod";
 import type { McpDb } from "./db.js";
 import { ANY_USER_SCOPE, TOOL_SCOPES, type McpScope, type ToolName } from "./scopes.js";

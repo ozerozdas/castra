@@ -1,4 +1,4 @@
-import { authenticated, defineConfig, isPublic, owner, role } from "castra";
+import { authenticated, defineConfig, isPublic, owner, role } from "@castra-kit/core";
 
 /**
  * Castra config for the blog example (ARCHITECTURE §7, adjusted to the blog's columns).

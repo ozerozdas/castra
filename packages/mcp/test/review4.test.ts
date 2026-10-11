@@ -3,7 +3,7 @@
  * Passing tests pin behaviour that held; tests marked BUG assert the correct behaviour and fail
  * until the finding is fixed.
  */
-import type { SchemaSnapshot } from "castra";
+import type { SchemaSnapshot } from "@castra-kit/core";
 import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import {

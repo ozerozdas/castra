@@ -62,14 +62,14 @@ describe("argument handling", () => {
   it("prints usage and exits 2 without a name", async () => {
     expect(await create([])).toBe(2);
     expect(err.join("\n")).toContain("Missing project name");
-    expect(err.join("\n")).toContain("Usage: create-castra <name>");
+    expect(err.join("\n")).toContain("Usage: npm create @castra-kit@latest <name>");
   });
 
   it("exits 2 for an invalid name, extra positionals, unknown flags, templates or package managers", async () => {
     for (const argv of [["Bad_Name"], ["a", "b"], ["app", "--bogus"], ["app", "--template", "nope"], ["app", "--package-manager", "yarn"]]) {
       err = [];
       expect(await create(argv)).toBe(2);
-      expect(err.join("\n")).toContain("Usage: create-castra");
+      expect(err.join("\n")).toContain("Usage: npm create @castra-kit");
     }
     expect(await readdir(cwd)).toEqual([]);
     expect(runs).toEqual([]);
@@ -150,7 +150,7 @@ describe("scaffolding", () => {
     await writeFile(join(template, "node_modules", "x", "index.js"), "");
     await writeFile(join(template, ".wrangler", "state", "db"), "");
     await writeFile(join(template, ".dev.vars"), "BETTER_AUTH_SECRET=real");
-    await writeFile(join(template, "package.json"), `{ "name": "castra-app", "dependencies": { "castra": "0.0.0" } }`);
+    await writeFile(join(template, "package.json"), `{ "name": "castra-app", "dependencies": { "@castra-kit/core": "0.0.0" } }`);
     await writeFile(join(template, "_gitignore"), "node_modules/\n");
     const result = await scaffold({
       name: "x",
@@ -210,7 +210,7 @@ describe("--local-packages", () => {
   it("uses file: paths for npm", async () => {
     expect(await create(["app", "--no-install", "--package-manager", "npm", "--local-packages", REPO])).toBe(0);
     const pkg = JSON.parse(await readFile(join(cwd, "app", "package.json"), "utf8"));
-    expect(pkg.dependencies.castra).toBe(`file:${join(REPO, "packages/core")}`);
+    expect(pkg.dependencies["@castra-kit/core"]).toBe(`file:${join(REPO, "packages/core")}`);
   });
 
   it("rejects a path that is not a Castra repository (exit 1, nothing written)", async () => {
@@ -220,9 +220,9 @@ describe("--local-packages", () => {
   });
 
   it("rewritePackageJson only touches Castra packages, in dependencies and devDependencies", () => {
-    const text = JSON.stringify({ name: "t", dependencies: { castra: "0", hono: "1" }, devDependencies: { "@castra-kit/cli": "0" } });
-    const pkg = JSON.parse(rewritePackageJson(text, "n", { castra: "link:/x", "@castra-kit/cli": "link:/y" }));
-    expect(pkg).toEqual({ name: "n", dependencies: { castra: "link:/x", hono: "1" }, devDependencies: { "@castra-kit/cli": "link:/y" } });
+    const text = JSON.stringify({ name: "t", dependencies: { "@castra-kit/core": "0", hono: "1" }, devDependencies: { "@castra-kit/cli": "0" } });
+    const pkg = JSON.parse(rewritePackageJson(text, "n", { "@castra-kit/core": "link:/x", "@castra-kit/cli": "link:/y" }));
+    expect(pkg).toEqual({ name: "n", dependencies: { "@castra-kit/core": "link:/x", hono: "1" }, devDependencies: { "@castra-kit/cli": "link:/y" } });
   });
 });
 
@@ -290,7 +290,7 @@ describe("--local-packages details", () => {
       await writeFile(join(repo, rel, "package.json"), JSON.stringify({ name: pkg }));
     }
     const { specs, warnings } = await localPackageSpecs(repo, "npm");
-    expect(specs.castra).toBe(`file:${join(repo, "packages/core")}`);
+    expect(specs["@castra-kit/core"]).toBe(`file:${join(repo, "packages/core")}`);
     expect(warnings).toHaveLength(Object.keys(CASTRA_PACKAGES).length);
     expect(warnings[0]).toContain("pnpm -r build");
   });
@@ -299,8 +299,8 @@ describe("--local-packages details", () => {
     const repo = join(cwd, "fake-repo");
     for (const [pkg, rel] of Object.entries(CASTRA_PACKAGES)) {
       await mkdir(join(repo, rel), { recursive: true });
-      await writeFile(join(repo, rel, "package.json"), JSON.stringify({ name: pkg === "castra" ? "not-castra" : pkg }));
+      await writeFile(join(repo, rel, "package.json"), JSON.stringify({ name: pkg === "@castra-kit/core" ? "not-castra" : pkg }));
     }
-    await expect(localPackageSpecs(repo, "pnpm")).rejects.toThrow(/expected "castra"/);
+    await expect(localPackageSpecs(repo, "pnpm")).rejects.toThrow(/expected "@castra-kit\/core"/);
   });
 });

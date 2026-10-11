@@ -1,5 +1,5 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { createPolicyEngine, problemBody, type CastraConfig, type PolicyEngine, type SchemaSnapshot } from "castra";
+import { createPolicyEngine, problemBody, type CastraConfig, type PolicyEngine, type SchemaSnapshot } from "@castra-kit/core";
 import { Hono, type Context, type Env } from "hono";
 import { auditArguments, writeAudit, type AuditEntry } from "./audit.js";
 import { mcpDb, type D1Like } from "./db.js";

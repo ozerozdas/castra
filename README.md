@@ -7,7 +7,7 @@ inspect and verify the exact policies that production enforces. Tables without a
 
 **Status: v0.1, pre-release, not published to npm.** Everything below runs from a checkout of this repository. Mocked
 tests cover the Cloudflare API calls; nothing has been run against a real Cloudflare account yet (see
-[What works and what does not](#what-works-and-what-does-not)). `npx create-castra my-app` will work only after the
+[What works and what does not](#what-works-and-what-does-not)). `npm create @castra-kit@latest my-app` will work only after the
 packages are published (names must be re-checked first, [ADR 0004](docs/adr/0004-package-names.md)). Until then,
 scaffold with `--local-packages` as shown below ([ADR 0036](docs/adr/0036-create-castra-local-packages.md)).
 
@@ -33,9 +33,9 @@ node <path-to-castra>/packages/create-castra/dist/cli.js my-app --local-packages
 cd my-app
 ```
 
-`create-castra` options: `--template <name>` (only `default`), `--package-manager pnpm|npm`, `--no-install`,
+Scaffolder options: `--template <name>` (only `default`), `--package-manager pnpm|npm`, `--no-install`,
 `--local-packages <path>`. `--local-packages` is only supported with pnpm. After publishing this becomes
-`npx create-castra my-app`.
+`npm create @castra-kit@latest my-app`.
 
 ### 2. Run locally
 
@@ -141,7 +141,7 @@ Use `pnpm run deploy`: `pnpm deploy` is a built-in pnpm command. `castra deploy`
 Example, from [examples/blog/castra.config.ts](examples/blog/castra.config.ts):
 
 ```ts
-import { authenticated, defineConfig, isPublic, owner, role } from "castra";
+import { authenticated, defineConfig, isPublic, owner, role } from "@castra-kit/core";
 
 export default defineConfig({
   database: "d1",
@@ -387,7 +387,7 @@ pnpm -r test             # unit + integration (Workers pool, local D1)
 pnpm test:policies       # policy allow/deny suite of the core package
 pnpm lint && pnpm typecheck
 pnpm --filter blog db:migrate:local && pnpm --filter blog dev
-pnpm --filter create-castra test:e2e   # scaffold + install + wrangler dev (opt-in)
+pnpm --filter @castra-kit/create test:e2e   # scaffold + install + wrangler dev (opt-in)
 ```
 
 Requires Node >= 20 and pnpm 10.

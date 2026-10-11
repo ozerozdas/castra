@@ -2,7 +2,7 @@
  * Tokens, scopes and the remote handler (`handleMcpRequest`) on real D1: auth failures, the scope
  * matrix for every tool × scope combination, and one audit row per call (including denied calls).
  */
-import type { SchemaSnapshot } from "castra";
+import type { SchemaSnapshot } from "@castra-kit/core";
 import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import {

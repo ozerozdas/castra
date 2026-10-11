@@ -1,4 +1,4 @@
-import { authenticated, defineConfig, isPublic, owner, role } from "castra";
+import { authenticated, defineConfig, isPublic, owner, role } from "@castra-kit/core";
 
 /**
  * Castra config. Every table is closed unless it has a policy here; `users` and the auth/internal tables

@@ -2,7 +2,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { QueryFn } from "castra";
+import type { QueryFn } from "@castra-kit/core";
 import { parseDeployedUrl } from "../src/commands/deploy.js";
 import { run } from "../src/run.js";
 import type { ExecCall } from "./fake-cloudflare.js";

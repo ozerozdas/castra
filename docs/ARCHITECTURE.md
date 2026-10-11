@@ -138,7 +138,7 @@ Idempotent: re-running never duplicates resources. State lives in `wrangler.json
 
 | Command | Does |
 | --- | --- |
-| `npx create-castra <name>` | Scaffold + config |
+| `npm create @castra-kit@latest <name>` | Scaffold + config |
 | `castra init` | Add to an existing Workers project |
 | `castra provision` | Create D1, KV and (if enabled) R2 |
 | `castra generate` | Schema snapshot + TS types |
@@ -156,7 +156,7 @@ print API, `/openapi.json` and `/mcp` URLs. Minimum token permissions are docume
 ## 7. Config example (API surface is a draft)
 
 ```ts
-import { defineConfig, owner, role, authenticated, isPublic } from "castra";
+import { defineConfig, owner, role, authenticated, isPublic } from "@castra-kit/core";
 
 export default defineConfig({
   database: "d1",

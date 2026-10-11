@@ -5,7 +5,7 @@
     "paths": {
       "@castra-kit/auth": ["../../packages/auth/src/index.ts"],
       "@castra-kit/mcp": ["../../packages/mcp/src/index.ts"],
-      "castra": ["../../packages/core/src/index.ts"]
+      "@castra-kit/core": ["../../packages/core/src/index.ts"]
     }
   },
   "include": ["src", "test", "env.d.ts", "vitest.config.ts", "castra.config.ts"]

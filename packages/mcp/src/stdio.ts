@@ -5,7 +5,7 @@
 import type { Readable, Writable } from "node:stream";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CastraConfig, PolicyEngine, SchemaSnapshot } from "castra";
+import type { CastraConfig, PolicyEngine, SchemaSnapshot } from "@castra-kit/core";
 import { mcpDb, type D1Like } from "./db.js";
 import { localAccess } from "./identity.js";
 import { createCastraMcpServer } from "./server.js";

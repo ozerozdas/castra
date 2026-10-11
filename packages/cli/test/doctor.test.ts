@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { QueryFn } from "castra";
+import type { QueryFn } from "@castra-kit/core";
 import { doctor, grantedGroupNames, policyCoversAccount } from "../src/commands/doctor.js";
 import type { DoctorCheck } from "../src/commands/doctor.js";
 import { run } from "../src/run.js";

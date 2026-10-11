@@ -13,7 +13,7 @@ import { main } from "../src/main.js";
  * migrate + `generate --check` with the castra CLI, then `wrangler dev` on a free port and hit /health and
  * /api/notes. Needs network access for third-party packages (or a warm pnpm store) and a prior `pnpm -r build`.
  *
- * Opt-in, not part of `pnpm -r test`: `pnpm --filter create-castra test:e2e`.
+ * Opt-in, not part of `pnpm -r test`: `pnpm --filter @castra-kit/create test:e2e`.
  */
 const E2E = process.env.CASTRA_E2E === "1";
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));

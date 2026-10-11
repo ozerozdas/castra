@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { pathToFileURL } from "node:url";
-import type { CastraConfig, SchemaSnapshot } from "castra";
+import type { CastraConfig, SchemaSnapshot } from "@castra-kit/core";
 import { CliError, readD1Target } from "../wrangler-config.js";
 
 /** Options of {@link mcp}. */

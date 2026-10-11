@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@castra-kit/mcp": "workspace:*",
-    "castra": "workspace:*",
+    "@castra-kit/core": "workspace:*",
     "jsonc-parser": "3.3.1"
   },
   "peerDependencies": {

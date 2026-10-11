@@ -1,4 +1,4 @@
-import type { CastraContext } from "castra";
+import type { CastraContext } from "@castra-kit/core";
 import { API_KEY_PREFIX, verifyApiKey } from "./api-keys.js";
 import type { CastraAuth } from "./create-auth.js";
 import { createAuthDb, type AuthDbInput } from "./db.js";

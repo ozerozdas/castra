@@ -9,7 +9,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "test:policies": "pnpm --filter castra test:policies",
+    "test:policies": "pnpm --filter @castra-kit/core test:policies",
     "lint": "eslint .",
     "typecheck": "pnpm -r typecheck",
     "site:build": "node site/build.mjs",

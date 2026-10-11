@@ -7,7 +7,7 @@ import {
   type CastraAuthVariables,
 } from "@castra-kit/auth";
 import { createMcpRoute } from "@castra-kit/mcp";
-import { createPolicyEngine, createRestRouter, withProblemHandlers, type PolicyEngine, type SchemaSnapshot } from "castra";
+import { createPolicyEngine, createRestRouter, withProblemHandlers, type PolicyEngine, type SchemaSnapshot } from "@castra-kit/core";
 import { Hono } from "hono";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";

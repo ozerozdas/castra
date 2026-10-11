@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { diffSnapshots, generateKyselyTypes, introspect } from "castra";
-import type { SchemaSnapshot } from "castra";
+import { diffSnapshots, generateKyselyTypes, introspect } from "@castra-kit/core";
+import type { SchemaSnapshot } from "@castra-kit/core";
 import type { OpenDatabaseFn } from "../local-d1.js";
 import { CliError, readD1Target } from "../wrangler-config.js";
 
