@@ -5,3 +5,7 @@ packages:
 onlyBuiltDependencies:
   - esbuild
   - workerd
+
+# GHSA esbuild < 0.28.1 (dev server file read on Windows); tsup and vite pinned 0.27.x.
+overrides:
+  esbuild@<0.28.1: 0.28.2
