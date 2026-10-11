@@ -19,6 +19,9 @@ current status.
   - It needs `Authorization: Bearer castra_mcp_...` tokens, created with
     `castra mcp token create --user <id> --scopes "schema:read data:read"`.
   - Scopes: `schema:read`, `access:check`, `data:read`, `data:read:any_user`. There are no write or admin scopes.
+  - `as` on `/mcp` is the token's user, `"anonymous"` or `{ userId }` of an existing user (the last two need
+    `data:read:any_user`). Roles always come from `_castra_roles`; explicit roles are rejected.
+  - No rate limiting on `/mcp`: add a Cloudflare rate-limiting rule in front of it.
   - Every call is written to `_castra_audit`.
 
 ## Develop
