@@ -17,6 +17,7 @@ export {
   affinityOf,
   diffSnapshots,
   generateKyselyTypes,
+  hasReplaceConflictClause,
   introspect,
   isInternalTable,
   quoteIdentifier,

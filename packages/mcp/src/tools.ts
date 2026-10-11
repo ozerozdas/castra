@@ -160,6 +160,8 @@ export function castraTools(options: CastraToolsOptions): ToolDefinition[] {
       const visible = t.snapshot.columns.filter((c) => !t.hidden.has(c.name));
       const policies: Record<string, string | null> = {};
       for (const op of OPERATIONS) policies[op] = engine.isOpen(name, op) ? String(tc[op]) : null;
+      // ADR 0066: create/update are refused for everyone on an ON CONFLICT REPLACE table.
+      const writesDisabled = t.snapshot.conflictReplace === true && (policies.create !== null || policies.update !== null);
       tables[name] = {
         primaryKey: t.snapshot.primaryKey.filter((c) => !t.hidden.has(c)),
         columns: visible.map((c) => {
@@ -188,6 +190,9 @@ export function castraTools(options: CastraToolsOptions): ToolDefinition[] {
           })
           .map((r) => ({ name: r.name, kind: r.kind, table: r.target, localColumn: r.localColumn, targetColumn: r.targetColumn })),
         ...(tc.selfColumn ? { selfColumn: tc.selfColumn } : {}),
+        ...(writesDisabled
+          ? { writesDisabled: "create and update are refused (403 unsafe_schema): the table has an ON CONFLICT REPLACE constraint" }
+          : {}),
       };
     }
     if (only !== undefined && !(only in tables)) throw notFound();
@@ -199,13 +204,19 @@ export function castraTools(options: CastraToolsOptions): ToolDefinition[] {
     if (!engine.isOpen(table, op)) return ok({ ...base, allowed: false, explanation: notExposed(table, op) });
     if (row === undefined) {
       let explanation: Explanation;
-      if (op === "create") {
-        const pk = snapshot.tables[table]!.primaryKey;
-        const target = pk.length > 0 ? Object.fromEntries(pk.map((k) => [k, "<row>"])) : "last_insert_rowid";
-        explanation = engine.writeGuard(table, "create", ctx, target).explanation;
-        explanation = { ...explanation, hiddenFields: [...explanation.hiddenFields] };
-      } else {
-        explanation = engine.explain(engine.readFilter(table, op, ctx));
+      try {
+        if (op === "create") {
+          const pk = snapshot.tables[table]!.primaryKey;
+          const target = pk.length > 0 ? Object.fromEntries(pk.map((k) => [k, "<row>"])) : "last_insert_rowid";
+          explanation = engine.writeGuard(table, "create", ctx, target).explanation;
+          explanation = { ...explanation, hiddenFields: [...explanation.hiddenFields] };
+        } else {
+          explanation = engine.explain(engine.readFilter(table, op, ctx));
+        }
+      } catch (err) {
+        // e.g. 403 unsafe_schema (ADR 0066): a refusal for every caller is a "no", not a tool error.
+        if (!(err instanceof PolicyError)) throw err;
+        return ok({ ...base, allowed: false, status: err.status, explanation: { ...err.explanation, reason: err.message } });
       }
       return ok({ ...base, allowed: explanation.allowed, explanation });
     }

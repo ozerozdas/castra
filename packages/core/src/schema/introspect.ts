@@ -48,6 +48,65 @@ function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/**
+ * Does a `CREATE TABLE` statement (as stored in `sqlite_master.sql`) carry an `ON CONFLICT REPLACE`
+ * clause that can delete rows, i.e. one on a `UNIQUE` or `PRIMARY KEY` constraint (ADR 0066)?
+ *
+ * With such a clause, an `INSERT`/`UPDATE` that collides on the constraint silently deletes the
+ * conflicting row, which no delete policy sees. The scan is conservative: it tokenizes the statement
+ * (skipping string literals, quoted identifiers and comments) and flags every `ON CONFLICT REPLACE`
+ * except the one form that never deletes a row, `NOT NULL ON CONFLICT REPLACE` (it substitutes the
+ * column default). Anything it cannot tokenize (an unterminated literal or comment) is flagged.
+ */
+export function hasReplaceConflictClause(createSql: string): boolean {
+  const tokens: string[] = [];
+  let i = 0;
+  const n = createSql.length;
+  while (i < n) {
+    const ch = createSql[i]!;
+    if (/\s/.test(ch)) {
+      i++;
+    } else if (ch === "-" && createSql[i + 1] === "-") {
+      const end = createSql.indexOf("\n", i);
+      i = end < 0 ? n : end + 1;
+    } else if (ch === "/" && createSql[i + 1] === "*") {
+      const end = createSql.indexOf("*/", i + 2);
+      if (end < 0) return true; // unterminated comment: unsure, flag
+      i = end + 2;
+    } else if (ch === "'" || ch === '"' || ch === "`" || ch === "[") {
+      const close = ch === "[" ? "]" : ch;
+      let j = i + 1;
+      for (;;) {
+        if (j >= n) return true; // unterminated literal or identifier: unsure, flag
+        if (createSql[j] === close) {
+          if (close !== "]" && createSql[j + 1] === close) {
+            j += 2; // doubled quote inside the literal
+            continue;
+          }
+          break;
+        }
+        j++;
+      }
+      tokens.push(ch === "'" ? "'literal'" : '"identifier"');
+      i = j + 1;
+    } else if (/[A-Za-z_]/.test(ch)) {
+      let j = i + 1;
+      while (j < n && /[A-Za-z0-9_$]/.test(createSql[j]!)) j++;
+      tokens.push(createSql.slice(i, j).toUpperCase());
+      i = j;
+    } else {
+      tokens.push(ch);
+      i++;
+    }
+  }
+  for (let k = 0; k + 2 < tokens.length; k++) {
+    if (tokens[k] !== "ON" || tokens[k + 1] !== "CONFLICT" || tokens[k + 2] !== "REPLACE") continue;
+    const notNull = k >= 2 && tokens[k - 2] === "NOT" && tokens[k - 1] === "NULL";
+    if (!notNull) return true;
+  }
+  return false;
+}
+
 /** A foreign key row before implicit parent columns are resolved. */
 interface RawForeignKey {
   column: string;
@@ -64,11 +123,14 @@ interface RawForeignKey {
  * Build a {@link SchemaSnapshot} from a live SQLite/D1 database.
  *
  * Sources: `sqlite_master` (tables) and the table-valued functions `pragma_table_info`,
- * `pragma_foreign_key_list`, `pragma_index_list`, `pragma_index_info` and `pragma_table_list` (STRICT flag), called with bound parameters (ADR 0009). Views and the tables matched by {@link isInternalTable}
+ * `pragma_foreign_key_list`, `pragma_index_list`, `pragma_index_info` and `pragma_table_list` (STRICT flag), plus the stored `CREATE TABLE` text (`sqlite_master.sql`, for
+ * conflict clauses), called with bound parameters (ADR 0009). Views and the tables matched by {@link isInternalTable}
  * are skipped. Output is deterministic: tables sorted by name, columns in declaration order, foreign
  * keys sorted by (column, table, referenced column), indexes sorted by name.
  *
  * Mapping notes:
+ * - `conflictReplace: true` when the stored `CREATE TABLE` text has an `ON CONFLICT REPLACE` clause
+ *   that can delete rows ({@link hasReplaceConflictClause}, ADR 0066).
  * - `notNull` follows `PRAGMA table_info`, plus single-column `INTEGER PRIMARY KEY` columns (rowid
  *   aliases), which can never read back as NULL.
  * - A foreign key that omits the parent column (`REFERENCES users`) is resolved to the parent's
@@ -166,7 +228,13 @@ async function introspectTable(
   const listRows = await query("SELECT * FROM pragma_table_list(?) WHERE schema = 'main'", [name]);
   const strict = listRows.some((r) => num(r.strict) === 1);
 
+  // The stored CREATE TABLE text is the only place SQLite keeps constraint conflict clauses.
+  const sqlRows = await query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [name]);
+  const createSql = sqlRows[0]?.sql;
+  const conflictReplace = typeof createSql === "string" && hasReplaceConflictClause(createSql);
+
   const table: TableSnapshot = { name, columns, primaryKey, foreignKeys: [], indexes };
   if (strict) table.strict = true;
+  if (conflictReplace) table.conflictReplace = true;
   return { table, foreignKeys };
 }

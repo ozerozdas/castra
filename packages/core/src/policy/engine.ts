@@ -84,7 +84,9 @@ export interface WriteGuard extends Compilable<unknown> {
 export interface PolicyEngine {
   /**
    * Is `table × op` reachable at all? False for unknown tables, tables missing from the snapshot,
-   * operations without a rule, and auth/internal tables.
+   * operations without a rule, and auth/internal tables. Create/update with a rule on a table with
+   * `conflictReplace` stay "open" (the route exists) but every call is refused with 403 `unsafe_schema`
+   * (ADR 0066); OpenAPI and MCP `describe_schema` do not advertise them.
    */
   isOpen(table: string, op: Operation): boolean;
   /**
@@ -260,6 +262,7 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     const t = info(table);
     const rule = t?.rules[op];
     if (!t || !rule) reject(404, "not_found", `${op} on "${table}" is not exposed`, table, op, ctx);
+    if (writeDisabled(t, op)) reject(403, "unsafe_schema", unsafeSchemaMessage(table, op), table, op, ctx);
     return { t, rule };
   }
 
@@ -373,6 +376,11 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
     if (!t || !rule) {
       const e = baseExplanation(table, op, ctx);
       e.reason = `${op} on "${table}" is not exposed`;
+      return { table, op, allowed: false, explanation: e };
+    }
+    if (writeDisabled(t, op)) {
+      const e = baseExplanation(table, op, ctx);
+      e.reason = unsafeSchemaMessage(table, op);
       return { table, op, allowed: false, explanation: e };
     }
     if (typeof candidateRow !== "object" || candidateRow === null || Array.isArray(candidateRow)) {
@@ -541,6 +549,18 @@ export function createPolicyEngine(options: PolicyEngineOptions): PolicyEngine {
   }
 
   return Object.freeze({ isOpen, readFilter, prepareWrite, writeGuard, checkRow, projectRow, canFilter, canReadColumn, explain });
+}
+
+/**
+ * Create and update are refused for every caller on a table with an `ON CONFLICT REPLACE` constraint:
+ * a colliding write would delete another row without the delete policy (ADR 0066). Default closed.
+ */
+function writeDisabled(t: TableInfo, op: Operation): boolean {
+  return (op === "create" || op === "update") && t.snapshot.conflictReplace === true;
+}
+
+function unsafeSchemaMessage(table: string, op: Operation): string {
+  return `${op} on "${table}" is disabled: the table has an ON CONFLICT REPLACE constraint, which would delete conflicting rows without the delete policy (ADR 0066)`;
 }
 
 function buildTableInfo(

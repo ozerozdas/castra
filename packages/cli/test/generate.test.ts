@@ -67,6 +67,28 @@ describe("castra generate", () => {
     expect(types).toContain("body: string | null;");
   });
 
+  it("records conflictReplace and warns for an ON CONFLICT REPLACE table (ADR 0066)", async () => {
+    const base = fakeDb();
+    const replaceDb: QueryFn = async (sql, params = []) =>
+      sql.startsWith("SELECT sql FROM sqlite_master")
+        ? [{ sql: "CREATE TABLE notes (id TEXT PRIMARY KEY, body TEXT UNIQUE ON CONFLICT REPLACE)" }]
+        : base(sql, params);
+    expect(await exec(["generate", "--local"], opener(replaceDb))).toBe(0);
+    const schema = JSON.parse(await readFile(join(dir, "castra", "schema.json"), "utf8"));
+    expect(schema.tables.notes.conflictReplace).toBe(true);
+    expect(err.join("\n")).toMatch(/table "notes" has ON CONFLICT REPLACE.*unsafe_schema/);
+  });
+
+  it("does not flag or warn for an ordinary table", async () => {
+    const base = fakeDb();
+    const plainDb: QueryFn = async (sql, params = []) =>
+      sql.startsWith("SELECT sql FROM sqlite_master") ? [{ sql: "CREATE TABLE notes (id TEXT PRIMARY KEY, body TEXT UNIQUE)" }] : base(sql, params);
+    expect(await exec(["generate", "--local"], opener(plainDb))).toBe(0);
+    const schema = JSON.parse(await readFile(join(dir, "castra", "schema.json"), "utf8"));
+    expect(schema.tables.notes).not.toHaveProperty("conflictReplace");
+    expect(err).toEqual([]);
+  });
+
   it("honours --out and --config", async () => {
     await writeFile(join(dir, "custom.jsonc"), WRANGLER);
     expect(await exec(["generate", "--config", "custom.jsonc", "--out", "gen/dir"], opener(fakeDb()))).toBe(0);

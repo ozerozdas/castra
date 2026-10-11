@@ -106,11 +106,13 @@ export function generateOpenApi(options: OpenApiOptions): JsonObject {
     const t = model.tables.get(name)!;
     // Advertise exactly what REST serves (plan.ts): creates need a single-column primary key; item
     // routes (/{id}) also need a key column that is not hidden (a hidden key always answers 404).
+    // Create/update on an ON CONFLICT REPLACE table are always refused (403 unsafe_schema, ADR 0066).
     const itemPk = t.pk !== undefined && !t.hidden.has(t.pk.name);
+    const writable = t.snapshot.conflictReplace !== true;
     const open = {
       read: engine.isOpen(name, "read"),
-      create: engine.isOpen(name, "create") && t.pk !== undefined,
-      update: engine.isOpen(name, "update") && itemPk,
+      create: engine.isOpen(name, "create") && t.pk !== undefined && writable,
+      update: engine.isOpen(name, "update") && itemPk && writable,
       delete: engine.isOpen(name, "delete") && itemPk,
     };
     if (!open.read && !open.create && !open.update && !open.delete) continue;

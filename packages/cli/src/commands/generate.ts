@@ -85,6 +85,15 @@ export async function generate(options: GenerateOptions, deps: GenerateDeps): Pr
     await db.close();
   }
 
+  for (const t of Object.values(live.tables)) {
+    if (t.conflictReplace) {
+      deps.error(
+        `warning: table "${t.name}" has ON CONFLICT REPLACE on a UNIQUE or PRIMARY KEY constraint; ` +
+          "Castra refuses every create and update on it (403 unsafe_schema, ADR 0066). Use the default conflict clause (ABORT).",
+      );
+    }
+  }
+
   const committedText = await readOptional(schemaPath);
   const committed = committedText === null ? null : parseSnapshot(committedText, schemaPath);
 

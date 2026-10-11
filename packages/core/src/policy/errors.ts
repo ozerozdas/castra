@@ -40,7 +40,12 @@ export type PolicyErrorCode =
   | "hidden_column"
   | "server_column"
   /** The guarded write's check failed against the stored row; the batch was rolled back (ADR 0050). */
-  | "write_check_failed";
+  | "write_check_failed"
+  /**
+   * Create/update refused for every caller: the table has an `ON CONFLICT REPLACE` constraint that
+   * would delete conflicting rows without the delete policy (`TableSnapshot.conflictReplace`, ADR 0066).
+   */
+  | "unsafe_schema";
 
 /**
  * A request rejected by the policy engine. `status` maps to the HTTP response; `explanation`

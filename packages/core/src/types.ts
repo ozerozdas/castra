@@ -71,6 +71,13 @@ export interface TableSnapshot {
    * Omitted for ordinary tables, so snapshots of non-STRICT schemas are unchanged (ADR 0050).
    */
   strict?: true;
+  /**
+   * `true` when a `UNIQUE` or `PRIMARY KEY` constraint of the table has `ON CONFLICT REPLACE` (detected
+   * conservatively from the stored `CREATE TABLE` text). A colliding insert or update would silently
+   * delete the other row without the delete policy, so the engine refuses every create and update on
+   * such a table (403 `unsafe_schema`, ADR 0066). Omitted for ordinary tables.
+   */
+  conflictReplace?: true;
 }
 
 /**

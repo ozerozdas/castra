@@ -60,6 +60,10 @@ function diffTable(left: TableSnapshot, right: TableSnapshot, out: string[]): vo
     out.push(`${scope}STRICT changed from ${left.strict === true} to ${right.strict === true}`);
   }
 
+  if ((left.conflictReplace === true) !== (right.conflictReplace === true)) {
+    out.push(`${scope}ON CONFLICT REPLACE changed from ${left.conflictReplace === true} to ${right.conflictReplace === true}`);
+  }
+
   if (left.primaryKey.join("\0") !== right.primaryKey.join("\0")) {
     out.push(`${scope}primary key changed from (${left.primaryKey.join(", ")}) to (${right.primaryKey.join(", ")})`);
   }
