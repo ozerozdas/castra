@@ -237,7 +237,7 @@ describe("dotfiles and secrets", () => {
   it(".gitignore ignores .dev.vars, local state and build output", async () => {
     expect(await create(["app", "--no-install"])).toBe(0);
     const lines = (await readFile(join(cwd, "app", ".gitignore"), "utf8")).split("\n");
-    for (const entry of [".dev.vars", ".wrangler/", "node_modules/", "dist/"]) expect(lines).toContain(entry);
+    for (const entry of [".dev.vars*", ".env*", "!.dev.vars.example", ".wrangler/", "node_modules/", "dist/"]) expect(lines).toContain(entry);
   });
 
   it(".dev.vars.example holds no usable secret: its placeholder is rejected by @castra/auth", async () => {
