@@ -538,7 +538,11 @@ function rereadPlan(engine: PolicyEngine, t: TableModel, ctx: CastraContext) {
   };
 }
 
-/** The projected re-read row, or `{ <pk>: id }` when the caller cannot read the written row. */
+/**
+ * The projected re-read row. When the caller cannot read the written row, `{ <pk>: id }` if the
+ * caller may read the key column (`canReadColumn`), otherwise `{}`: a hidden or role-gated key
+ * (e.g. a rowid that also counts the table's rows) never leaves the server.
+ */
 function rereadBody(
   engine: PolicyEngine,
   t: TableModel,
@@ -548,7 +552,9 @@ function rereadBody(
 ): Record<string, unknown> {
   const row = rows?.[0];
   if (row) return jsonSafe(engine.projectRow(t.name, ctx, row));
-  return { [t.pk!.name]: typeof id === "bigint" ? Number(id) : id };
+  const pk = t.pk!.name;
+  if (!engine.canReadColumn(t.name, pk, ctx)) return {};
+  return { [pk]: typeof id === "bigint" ? Number(id) : id };
 }
 
 function planCreate(engine: PolicyEngine, model: ApiModel, t: TableModel, body: Record<string, unknown>, ctx: CastraContext): Plan {
