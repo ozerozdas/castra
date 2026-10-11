@@ -30,3 +30,18 @@ first deploy). The schema drift check runs only when a local D1 exists (`.wrangl
 - A token with only Read permissions passes doctor as `readable` and fails later at create time; provision and
   deploy then raise a `missing-permission` problem naming the exact group, so the fix is still obvious.
 - Users who want a precise report can temporarily add "API Tokens Read" to the token.
+
+## Amendment (2026-10-11): account scope, deny policies, probe always runs
+
+The M5 review (R5-1) found that step 1 trusted every allow policy, whatever account it was scoped to, and ignored
+deny policies, so a token whose Edit rows were granted on another account (or explicitly denied) was reported `ok`.
+
+- A policy counts only if its `resources` contain `com.cloudflare.api.account.<accountId>` or
+  `com.cloudflare.api.account.*` with the value `"*"` (format from
+  https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/, checked 2026-10-11). A nested object
+  value selects zones inside the account and does not count; zone and user keys never count. Cloudflare documents
+  no organization-level resource key for token policies, so none is recognised.
+- Deny policies covering the account remove their groups (Cloudflare evaluates explicit deny before allow).
+- The read-only probe now always runs. A 401/403 is `missing` even when the policies say Edit. When the probe
+  succeeds, the policies decide: Edit → `ok`, Read only → `missing`, neither (a format doctor does not parse) →
+  `readable`. Without readable policies the behaviour is unchanged (`readable`).

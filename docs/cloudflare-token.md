@@ -42,6 +42,11 @@ Doctor only sends `GET` requests. It verifies the token (`/user/tokens/verify`, 
 `/accounts/{id}/tokens/verify` for account-owned tokens), probes each permission with a read-only list call, and
 prints `Check | Status | How to fix`. Exit code 1 means something required is missing.
 
+A refused probe (401/403) is always `missing`. If the token can read its own policies ("API Tokens Read"), doctor
+then tells Edit from Read, counting only policies whose resources cover the target account
+(`com.cloudflare.api.account.<id>` or `com.cloudflare.api.account.*`) and removing groups that a deny policy on
+that account lists (ADR 0033, amendment 2026-10-11).
+
 ## Sources (verified 2026-10-10)
 
 - Permission group names: https://developers.cloudflare.com/fundamentals/api/reference/permissions/
@@ -50,6 +55,8 @@ prints `Check | Status | How to fix`. Exit code 1 means something required is mi
 - Token verify (user): https://developers.cloudflare.com/api/resources/user/subresources/tokens/methods/verify/
 - Token verify (account-owned): https://developers.cloudflare.com/api/resources/accounts/subresources/tokens/methods/verify/
 - Token details / policies ("API Tokens Read"): https://developers.cloudflare.com/api/resources/user/subresources/tokens/methods/get/
+- Token policy `resources` keys and deny-before-allow evaluation (checked 2026-10-11):
+  https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/
 - D1 list/create/query ("D1 Read" or "D1 Write"):
   https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/list/,
   https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/create/,
