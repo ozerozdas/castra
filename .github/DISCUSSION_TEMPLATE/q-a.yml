@@ -1,0 +1,18 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [Troubleshooting](https://github.com/ozerozdas/castra/wiki/Troubleshooting) page first.
+        Never paste an API token, MCP token or `BETTER_AUTH_SECRET`.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do, and what happens instead? Include the problem `type` from the error response.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Castra version
+      placeholder: "@castra-kit/core 0.1.0"
