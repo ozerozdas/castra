@@ -52,6 +52,9 @@ export const spawnExec: ExecFn = (command, args, options) =>
       if (echo) process.stderr.write(chunk);
     });
     child.on("error", reject);
+    // A child may exit before reading its stdin (EPIPE / ERR_STREAM_DESTROYED). That is not a failure of ours:
+    // the child's exit code (from "close") is the result, so the stdin error is swallowed instead of crashing.
+    child.stdin.on("error", () => {});
     child.on("close", (code) => resolvePromise({ code: code ?? 1, stdout, stderr }));
     child.stdin.end(options.input ?? "");
   });
