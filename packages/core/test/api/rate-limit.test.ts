@@ -57,6 +57,20 @@ describe("rateLimitWrites (ADR 0072)", () => {
     expect(keys).toEqual(["one.dev:1.1.1.1", "two.dev:1.1.1.1"]);
   });
 
+  it("keys by options.key when it returns one, else by IP (ADR 0078)", async () => {
+    const { limiter, keys } = fakeLimiter(1);
+    const a = new Hono();
+    a.use("*", rateLimitWrites(() => limiter, { key: (c) => c.req.header("x-user") }));
+    a.all("*", (c) => c.text("ok"));
+    const as = (user?: string) => ({ method: "POST", headers: { ...ip("1.1.1.1"), ...(user ? { "x-user": user } : {}) } });
+    expect((await a.request("https://x.dev/api/notes", as("u1"))).status).toBe(200);
+    expect((await a.request("https://x.dev/api/notes", as("u2"))).status).toBe(200);
+    expect((await a.request("https://x.dev/api/notes", as())).status).toBe(200);
+    expect((await a.request("https://x.dev/api/notes", as("u1"))).status).toBe(429);
+    expect((await a.request("https://x.dev/api/notes", as())).status).toBe(429);
+    expect(keys).toEqual(["x.dev:id:u1", "x.dev:id:u2", "x.dev:1.1.1.1", "x.dev:id:u1", "x.dev:1.1.1.1"]);
+  });
+
   it("does not limit without a client IP or without a binding; a missing binding warns once (ADR 0077)", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { limiter, keys } = fakeLimiter(0);

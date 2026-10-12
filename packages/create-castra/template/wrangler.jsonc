@@ -18,5 +18,9 @@
   ],
   // Writes (sign-in, sign-up, /mcp, table writes) per client IP; reads are not limited (ADR 0072).
   // namespace_id is any integer; apps on one account may share it, the key includes the host.
-  "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } }]
+  // AUTH_RATE_LIMITER is the tighter bucket for /api/auth/* writes (sign-in, sign-up), ADR 0078.
+  "ratelimits": [
+    { "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+    { "name": "AUTH_RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }
+  ]
 }

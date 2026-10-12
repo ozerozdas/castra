@@ -16,7 +16,7 @@ pnpm test:policies               # only the policy allow/deny tests
 ## Rate limiting
 
 Writes (sign-in, sign-up, `/mcp`, table writes) are limited to 60 per minute per IP by the `RATE_LIMITER` binding in
-`wrangler.jsonc`. Reads are not. Tuning and a WAF rule for reads: Castra docs, `docs/rate-limiting.md`.
+`wrangler.jsonc`; sign-in and sign-up also to 10 per minute by `AUTH_RATE_LIMITER`. Reads are not. Tuning and a WAF rule for reads: Castra docs, `docs/rate-limiting.md`.
 
 ## Deploy (5 commands)
 

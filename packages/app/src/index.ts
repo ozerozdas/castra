@@ -2,7 +2,7 @@
  * `@castra-kit/app`: the Castra Worker app in one call (ADR 0077). Projects keep only app-specific code in
  * `src/index.ts`; middleware added by a release ships with a package bump.
  */
-import { authRoutes, castraContext, type AuthEnv, type CastraAuthOptions, type CastraAuthVariables } from "@castra-kit/auth";
+import { authRoutes, castraContext, DEFAULT_AUTH_BASE_PATH, type AuthEnv, type CastraAuthOptions, type CastraAuthVariables } from "@castra-kit/auth";
 import {
   createPolicyEngine,
   createRestRouter,
@@ -14,7 +14,7 @@ import {
   type SchemaSnapshot,
 } from "@castra-kit/core";
 import { createMcpRoute } from "@castra-kit/mcp";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
 
@@ -27,6 +27,8 @@ export interface CastraBindings extends AuthEnv {
   DB: D1Database;
   /** Workers Rate Limiting binding (`ratelimits` in wrangler.jsonc, ADR 0072). */
   RATE_LIMITER?: RateLimiterLike;
+  /** Tighter bucket for `/api/auth/*` writes such as sign-in and sign-up, on top of `RATE_LIMITER` (ADR 0078). */
+  AUTH_RATE_LIMITER?: RateLimiterLike;
 }
 
 /** Hono environment of the app: the bindings plus `ctx` / `auth` set by the request context. */
@@ -46,8 +48,12 @@ export interface CastraAppOptions<B extends CastraBindings = CastraBindings> {
   auth?: CastraAuthOptions;
   /** `info` of `/openapi.json` and the welcome route. */
   openapi?: { title?: string; version?: string };
-  /** `false` turns off the per-IP write limit. */
-  rateLimit?: false | { retryAfterSeconds?: number };
+  /**
+   * Write limits (ADRs 0072, 0078). `false` turns them off. `key` keys the general limit by something other than
+   * the client IP once the request context is set, e.g. `(c) => c.get("ctx").user?.id`; `undefined` falls back to
+   * the IP. Auth routes and `/mcp` are always keyed by IP.
+   */
+  rateLimit?: false | { retryAfterSeconds?: number; key?: (c: Context<CastraAppEnv<B>>) => string | undefined };
   /** `false` does not mount `/mcp`. */
   mcp?: false;
   /** Runs right after the problem handlers, before everything else (CORS, logging). */
@@ -70,8 +76,9 @@ function kyselyFor(d1: D1Database): Kysely<any> {
 }
 
 /**
- * Builds the Worker app, in order: problem+json handlers, `before`, the write rate limit, `GET /health`, `/mcp`,
- * Better Auth under `/api/auth/*`, the request context, `GET /me`, `routes`, then the REST router
+ * Builds the Worker app, in order: problem+json handlers, `before`, the write rate limits, `GET /health`, `/mcp`,
+ * Better Auth under `/api/auth/*`, the request context (then the keyed write limit, if any), `GET /me`, `routes`,
+ * then the REST router
  * (`/`, `/openapi.json`, `/api/<table>`).
  */
 export function createCastraApp<B extends CastraBindings = CastraBindings>(options: CastraAppOptions<B>): Hono<CastraAppEnv<B>> {
@@ -84,7 +91,14 @@ export function createCastraApp<B extends CastraBindings = CastraBindings>(optio
   const app = withProblemHandlers(new Hono<E>());
   options.before?.(app);
 
-  if (options.rateLimit !== false) app.use("*", rateLimitWrites<E>((c) => c.env.RATE_LIMITER, options.rateLimit?.retryAfterSeconds));
+  const rl = options.rateLimit === false ? undefined : (options.rateLimit ?? {});
+  const limit = (binding: "RATE_LIMITER" | "AUTH_RATE_LIMITER", key?: (c: Context<E>) => string | undefined) =>
+    rateLimitWrites<E>((c) => c.env[binding], { retryAfterSeconds: rl?.retryAfterSeconds, key, binding });
+  if (rl) {
+    // Auth writes also pass their own, tighter bucket; with a `key`, the general limit moves after the context.
+    app.use(`${auth.basePath ?? DEFAULT_AUTH_BASE_PATH}/*`, limit("AUTH_RATE_LIMITER"));
+    app.use(rl.key ? "/mcp" : "*", limit("RATE_LIMITER"));
+  }
 
   app.get("/health", (c) => c.json({ ok: true }));
 
@@ -93,6 +107,7 @@ export function createCastraApp<B extends CastraBindings = CastraBindings>(optio
 
   authRoutes(app, auth);
   app.use("*", castraContext<E>(auth));
+  if (rl?.key) app.use("*", limit("RATE_LIMITER", rl.key));
 
   app.get("/me", (c) => {
     const ctx = c.get("ctx");

@@ -5,9 +5,9 @@ New projects limit **writes** per client IP out of the box ([ADR 0072](adr/0072-
 
 | What | Limited by default | How |
 | --- | --- | --- |
-| Sign-in, sign-up and other `POST /api/auth/*` | yes | `rateLimitWrites` + `RATE_LIMITER` binding |
-| `/mcp` | yes | same |
-| Table writes (`POST`, `PATCH`, `DELETE /api/*`) | yes | same |
+| Sign-in, sign-up and other `POST /api/auth/*` | yes, 10/min | `AUTH_RATE_LIMITER` binding, then `RATE_LIMITER` too ([ADR 0078](adr/0078-auth-bucket-and-rate-limit-key.md)) |
+| `/mcp` | yes, 60/min | `RATE_LIMITER` binding |
+| Table writes (`POST`, `PATCH`, `DELETE /api/*`) and custom routes | yes, 60/min | `RATE_LIMITER` binding |
 | Reads (`GET`) | no | WAF rule on a custom domain (below), or cache |
 
 Over the limit the API answers `429` with the problem type
@@ -18,8 +18,13 @@ Over the limit the API answers `429` with the problem type
 `wrangler.jsonc`:
 
 ```jsonc
-"ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } }]
+"ratelimits": [
+  { "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+  { "name": "AUTH_RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }
+]
 ```
+
+Use a different `namespace_id` per binding, or the two share counters.
 
 `createCastraApp` (from `@castra-kit/app`) applies `rateLimitWrites` over that binding before every other route.
 Without the binding it logs one warning per isolate and does not limit. `rateLimit: false` turns it off.
@@ -32,6 +37,20 @@ Without the binding it logs one warning per isolate and does not limit. `rateLim
 - Many users behind one address (an office, a carrier NAT) share a budget. Raise `limit` if real users see 429s.
 - Requests without `cf-connecting-ip` are not limited. Outside tests this does not happen: Cloudflare sets the header and
   clients cannot override it.
+
+## Per user instead of per IP
+
+Users behind one address share the IP budget. To key table writes and custom routes by user once they are signed in:
+
+```ts
+export default createCastraApp<Env>({
+  // ...
+  rateLimit: { key: (c) => c.get("ctx").user?.id },
+});
+```
+
+Anonymous requests still fall back to the IP. `/mcp` and `/api/auth/*` stay keyed by IP. With `key`, the general limit
+runs after the session lookup instead of before it.
 
 ## Projects created before 0.1.2
 

@@ -44,6 +44,36 @@ describe("createCastraApp (ADR 0077)", () => {
     expect((await off.request("/api/notes", post, { ...env, RATE_LIMITER: deny })).status).not.toBe(429);
   });
 
+  it("auth writes use AUTH_RATE_LIMITER and the general bucket; other writes only the general one (ADR 0078)", async () => {
+    const calls: string[] = [];
+    const record = (name: string, success = true): RateLimiterLike => ({
+      limit: async ({ key }) => (calls.push(`${name} ${key}`), { success }),
+    });
+    const app = createCastraApp(options);
+    const bindings = { ...env, RATE_LIMITER: record("general"), AUTH_RATE_LIMITER: record("auth") };
+    await app.request("http://x.dev/api/auth/sign-in/email", post, bindings);
+    expect(calls).toEqual(["auth x.dev:1.1.1.1", "general x.dev:1.1.1.1"]);
+    calls.length = 0;
+    await app.request("http://x.dev/api/notes", post, bindings);
+    expect(calls).toEqual(["general x.dev:1.1.1.1"]);
+    const denied = { ...bindings, AUTH_RATE_LIMITER: record("auth", false) };
+    expect((await app.request("http://x.dev/api/auth/sign-in/email", post, denied)).status).toBe(429);
+  });
+
+  it("rateLimit.key keys table writes after the request context, falling back to the IP; /mcp stays per IP", async () => {
+    const calls: string[] = [];
+    const general: RateLimiterLike = { limit: async ({ key }) => (calls.push(key), { success: true }) };
+    const app = createCastraApp({
+      ...options,
+      rateLimit: { key: (c) => (c.get("ctx").via === "anonymous" ? undefined : c.get("ctx").user?.id) },
+      routes: (a) => a.post("/whoami", (c) => c.json({ via: c.get("ctx").via })),
+    });
+    const bindings = { ...env, RATE_LIMITER: general };
+    expect(await (await app.request("http://x.dev/whoami", post, bindings)).json()).toEqual({ via: "anonymous" });
+    await app.request("http://x.dev/mcp", post, bindings);
+    expect(calls).toEqual(["x.dev:1.1.1.1", "x.dev:1.1.1.1"]);
+  });
+
   it("mounts /mcp unless mcp: false", async () => {
     expect((await createCastraApp(options).request("/mcp", { method: "POST" }, env)).status).toBe(401);
     expect((await createCastraApp({ ...options, mcp: false }).request("/mcp", { method: "POST" }, env)).status).toBe(404);

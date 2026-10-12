@@ -10,7 +10,11 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
   `routes` hooks and `rateLimit: false` / `mcp: false`. The template's and `examples/blog`'s `src/index.ts` are now a
   single call, so middleware added later ships with a package bump
   ([ADR 0077](docs/adr/0077-create-castra-app.md), #19). Existing projects: [docs/upgrading/0.2.0.md](docs/upgrading/0.2.0.md).
-- `rateLimitWrites` logs one warning per isolate when a write from Cloudflare finds no `RATE_LIMITER` binding.
+- `rateLimitWrites` logs one warning per isolate when a write from Cloudflare finds no binding.
+- Sign-in, sign-up and other `/api/auth/*` writes have their own bucket, `AUTH_RATE_LIMITER` (10/min per IP in the
+  template), on top of the general one. `rateLimit: { key }` keys table writes by user (or anything in the request
+  context), falling back to the IP; `rateLimitWrites` takes `{ retryAfterSeconds, key, binding }`
+  ([ADR 0078](docs/adr/0078-auth-bucket-and-rate-limit-key.md), #18).
 - `castra destroy` deletes what `castra deploy` created and `wrangler.jsonc` records (Worker, D1, `CACHE` KV, R2),
   after a plan and typing the Worker name (`--confirm` in scripts, `--dry-run` to only list). D1 is exported with
   `wrangler d1 export` first unless `--skip-backup`. Recorded ids are reset to placeholders, so a rerun deletes
