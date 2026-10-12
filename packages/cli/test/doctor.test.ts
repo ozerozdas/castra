@@ -21,9 +21,9 @@ const noDb: OpenDatabaseFn = async () => {
   throw new Error("doctor should not open a database without local state");
 };
 
-const runDoctor = (opts: { env?: Record<string, string>; storage?: boolean; openDatabase?: OpenDatabaseFn } = {}) =>
+const runDoctor = (opts: { env?: Record<string, string>; storage?: boolean; remote?: boolean; openDatabase?: OpenDatabaseFn } = {}) =>
   doctor(
-    { cwd: dir, config: "wrangler.jsonc", storage: opts.storage },
+    { cwd: dir, config: "wrangler.jsonc", storage: opts.storage, remote: opts.remote },
     {
       fetch: cf.fetch,
       env: opts.env ?? { CLOUDFLARE_API_TOKEN: FAKE_TOKEN },
@@ -140,6 +140,72 @@ describe("castra doctor", () => {
     const second = await runDoctor({ openDatabase: open });
     expect(row(second.checks, "Schema snapshot (local D1)")?.status).toBe("ok");
     expect(second.code).toBe(0);
+  });
+
+  it("with --remote, checks drift against the deployed D1 over the API and returns the drift lines (ADR 0079)", async () => {
+    cf.d1Query = (sql) => {
+      if (sql.startsWith("SELECT name FROM sqlite_master")) return [{ name: "notes" }];
+      if (sql === 'PRAGMA table_info("notes")') return [{ cid: 0, name: "id", type: "TEXT", notnull: 1, dflt_value: null, pk: 1 }];
+      return [];
+    };
+    const open: OpenDatabaseFn = async () => ({ query: async (sql, params) => cf.d1Query(sql, params ?? []), close: async () => {} });
+    expect(await run(["generate"], { cwd: dir, log: () => {}, error: () => {}, openDatabase: open })).toBe(0);
+    const same = await runDoctor({ remote: true });
+    expect(row(same.checks, "Schema snapshot (remote D1)")?.status).toBe("ok");
+    expect(cf.calls.some((c) => c.path.endsWith("/d1/database/6f1c0a3e-1111-4000-8000-000000000001/query"))).toBe(true);
+
+    cf.d1Query = () => []; // the deployed database has no tables
+    const drifted = await runDoctor({ remote: true });
+    expect(drifted.code).toBe(1);
+    expect(row(drifted.checks, "Schema snapshot (remote D1)")).toMatchObject({ status: "missing" });
+    expect(row(drifted.checks, "Schema snapshot (remote D1)")!.fix).toContain("castra migrate --remote");
+    expect(drifted.drift.join("\n")).toContain("notes");
+  });
+
+  it("skips remote drift until the database is provisioned or the token works", async () => {
+    await writeFile(join(dir, "wrangler.jsonc"), BLOG_CONFIG);
+    expect(row((await runDoctor({ remote: true })).checks, "Schema snapshot (remote D1)")).toMatchObject({ status: "skipped" });
+    await writeFile(join(dir, "wrangler.jsonc"), PROVISIONED);
+    expect(row((await runDoctor({ remote: true, env: {} })).checks, "Schema snapshot (remote D1)")?.fix).toBe("Fix the token first.");
+  });
+
+  it("warns about missing rate-limit bindings without failing (ADR 0079)", async () => {
+    const without = await runDoctor();
+    expect(without.code).toBe(0);
+    expect(row(without.checks, "Rate limit binding AUTH_RATE_LIMITER")).toMatchObject({ status: "warn", required: false });
+    expect(row(without.checks, "Rate limit binding AUTH_RATE_LIMITER")!.fix).toContain('"namespace_id": "1002"');
+    await writeFile(
+      join(dir, "wrangler.jsonc"),
+      PROVISIONED.replace(`  "d1_databases": [`, `  "ratelimits": [{ "name": "RATE_LIMITER" }, { "name": "AUTH_RATE_LIMITER" }],\n  "d1_databases": [`),
+    );
+    const withBoth = await runDoctor();
+    expect(row(withBoth.checks, "Rate limit binding RATE_LIMITER")?.status).toBe("ok");
+    expect(row(withBoth.checks, "Rate limit binding AUTH_RATE_LIMITER")?.status).toBe("ok");
+  });
+
+  it("fails on mixed @castra-kit/* versions, passes when aligned, warns when not installed (ADR 0079)", async () => {
+    const install = async (versions: Record<string, string>) => {
+      for (const [name, version] of Object.entries(versions)) {
+        await mkdir(join(dir, "node_modules", name), { recursive: true });
+        await writeFile(join(dir, "node_modules", name, "package.json"), JSON.stringify({ name, version }));
+      }
+    };
+    expect(row((await runDoctor()).checks, "Castra packages")).toBeUndefined(); // no package.json
+    await writeFile(
+      join(dir, "package.json"),
+      JSON.stringify({ dependencies: { "@castra-kit/app": "^0.2.0", hono: "4" }, devDependencies: { "@castra-kit/cli": "^0.2.0" } }),
+    );
+    expect(row((await runDoctor()).checks, "Castra packages")).toMatchObject({ status: "warn", required: false });
+
+    await install({ "@castra-kit/app": "0.2.0", "@castra-kit/cli": "0.1.2" });
+    const mixed = await runDoctor();
+    expect(mixed.code).toBe(1);
+    expect(row(mixed.checks, "Castra packages")!.fix).toContain("pnpm add @castra-kit/app@0.2.0 @castra-kit/cli@0.2.0");
+
+    await install({ "@castra-kit/cli": "0.2.0" });
+    const aligned = await runDoctor();
+    expect(row(aligned.checks, "Castra packages (0.2.0)")?.status).toBe("ok");
+    expect(aligned.code).toBe(0);
   });
 
   it("is wired into the CLI and returns the exit code", async () => {

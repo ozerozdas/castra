@@ -9,6 +9,7 @@ import type { OpenDatabaseFn } from "../local-d1.js";
 import { ProblemError, TOKEN_DOCS } from "../problems.js";
 import { isPlaceholderId, readWranglerConfig } from "../wrangler-config.js";
 import type { WranglerConfig } from "../wrangler-config.js";
+import { remoteD1Opener } from "../remote-d1.js";
 import { generate } from "./generate.js";
 import { KV_BINDING } from "./provision.js";
 import type { CloudflareDeps } from "./provision.js";
@@ -22,6 +23,16 @@ export interface DoctorOptions {
   storage?: boolean;
   /** Snapshot directory for the drift check (default `castra`). */
   out?: string;
+  /** Compare the snapshot with the deployed D1 (D1 HTTP API) instead of the local one (ADR 0079). */
+  remote?: boolean;
+}
+
+/** What {@link doctor} found. */
+export interface DoctorResult {
+  code: number;
+  checks: DoctorCheck[];
+  /** Schema drift lines (snapshot vs D1); empty when there is none or the check did not run. */
+  drift: string[];
 }
 
 /** Side effects of `castra doctor`. */
@@ -175,6 +186,53 @@ async function checkPermission(
   return row("readable", `Read access works; Edit cannot be verified read-only. Make sure the token has ${spec.name}.`);
 }
 
+/**
+ * Rate-limit bindings `createCastraApp` reads (ADRs 0072, 0078), with the `ratelimits` entry new projects get.
+ * A release that adds a binding adds it here and to its upgrade note.
+ */
+export const RATE_LIMIT_BINDINGS: Readonly<Record<string, string>> = {
+  RATE_LIMITER: `{ "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } }`,
+  AUTH_RATE_LIMITER: `{ "name": "AUTH_RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }`,
+};
+
+/**
+ * Every `@castra-kit/*` dependency of the project is installed at one version (ADR 0079). `null` without a
+ * package.json or Castra dependencies.
+ */
+export async function packageCheck(projectDir: string): Promise<DoctorCheck | null> {
+  let deps: string[];
+  try {
+    const pkg = JSON.parse(await readFile(join(projectDir, "package.json"), "utf8")) as Record<string, Record<string, string> | undefined>;
+    deps = [...new Set([...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})])]
+      .filter((d) => d.startsWith("@castra-kit/"))
+      .sort();
+  } catch {
+    return null;
+  }
+  if (deps.length === 0) return null;
+  const versions = new Map<string, string | undefined>();
+  for (const d of deps) {
+    try {
+      versions.set(d, (JSON.parse(await readFile(join(projectDir, "node_modules", d, "package.json"), "utf8")) as { version?: string }).version);
+    } catch {
+      versions.set(d, undefined);
+    }
+  }
+  const missing = deps.filter((d) => versions.get(d) === undefined);
+  if (missing.length > 0) {
+    return { check: "Castra packages", status: "warn", required: false, fix: `Not installed: ${missing.join(", ")}. Run your package manager's install.` };
+  }
+  const distinct = [...new Set(versions.values())] as string[];
+  if (distinct.length === 1) return { check: `Castra packages (${distinct[0]})`, status: "ok", required: true, fix: "" };
+  const newest = distinct.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0]!;
+  return {
+    check: "Castra packages",
+    status: "missing",
+    required: true,
+    fix: `Mixed versions (${deps.map((d) => `${d}@${versions.get(d)}`).join(", ")}). Align them: \`pnpm add ${deps.map((d) => `${d}@${newest}`).join(" ")}\` (or npm install).`,
+  };
+}
+
 function bindingChecks(config: WranglerConfig, storage: boolean): DoctorCheck[] {
   const fix = "Run `castra provision`.";
   const rows: DoctorCheck[] = [];
@@ -201,6 +259,15 @@ function bindingChecks(config: WranglerConfig, storage: boolean): DoctorCheck[] 
       fix: config.r2.some((r) => r.bucketName) ? "" : `No r2_buckets entry. Run \`castra provision --storage\`.`,
     });
   }
+  for (const [name, entry] of Object.entries(RATE_LIMIT_BINDINGS)) {
+    const present = config.ratelimits.includes(name);
+    rows.push({
+      check: `Rate limit binding ${name}`,
+      status: present ? "ok" : "warn",
+      required: false,
+      fix: present ? "" : `Not in ratelimits, so this limit is off. Add ${entry} (docs/rate-limiting.md).`,
+    });
+  }
   return rows;
 }
 
@@ -215,11 +282,14 @@ export function formatTable(rows: DoctorCheck[]): string[] {
 
 /**
  * `castra doctor`: verify the API token and its permissions (read-only probes; nothing is created), that the
- * wrangler bindings are provisioned, and, when a local D1 exists, that the committed schema snapshot matches it.
+ * wrangler bindings are provisioned, that the `@castra-kit/*` packages share one version, and that the committed
+ * schema snapshot matches the local D1 (if it exists) or, with `remote`, the deployed one. The MCP tool
+ * `deploy_status` runs this same function (ADR 0079).
  *
- * @returns 1 when the token is missing/invalid, a required permission is missing, or the snapshot drifted.
+ * @returns code 1 when the token is missing/invalid, a required permission is missing, the packages have mixed
+ * versions, or the snapshot drifted.
  */
-export async function doctor(options: DoctorOptions, deps: DoctorDeps): Promise<{ code: number; checks: DoctorCheck[] }> {
+export async function doctor(options: DoctorOptions, deps: DoctorDeps): Promise<DoctorResult> {
   const configPath = resolve(options.cwd, options.config);
   const checks: DoctorCheck[] = [];
   let config: WranglerConfig | undefined;
@@ -259,24 +329,47 @@ export async function doctor(options: DoctorOptions, deps: DoctorDeps): Promise<
   }
 
   if (config) checks.push(...bindingChecks(config, storage));
+  const packages = await packageCheck(dirname(configPath));
+  if (packages) checks.push(packages);
 
-  // Drift: only when the local D1 state exists (created by `castra migrate --local` / `wrangler dev`).
-  const localState = join(dirname(configPath), ".wrangler", "state", "v3", "d1");
-  if (config && config.d1.length > 0 && existsSync(localState)) {
-    const drift: string[] = [];
+  // Drift: the deployed D1 with `remote`, else the local one when its state exists (`castra migrate --local`).
+  const drift: string[] = [];
+  const where = options.remote ? "remote D1" : "local D1";
+  const d1 = config?.d1[0];
+  let skip: string | undefined;
+  if (!d1) skip = "No d1_databases entry.";
+  else if (options.remote && !session) skip = "Fix the token first.";
+  else if (options.remote && isPlaceholderId(d1.databaseId)) skip = "Not provisioned yet; run `castra provision`.";
+  else if (!options.remote && !existsSync(join(dirname(configPath), ".wrangler", "state", "v3", "d1"))) {
+    skip = "No local D1 yet; run `castra migrate --local`.";
+  }
+  if (skip || !d1) {
+    checks.push({ check: `Schema snapshot (${where})`, status: "skipped", required: false, fix: skip ?? "" });
+  } else {
+    const openDatabase = options.remote ? remoteD1Opener(session!.api, session!.accountId) : deps.openDatabase;
     const code = await generate(
-      { cwd: options.cwd, config: options.config, out: options.out ?? "castra", check: true, binding: config.d1[0]!.binding },
-      { openDatabase: deps.openDatabase, log: () => {}, error: (l) => drift.push(l) },
+      {
+        cwd: options.cwd,
+        config: options.config,
+        out: options.out ?? "castra",
+        check: true,
+        binding: d1.binding,
+        ...(options.remote ? { source: "deployed database" } : {}),
+      },
+      { openDatabase, log: () => {}, error: (l) => drift.push(l) },
     );
     checks.push({
-      check: "Schema snapshot (local D1)",
+      check: `Schema snapshot (${where})`,
       status: code === 0 ? "ok" : "missing",
       required: true,
-      fix: code === 0 ? "" : "Run `castra generate` and commit castra/.",
+      fix:
+        code === 0
+          ? ""
+          : options.remote
+            ? "The deployed D1 differs from castra/. Apply pending migrations (`castra migrate --remote`) or regenerate from the matching database."
+            : "Run `castra generate` and commit castra/.",
     });
     for (const l of drift) deps.error(l);
-  } else {
-    checks.push({ check: "Schema snapshot (local D1)", status: "skipped", required: false, fix: "No local D1 yet; run `castra migrate --local`." });
   }
 
   for (const l of formatTable(checks)) deps.log(l);
@@ -289,9 +382,9 @@ export async function doctor(options: DoctorOptions, deps: DoctorDeps): Promise<
   if (failing.length > 0) {
     deps.error("");
     deps.error(`Missing: ${failing.map((c) => c.check).join(", ")}`);
-    return { code: 1, checks };
+    return { code: 1, checks, drift };
   }
   deps.log("");
   deps.log("All required checks passed.");
-  return { code: 0, checks };
+  return { code: 0, checks, drift };
 }

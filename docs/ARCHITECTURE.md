@@ -148,7 +148,7 @@ Idempotent: re-running never duplicates resources. State lives in `wrangler.json
 | `castra deploy` | provision → migrate → wrangler deploy |
 | `castra test policies` | Policy tests |
 | `castra mcp` | Local MCP server |
-| `castra doctor` | Token permissions, bindings, drift |
+| `castra doctor` | Token permissions, bindings, package versions, drift (local or `--remote`); `deploy_status` runs it |
 
 First run: scaffold → read/verify `CLOUDFLARE_API_TOKEN` and list missing permissions → create
 resources and write bindings → generate `BETTER_AUTH_SECRET` as a Worker secret → migrate → deploy and

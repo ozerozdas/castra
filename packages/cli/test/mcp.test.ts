@@ -192,7 +192,9 @@ export default defineConfig({
   afterAll(() => rm(project, { recursive: true, force: true }));
 
   it("serves the tools; `as` impersonates any user", async () => {
-    const child = spawn(process.execPath, [join(cliDir, "dist", "cli.js"), "mcp"], { cwd: project, stdio: ["pipe", "pipe", "pipe"] });
+    // No Cloudflare credentials in the child: deploy_status must never reach the real API from a test.
+    const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("CLOUDFLARE_")));
+    const child = spawn(process.execPath, [join(cliDir, "dist", "cli.js"), "mcp"], { cwd: project, env, stdio: ["pipe", "pipe", "pipe"] });
     let stderr = "";
     child.stderr.on("data", (d) => (stderr += d));
     const lines = createInterface({ input: child.stdout });
@@ -220,13 +222,27 @@ export default defineConfig({
       expect(init.result.serverInfo.name, stderr).toBe("castra-local");
       child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
       const list = await rpc("tools/list");
-      expect(list.result.tools).toHaveLength(4);
+      expect(list.result.tools.map((t: { name: string }) => t.name).sort()).toEqual([
+        "check_access",
+        "deploy_status",
+        "describe_schema",
+        "explain_query",
+        "query_data",
+      ]);
       const anon = await rpc("tools/call", { name: "query_data", arguments: { path: "/api/notes" } });
       expect(anon.result.structuredContent.body.data).toEqual([{ id: "n1", owner_id: "u1", status: "published" }]);
       const owner = await rpc("tools/call", { name: "query_data", arguments: { path: "/api/notes", as: { userId: "u1" } } });
       expect(owner.result.structuredContent.body.data.map((n: { id: string }) => n.id).sort()).toEqual(["n1", "n2"]);
       const schema = await rpc("tools/call", { name: "describe_schema", arguments: {} });
       expect(Object.keys(schema.result.structuredContent.tables)).toEqual(["notes"]);
+      // deploy_status is castra doctor (ADR 0079): no token here, but the local drift check still runs and returns
+      // its lines (this project committed schema.json without db.d.ts).
+      const status = (await rpc("tools/call", { name: "deploy_status", arguments: {} })).result.structuredContent;
+      const check = (name: string) => status.checks.find((c: { check: string }) => c.check === name);
+      expect(status.ok).toBe(false);
+      expect(check("API token / account").status).toBe("missing");
+      expect(check("Schema snapshot (local D1)").status).toBe("missing");
+      expect(status.drift.join("\n")).toContain("db.d.ts is missing");
       expect(nonJson).toEqual([]);
     } finally {
       child.stdin.end();

@@ -6,6 +6,9 @@ and request pipeline as REST. There are no write or admin tools in v0.1.
 - **Local, stdio:** `castra mcp` serves them against the **local** D1. It is a developer tool: `as` may impersonate any
   user (`{ userId, roles? }`), `"anonymous"`, or a hypothetical role set, with no token and no audit log. Never expose
   it over a network. Loading `castra.config.ts` needs Node >= 22.18 (or a `.js`/`.mjs` config, `--config`).
+  It also serves **`deploy_status`**, which runs the `castra doctor` checks (token permissions, bindings, package
+  versions, schema drift; `remote: true` compares with the deployed D1) and returns one row per check with a fix
+  ([ADR 0079](adr/0079-deploy-status-and-doctor-checks.md)). It uses `CLOUDFLARE_API_TOKEN` if set.
 - **Remote, `POST /mcp` on the deployed Worker:** needs `Authorization: Bearer castra_mcp_...`.
 
   ```sh

@@ -94,6 +94,8 @@ export interface WranglerConfig {
   d1: D1Binding[];
   kv: KvBinding[];
   r2: R2Binding[];
+  /** `name`s of the `ratelimits` entries. */
+  ratelimits: string[];
 }
 
 /**
@@ -125,6 +127,9 @@ export function readWranglerConfig(text: string): WranglerConfig {
     })),
     kv: list("kv_namespaces").map(([v, index]) => ({ index, binding: v.binding as string, id: str(v.id) })),
     r2: list("r2_buckets").map(([v, index]) => ({ index, binding: v.binding as string, bucketName: str(v.bucket_name) })),
+    ratelimits: (Array.isArray(config.ratelimits) ? (config.ratelimits as unknown[]) : [])
+      .map((v) => (typeof v === "object" && v !== null ? str((v as Record<string, unknown>).name) : undefined))
+      .filter((n): n is string => n !== undefined),
   };
 }
 

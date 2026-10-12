@@ -4,6 +4,7 @@ import type { Readable, Writable } from "node:stream";
 import { pathToFileURL } from "node:url";
 import type { CastraConfig, SchemaSnapshot } from "@castra-kit/core";
 import { CliError, readD1Target } from "../wrangler-config.js";
+import { doctor, type DoctorDeps } from "./doctor.js";
 
 /** Options of {@link mcp}. */
 export interface McpOptions {
@@ -47,7 +48,7 @@ export async function loadCastraConfig(path: string): Promise<CastraConfig> {
  * A local developer tool: `as` may impersonate ANY user or role, there are no tokens and no audit log.
  * Resolves when stdin closes.
  */
-export async function mcp(options: McpOptions): Promise<number> {
+export async function mcp(options: McpOptions, deps: Omit<DoctorDeps, "log" | "error">): Promise<number> {
   const configPath = resolve(options.cwd, options.config);
   const wranglerPath = resolve(options.cwd, options.wrangler);
   const snapshotPath = resolve(options.cwd, options.out, "schema.json");
@@ -83,8 +84,22 @@ export async function mcp(options: McpOptions): Promise<number> {
       stdin.once("end", done);
       stdin.once("close", done);
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const server = await serveStdio({ config, snapshot, d1: d1 as any, stdin, stdout: options.stdout ?? process.stdout });
+    const server = await serveStdio({
+      config,
+      snapshot,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      d1: d1 as any,
+      stdin,
+      stdout: options.stdout ?? process.stdout,
+      // deploy_status is `castra doctor` (ADR 0079); its table output is discarded, the rows are returned.
+      deployStatus: async ({ remote }) => {
+        const r = await doctor(
+          { cwd: options.cwd, config: options.wrangler, out: options.out, remote },
+          { ...deps, log: () => {}, error: () => {} },
+        );
+        return { ok: r.code === 0, checks: r.checks, drift: r.drift };
+      },
+    });
     process.stderr.write(`castra mcp: serving ${Object.keys(config.tables).length} configured table(s) from local D1 "${binding}" over stdio\n`);
     await closed;
     await server.close();

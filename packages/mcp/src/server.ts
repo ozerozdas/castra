@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { jsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/types.js";
+import { z } from "zod";
 import type { ToolAccess } from "./identity.js";
 import type { ToolName } from "./scopes.js";
 import { castraTools, type CastraToolsOptions, type ToolOutcome } from "./tools.js";
@@ -24,7 +25,15 @@ export interface CastraMcpServerOptions extends CastraToolsOptions {
   onToolResult?: (record: ToolCallRecord) => void;
   /** Server name in `initialize`. Default `castra`. */
   name?: string;
+  /**
+   * Registers `deploy_status` (local only, ADR 0079): `castra mcp` passes its `castra doctor` run here. The remote
+   * `/mcp` route never sets it.
+   */
+  deployStatus?: DeployStatusFn;
 }
+
+/** Runs the `castra doctor` checks for `deploy_status`; `remote` compares the snapshot with the deployed D1. */
+export type DeployStatusFn = (input: { remote: boolean }) => Promise<Record<string, unknown>>;
 
 /**
  * The SDK validates JSON Schema only for elicitation, which Castra never uses. This validator rejects
@@ -71,6 +80,28 @@ export function createCastraMcpServer(options: CastraMcpServerOptions): McpServe
         const outcome = await tool.run(args, options.access);
         options.onToolResult?.({ requestId: extra.requestId, tool: tool.name, outcome: outcome.outcome, status: outcome.status });
         return toResult(outcome);
+      },
+    );
+  }
+  const deployStatus = options.deployStatus;
+  if (deployStatus) {
+    server.registerTool(
+      "deploy_status",
+      {
+        title: "Deploy status",
+        description:
+          "Runs the `castra doctor` checks: Cloudflare token and permissions, provisioned bindings (D1, KV, rate limits), " +
+          "@castra-kit/* package versions, and schema drift between castra/schema.json and D1 (local, or the deployed " +
+          "database with remote: true). Returns one row per check with a fix, plus the drift lines. Read-only.",
+        inputSchema: { remote: z.boolean().optional().describe("Check drift against the deployed D1 instead of the local one.") },
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      },
+      async (args: { remote?: boolean }) => {
+        try {
+          return toResult({ outcome: "ok", status: 200, data: await deployStatus({ remote: args.remote === true }) });
+        } catch (e) {
+          return toResult({ outcome: "error", status: 500, data: { detail: e instanceof Error ? e.message : String(e) } });
+        }
       },
     );
   }

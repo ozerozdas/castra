@@ -22,7 +22,7 @@ Writes (sign-in, sign-up, `/mcp`, table writes) are limited to 60 per minute per
 
 ```sh
 export CLOUDFLARE_API_TOKEN=...  # permissions: see the Castra docs (docs/cloudflare-token.md)
-pnpm doctor                      # checks the token permissions and bindings, changes nothing
+pnpm doctor                      # checks token permissions, bindings, package versions and drift; changes nothing
 pnpm provision                   # creates the D1 database (+ KV) and writes the ids into wrangler.jsonc
 pnpm run deploy                  # provision -> migrate --remote -> drift check -> secret -> wrangler deploy
 curl https://castra-app.<your-subdomain>.workers.dev/health

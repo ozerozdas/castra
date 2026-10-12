@@ -26,7 +26,7 @@ export type { AsInput, TokenIdentity, ToolAccess } from "./identity.js";
 export { castraTools, parseRestPath } from "./tools.js";
 export type { CastraToolsOptions, ToolDefinition, ToolOutcome } from "./tools.js";
 export { createCastraMcpServer, SERVER_VERSION } from "./server.js";
-export type { CastraMcpServerOptions, ToolCallRecord } from "./server.js";
+export type { CastraMcpServerOptions, DeployStatusFn, ToolCallRecord } from "./server.js";
 export { createMcpRoute, handleMcpRequest, MCP_MAX_BODY_BYTES, MCP_MAX_MESSAGES } from "./remote.js";
 export type { McpHandlerOptions, McpRouteOptions } from "./remote.js";
 export { AUDIT_PRUNE_BATCH, auditArguments, pruneAuditQuery, writeAudit } from "./audit.js";

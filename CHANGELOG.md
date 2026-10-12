@@ -15,6 +15,10 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
   template), on top of the general one. `rateLimit: { key }` keys table writes by user (or anything in the request
   context), falling back to the IP; `rateLimitWrites` takes `{ retryAfterSeconds, key, binding }`
   ([ADR 0078](docs/adr/0078-auth-bucket-and-rate-limit-key.md), #18).
+- MCP tool `deploy_status` (local `castra mcp` only) runs the `castra doctor` checks and returns the rows and drift
+  lines. `castra doctor` now also checks that `@castra-kit/*` packages share one version (fails otherwise), that
+  `RATE_LIMITER` / `AUTH_RATE_LIMITER` are declared (warns), and with `--remote` compares the snapshot with the
+  deployed D1 ([ADR 0079](docs/adr/0079-deploy-status-and-doctor-checks.md), #13, #19).
 - `castra destroy` deletes what `castra deploy` created and `wrangler.jsonc` records (Worker, D1, `CACHE` KV, R2),
   after a plan and typing the Worker name (`--confirm` in scripts, `--dry-run` to only list). D1 is exported with
   `wrangler d1 export` first unless `--skip-backup`. Recorded ids are reset to placeholders, so a rerun deletes

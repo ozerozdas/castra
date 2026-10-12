@@ -76,13 +76,15 @@ Options:
 
 const DOCTOR_USAGE = `Usage: castra doctor [options]
 
-Verifies the API token and each required permission (read-only), that bindings are provisioned, and that the
-committed schema snapshot matches the local D1 (if it exists). Exit 1 if anything required is missing.
+Verifies the API token and each required permission (read-only), that bindings (D1, KV, rate limits) are
+provisioned, that the @castra-kit/* packages share one version, and that the committed schema snapshot matches the
+local D1 (if it exists) or, with --remote, the deployed one. Exit 1 if anything required is missing.
 
 Options:
   --config <path>      Wrangler config (default: wrangler.jsonc)
   --account-id <id>    Cloudflare account
   --storage            Also require R2
+  --remote             Check schema drift against the deployed D1 instead of the local one
   --out <dir>          Snapshot directory (default: castra)`;
 
 const DEPLOY_USAGE = `Usage: castra deploy [options]
@@ -117,7 +119,7 @@ const MCP_USAGE = `Usage: castra mcp [options]
        castra mcp audit prune --older-than <days> [--local | --remote]
 
 castra mcp serves describe_schema, check_access, explain_query and query_data over stdio against the LOCAL D1
-database. It is a developer tool: \`as\` may impersonate ANY user or role, with no token and no audit log.
+database, plus deploy_status (the castra doctor checks; uses CLOUDFLARE_API_TOKEN if set). It is a developer tool: \`as\` may impersonate ANY user or role, with no token and no audit log.
 Never expose it over a network; the deployed Worker's /mcp route uses scoped tokens instead.
 
 Options (serve):
@@ -320,6 +322,7 @@ async function runDoctor(args: string[], env: RunEnv): Promise<number> {
       ...COMMON,
       "account-id": { type: "string" },
       storage: { type: "boolean", default: false },
+      remote: { type: "boolean", default: false },
       out: { type: "string", default: "castra" },
     },
     DOCTOR_USAGE,
@@ -329,7 +332,7 @@ async function runDoctor(args: string[], env: RunEnv): Promise<number> {
     return 0;
   }
   const result = await doctor(
-    { cwd: env.cwd, config: values.config, accountId: values["account-id"], storage: values.storage, out: values.out },
+    { cwd: env.cwd, config: values.config, accountId: values["account-id"], storage: values.storage, remote: values.remote, out: values.out },
     env,
   );
   return result.code;
@@ -429,7 +432,7 @@ async function runMcp(args: string[], env: RunEnv): Promise<number> {
   }
   // stdout carries the protocol; anything else that logs (wrangler, user config) goes to stderr.
   console.log = console.info = console.debug = (...a: unknown[]) => console.error(...a);
-  return mcp({ cwd: env.cwd, config: values.config, wrangler: values.wrangler, binding: values.binding, out: values.out });
+  return mcp({ cwd: env.cwd, config: values.config, wrangler: values.wrangler, binding: values.binding, out: values.out }, env);
 }
 
 async function runMcpAudit(args: string[], env: RunEnv): Promise<number> {
