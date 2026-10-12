@@ -43,7 +43,7 @@
     "status": 403,
     "summary": "The MCP token does not have the scope this tool needs.",
     "causes": [
-      "`describe_schema` needs `schema:read`, `check_access` and `explain_query` need `access:check`, `query_data` needs `data:read`.",
+      "`describe_schema` needs `schema:read`, `check_access` and `explain_query` need `access:check`, `query_data` needs `data:read`, the write tools need `data:write`.",
       "Acting as another user (`as: { userId }`) needs `data:read:any_user`."
     ],
     "fix": "Create a token with the missing scope: `castra mcp token create --scopes ...`. The response names the missing scope."
@@ -213,6 +213,12 @@
     "summary": "The remote `/mcp` server does not accept `as.roles`.",
     "causes": ["Roles always come from `_castra_roles` on the remote server (ADR 0061)."],
     "fix": "Pass only `as: \"anonymous\"` or `as: { \"userId\": \"...\" }`."
+  },
+  "write_as_other_user": {
+    "status": 403,
+    "summary": "Remote MCP write tools run only as the token's own user.",
+    "causes": ["`create_data`, `update_data` or `delete_data` was called with `as` naming another user, `\"anonymous\"` or roles (ADR 0081). No scope allows that."],
+    "fix": "Omit `as`, or use a token created for the user who should write."
   },
   "write_unavailable": {
     "status": 500,

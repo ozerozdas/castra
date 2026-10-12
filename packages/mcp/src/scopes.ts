@@ -1,15 +1,19 @@
 /**
- * MCP token scopes (ARCHITECTURE §5, ADR 0061). No scope grants admin rights or writes.
+ * MCP token scopes (ARCHITECTURE §5, ADRs 0061, 0081). No scope grants admin rights; `data:write` writes only as
+ * the token's own user.
  */
 
 /** Every scope a remote MCP token can carry. */
-export const MCP_SCOPES = ["schema:read", "access:check", "data:read", "data:read:any_user"] as const;
+export const MCP_SCOPES = ["schema:read", "access:check", "data:read", "data:read:any_user", "data:write"] as const;
 
 /** One MCP token scope. */
 export type McpScope = (typeof MCP_SCOPES)[number];
 
-/** The four read-only tools shared by the stdio and the remote server. */
-export const TOOL_NAMES = ["describe_schema", "check_access", "explain_query", "query_data"] as const;
+/** The tools shared by the stdio and the remote server: four read-only, three writes (ADR 0081). */
+export const TOOL_NAMES = ["describe_schema", "check_access", "explain_query", "query_data", "create_data", "update_data", "delete_data"] as const;
+
+/** The write tools. On the remote server they run only as the token's own user. */
+export const WRITE_TOOLS: readonly ToolName[] = ["create_data", "update_data", "delete_data"];
 
 /** Name of a Castra MCP tool. */
 export type ToolName = (typeof TOOL_NAMES)[number];
@@ -20,9 +24,12 @@ export const TOOL_SCOPES: Readonly<Record<ToolName, McpScope>> = Object.freeze({
   check_access: "access:check",
   explain_query: "access:check",
   query_data: "data:read",
+  create_data: "data:write",
+  update_data: "data:write",
+  delete_data: "data:write",
 });
 
-/** Extra scope needed when `as` names an identity other than the token's own user (ADR 0061). */
+/** Extra scope needed when `as` names an identity other than the token's own user (ADR 0061). Reads only. */
 export const ANY_USER_SCOPE: McpScope = "data:read:any_user";
 
 /** True for a known scope string. */

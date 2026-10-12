@@ -1,7 +1,9 @@
 # MCP
 
-Four read-only tools: `describe_schema`, `check_access`, `explain_query`, `query_data`. They run on the same engine
-and request pipeline as REST. There are no write or admin tools in v0.1.
+Read tools: `describe_schema`, `check_access`, `explain_query`, `query_data`. Write tools: `create_data`,
+`update_data`, `delete_data` (`{ path, body }`, the same arguments as `explain_query` for `POST` / `PATCH` /
+`DELETE`; [ADR 0081](adr/0081-mcp-write-tools.md)). All run on the same engine and request pipeline as REST, so
+policies, field rules and the write guard apply unchanged. There are no admin tools.
 
 - **Local, stdio:** `castra mcp` serves them against the **local** D1. It is a developer tool: `as` may impersonate any
   user (`{ userId, roles? }`), `"anonymous"`, or a hypothetical role set, with no token and no audit log. Never expose
@@ -22,11 +24,14 @@ and request pipeline as REST. There are no write or admin tools in v0.1.
   | `schema:read` | `describe_schema` |
   | `access:check` | `check_access`, `explain_query` |
   | `data:read` | `query_data` as the token's own user |
-  | `data:read:any_user` | `as` another user or `"anonymous"` |
+  | `data:read:any_user` | `as` another user or `"anonymous"` (reads only) |
+  | `data:write` | `create_data`, `update_data`, `delete_data`, only as the token's own user |
 
   `as` on `/mcp` is the token's user by default; `"anonymous"` or `{ userId }` of an existing user need
   `data:read:any_user`. Explicit roles are rejected: roles always come from `_castra_roles`. MCP tokens are accepted only
-  on `/mcp`, and sessions or API keys are not. Every call writes a `_castra_audit` row. Nothing deletes them
+  on `/mcp`, and sessions or API keys are not. Writes never take another `as` (403 `write_as_other_user`). Every call
+  writes a `_castra_audit` row; a write also writes an `attempt` row first and does not run if that fails. Written
+  values are part of the stored arguments. Nothing deletes them
   automatically; prune old rows with `castra mcp audit prune --older-than <days> [--local|--remote]`
   ([ADR 0070](adr/0070-audit-prune-command.md)), or call `pruneAuditQuery` from a Cron Trigger. `/mcp` calls count
   against the per-IP write limit ([rate limiting](rate-limiting.md)).

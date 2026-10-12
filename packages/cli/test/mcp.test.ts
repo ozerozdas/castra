@@ -169,7 +169,7 @@ const secretColumn: string = "secret";
 export default defineConfig({
   database: "d1",
   roles: ["admin"],
-  tables: { notes: { read: isPublic().where((q) => q.eb("status", "=", "published")).or(owner("owner_id")), fields: { [secretColumn]: { hidden: true } } } },
+  tables: { notes: { read: isPublic().where((q) => q.eb("status", "=", "published")).or(owner("owner_id")), update: owner("owner_id"), fields: { [secretColumn]: { hidden: true } } } },
 });
 `,
     );
@@ -224,11 +224,21 @@ export default defineConfig({
       const list = await rpc("tools/list");
       expect(list.result.tools.map((t: { name: string }) => t.name).sort()).toEqual([
         "check_access",
+        "create_data",
+        "delete_data",
         "deploy_status",
         "describe_schema",
         "explain_query",
         "query_data",
+        "update_data",
       ]);
+      // Writes over stdio (ADR 0081): the owner may update, anonymous may not; the row shows which happened.
+      const write = async (as: unknown, status: string) =>
+        (await rpc("tools/call", { name: "update_data", arguments: { path: "/api/notes/n2", body: { status }, as } })).result.structuredContent.status;
+      expect(await write("anonymous", "hacked")).toBe(401);
+      expect(await write({ userId: "u1" }, "review")).toBe(200);
+      const n2 = await rpc("tools/call", { name: "query_data", arguments: { path: "/api/notes/n2", as: { userId: "u1" } } });
+      expect(n2.result.structuredContent.body.status).toBe("review");
       const anon = await rpc("tools/call", { name: "query_data", arguments: { path: "/api/notes" } });
       expect(anon.result.structuredContent.body.data).toEqual([{ id: "n1", owner_id: "u1", status: "published" }]);
       const owner = await rpc("tools/call", { name: "query_data", arguments: { path: "/api/notes", as: { userId: "u1" } } });

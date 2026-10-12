@@ -53,8 +53,8 @@ function toResult(o: ToolOutcome): CallToolResult {
 }
 
 /**
- * Builds an `McpServer` with the four shared read-only tools (`describe_schema`, `check_access`,
- * `explain_query`, `query_data`). The stdio and the remote transport both use this function, so the
+ * Builds an `McpServer` with the shared tools (`describe_schema`, `check_access`, `explain_query`, `query_data`,
+ * and the writes `create_data`, `update_data`, `delete_data`). The stdio and the remote transport both use this function, so the
  * tool set and behaviour are identical; only `access` differs.
  */
 export function createCastraMcpServer(options: CastraMcpServerOptions): McpServer {
@@ -64,7 +64,7 @@ export function createCastraMcpServer(options: CastraMcpServerOptions): McpServe
       capabilities: { tools: {} },
       jsonSchemaValidator: noJsonSchemaValidation,
       instructions:
-        "Castra backend verification tools. All tools are read-only and evaluate the same policy engine as the REST API. Start with describe_schema.",
+        "Castra backend tools. They evaluate the same policy engine as the REST API; create_data, update_data and delete_data write through the REST pipeline, everything else is read-only. Start with describe_schema; use explain_query or check_access before a write.",
     },
   );
   for (const tool of castraTools(options)) {
@@ -74,7 +74,7 @@ export function createCastraMcpServer(options: CastraMcpServerOptions): McpServe
         title: tool.title,
         description: tool.description,
         inputSchema: tool.inputSchema,
-        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        annotations: { ...(tool.annotations ?? { readOnlyHint: true, destructiveHint: false, idempotentHint: true }), openWorldHint: false },
       },
       async (args: Record<string, unknown>, extra) => {
         const outcome = await tool.run(args, options.access);

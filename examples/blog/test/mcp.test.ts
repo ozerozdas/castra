@@ -77,8 +77,16 @@ describe("transport and auth", () => {
     expect(init.status).toBe(200);
     expect(init.json.result.capabilities.tools).toBeDefined();
     const list = await mcp(any, { jsonrpc: "2.0", id: 2, method: "tools/list" });
-    expect(list.json.result.tools.map((t: { name: string }) => t.name).sort()).toEqual(["check_access", "describe_schema", "explain_query", "query_data"]);
-    for (const t of list.json.result.tools) expect(t.annotations.readOnlyHint).toBe(true);
+    expect(list.json.result.tools.map((t: { name: string }) => t.name).sort()).toEqual([
+      "check_access",
+      "create_data",
+      "delete_data",
+      "describe_schema",
+      "explain_query",
+      "query_data",
+      "update_data",
+    ]);
+    for (const t of list.json.result.tools) expect(t.annotations.readOnlyHint).toBe(!t.name.endsWith("_data") || t.name === "query_data");
   });
   it("401 for no token, sessions, API keys, revoked and expired MCP tokens", async () => {
     const key = (await createApiKey(env.DB, { userId: admin.id }, authOptions.roles)).key;

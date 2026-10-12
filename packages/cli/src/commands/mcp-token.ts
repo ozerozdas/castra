@@ -42,7 +42,7 @@ async function open(options: McpTokenTarget, deps: McpTokenDeps) {
 
 /**
  * Mints an MCP token for an existing user and prints it ONCE (only its SHA-256 hash is stored).
- * Scopes: `schema:read`, `access:check`, `data:read`, `data:read:any_user`.
+ * Scopes: `schema:read`, `access:check`, `data:read`, `data:read:any_user`, `data:write`.
  */
 export async function createMcpTokenCommand(options: CreateMcpTokenOptions, deps: McpTokenDeps): Promise<number> {
   let scopes;

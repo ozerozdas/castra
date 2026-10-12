@@ -1,5 +1,5 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { createPolicyEngine, problemBody, type CastraConfig, type PolicyEngine, type SchemaSnapshot } from "@castra-kit/core";
+import { createPolicyEngine, problemBody, type CastraConfig, type D1DatabaseLike, type PolicyEngine, type SchemaSnapshot } from "@castra-kit/core";
 import { Hono, type Context, type Env } from "hono";
 import { auditArguments, writeAudit, type AuditEntry } from "./audit.js";
 import { mcpDb, type D1Like } from "./db.js";
@@ -242,6 +242,7 @@ export async function handleMcpRequest(request: Request, d1: D1Like, options: Mc
           snapshot: options.snapshot,
           engine,
           db,
+          d1: d1 as unknown as D1DatabaseLike,
           basePath: options.basePath,
           access: remoteAccess(db, options.config, { tokenId: token.id, userId: token.userId, scopes: token.scopes }),
           onToolResult: (r) => recordsById.set(r.requestId, r),

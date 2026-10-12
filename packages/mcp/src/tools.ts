@@ -11,6 +11,7 @@ import {
   toProblem,
   type CastraConfig,
   type CastraContext,
+  type D1DatabaseLike,
   type Explanation,
   type Operation,
   type PolicyEngine,
@@ -39,8 +40,13 @@ export interface CastraToolsOptions {
   snapshot: SchemaSnapshot;
   /** Reuse the engine the REST router uses (recommended). Built from config + snapshot otherwise. */
   engine?: PolicyEngine;
-  /** Kysely over the D1 binding. Used only for reads (`query_data`) and the `check_access` dry run. */
+  /** Kysely over the D1 binding: reads, the `check_access` dry run and deletes. */
   db: AnyDb;
+  /**
+   * The D1 binding, for creates and updates (one atomic [write, guard] batch, as in REST). Without it, those tools
+   * fail closed with a 500.
+   */
+  d1?: D1DatabaseLike;
   /** REST base path that `path` arguments start with. Default `/api`. */
   basePath?: string;
 }
@@ -61,6 +67,8 @@ export interface ToolDefinition {
   title: string;
   description: string;
   inputSchema: z.ZodRawShape;
+  /** MCP hints. Default: read-only. */
+  annotations?: { readOnlyHint: boolean; destructiveHint: boolean; idempotentHint: boolean };
   run(args: Record<string, unknown>, access: ToolAccess): Promise<ToolOutcome>;
 }
 
@@ -138,9 +146,9 @@ function notExposed(table: string, op: Operation): Explanation {
 }
 
 /**
- * Builds the four read-only tools. Every one goes through the policy engine; `explain_query` and
- * `query_data` go through the REST pipeline (`parseRequest → planRequest → executePlan`), so an
- * agent sees exactly what REST enforces (CLAUDE.md rule 7). No tool writes.
+ * Builds the shared tools. Every one goes through the policy engine; `explain_query`, `query_data` and the write
+ * tools go through the REST pipeline (`parseRequest → planRequest → executePlan`), so an agent sees and does
+ * exactly what REST allows (CLAUDE.md rule 7). Writes: `create_data`, `update_data`, `delete_data` (ADR 0081).
  */
 export function castraTools(options: CastraToolsOptions): ToolDefinition[] {
   const { config, snapshot, db } = options;
@@ -245,19 +253,20 @@ export function castraTools(options: CastraToolsOptions): ToolDefinition[] {
     return ok({ as: describeIdentity(ctx), executed: false, plan: JSON.parse(JSON.stringify(plan)) as unknown });
   }
 
-  async function queryData(ctx: CastraContext, path: string, query: unknown): Promise<ToolOutcome> {
+  /** One REST request through the REST pipeline; `GET` never gets the D1 binding, so it cannot write. */
+  async function runRest(ctx: CastraContext, method: "GET" | "POST" | "PATCH" | "DELETE", path: string, query: unknown, body?: unknown): Promise<ToolOutcome> {
     try {
       const target = parseRestPath(path, basePath, query);
-      if (!engine.isOpen(target.table, "read")) throw notFound();
-      const parsed = parseRequest({ method: "GET", table: target.table, id: target.id, query: target.query });
+      const op = OP_BY_METHOD[method]!(target.id !== undefined);
+      if (!op || !engine.isOpen(target.table, op)) throw notFound();
+      const parsed = parseRequest({ method, table: target.table, id: target.id, query: target.query, body });
       const plan = planRequest(engine, snapshot, config, parsed, ctx);
-      // No D1 binding is passed: a write plan could not run even if one were built (fail closed).
-      const result = await executePlan(db, plan, {});
+      const result = await executePlan(db, plan, method === "GET" ? {} : { d1: options.d1 });
       return { outcome: "ok", status: result.status, data: { status: result.status, body: result.body } };
     } catch (err) {
       if (err instanceof ToolDenied) throw err;
       const p: ProblemDetails = toProblem(err);
-      if (p.status >= 500) console.error("castra mcp: query_data failed", err);
+      if (p.status >= 500) console.error(`castra mcp: ${method} ${path} failed`, err);
       return { outcome: "error", status: p.status, data: { status: p.status, body: p } };
     }
   }
@@ -325,7 +334,46 @@ export function castraTools(options: CastraToolsOptions): ToolDefinition[] {
       inputSchema: { path: pathInput, query: queryInput, as: asSchema.optional() },
       run: guard(async (args, access) => {
         const ctx = await access.authorize("query_data", args.as as AsInput | undefined);
-        return queryData(ctx, args.path as string, args.query);
+        return runRest(ctx, "GET", args.path as string, args.query);
+      }),
+    },
+    {
+      name: "create_data",
+      title: "Create a row",
+      description:
+        "POST /api/<table> through the REST pipeline as the given identity: the create policy, field rules (server-set and readonly columns) and the write guard all apply. Returns { status, body } exactly as REST would. Remote: only as the token's own user.",
+      inputSchema: { path: pathInput, body: rowInput.describe("The new row's columns."), query: queryInput, as: asSchema.optional() },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+      run: guard(async (args, access) => {
+        const ctx = await access.authorize("create_data", args.as as AsInput | undefined);
+        await access.beforeWrite?.("create_data", args);
+        return runRest(ctx, "POST", args.path as string, args.query, args.body);
+      }),
+    },
+    {
+      name: "update_data",
+      title: "Update a row",
+      description:
+        "PATCH /api/<table>/<id> through the REST pipeline as the given identity: the update policy (before and after the change), field rules and the write guard all apply. Returns { status, body } exactly as REST would. Remote: only as the token's own user.",
+      inputSchema: { path: pathInput, body: rowInput.describe("The columns to change."), query: queryInput, as: asSchema.optional() },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+      run: guard(async (args, access) => {
+        const ctx = await access.authorize("update_data", args.as as AsInput | undefined);
+        await access.beforeWrite?.("update_data", args);
+        return runRest(ctx, "PATCH", args.path as string, args.query, args.body);
+      }),
+    },
+    {
+      name: "delete_data",
+      title: "Delete a row",
+      description:
+        "DELETE /api/<table>/<id> through the REST pipeline as the given identity, under the delete policy. Returns { status, body } exactly as REST would (204 on success). Remote: only as the token's own user.",
+      inputSchema: { path: pathInput, as: asSchema.optional() },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+      run: guard(async (args, access) => {
+        const ctx = await access.authorize("delete_data", args.as as AsInput | undefined);
+        await access.beforeWrite?.("delete_data", args);
+        return runRest(ctx, "DELETE", args.path as string, undefined);
       }),
     },
   ];

@@ -5,6 +5,10 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 ## Unreleased
 
 ### Added
+- MCP write tools `create_data`, `update_data`, `delete_data` run `POST` / `PATCH` / `DELETE` through the REST write
+  path (policies, field rules, write guard). Local stdio: any `as`. Remote `/mcp`: new scope `data:write`, only as
+  the token's own user; an `attempt` audit row is stored before each write
+  ([ADR 0081](docs/adr/0081-mcp-write-tools.md), #10).
 - `castra migrate create <name>` writes the next numbered file in `migrations_dir`; `castra migrate status
   [--local|--remote]` lists files as applied / pending / unknown from wrangler's `d1_migrations` table. Wrangler stays
   the runner ([ADR 0080](docs/adr/0080-migration-workflow.md), #11).

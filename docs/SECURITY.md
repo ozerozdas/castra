@@ -14,7 +14,7 @@ background: [ARCHITECTURE.md](ARCHITECTURE.md). Decisions: [docs/adr](adr/).
 | Authenticated user | Better Auth session | Operations whose rules accept that user id and their current roles. |
 | User with a role | session + `_castra_roles` row | Same, plus `role(...)` rules and `visibleTo` fields for that role. Roles are read from D1 on every request. |
 | API key holder | `castra_ak_...` | Acts as the key's user, with roles limited to a subset of that user's current roles ([ADR 0022](adr/0022-own-api-keys-table.md)). Never more than the user. |
-| MCP token holder | `castra_mcp_...` | `/mcp` only. Per scope: `schema:read` (`describe_schema`), `access:check` (`check_access`, `explain_query`), `data:read` (`query_data` as the token's own user), `data:read:any_user` (`as` another user or `anonymous`). No scope grants admin or writes ([ADR 0061](adr/0061-mcp-tokens-and-scopes.md)). |
+| MCP token holder | `castra_mcp_...` | `/mcp` only. Per scope: `schema:read` (`describe_schema`), `access:check` (`check_access`, `explain_query`), `data:read` (`query_data` as the token's own user), `data:read:any_user` (`as` another user or `anonymous`, reads only), `data:write` (`create_data`, `update_data`, `delete_data` as the token's own user only). No scope grants admin ([ADR 0061](adr/0061-mcp-tokens-and-scopes.md), [0081](adr/0081-mcp-write-tools.md)). |
 | Local stdio MCP user | shell access to the developer machine | Trusted operator. `castra mcp` has no tokens, runs against the local D1, and `as` may be any user id, `anonymous`, or a hypothetical role set. |
 
 A MCP token is not a REST credential (it resolves to anonymous there), and an API key or session is not accepted on
@@ -130,6 +130,12 @@ Each item names where it is enforced and which tests cover it. Test paths are re
     (`hasReplaceConflictClause`), `engine.ts`. Tests: `packages/core/test/api/final-review.d1.test.ts` (FR-1),
     `final-review-fixes.d1.test.ts`, `packages/mcp/test/final-review.test.ts`, `packages/cli/test/generate.test.ts`.
     Triggers are trusted schema code and can still change other rows.
+19. **MCP writes use the REST write path.** `create_data`, `update_data` and `delete_data` plan and execute through
+    the REST pipeline with the D1 binding, so the create/update/delete policies, field rules and the atomic write guard
+    apply unchanged. Remote writes need `data:write` and run only as the token's own user (403 `write_as_other_user`
+    for any other `as`); an `attempt` audit row is stored before the write, and the write does not run without it.
+    `packages/mcp/src/tools.ts`, `identity.ts` ([ADR 0081](adr/0081-mcp-write-tools.md)). Tests:
+    `packages/mcp/test/write-tools.test.ts` (allow and deny per rule type, local and remote), `remote.test.ts`.
 
 ## 3. What Castra does not guarantee
 
@@ -186,9 +192,9 @@ Each item names where it is enforced and which tests cover it. Test paths are re
 ### Not built (ARCHITECTURE section 8)
 
 Out of scope until v1.0 and therefore not protected by anything here: PostgreSQL/MySQL/Hyperdrive, realtime
-(Durable Objects), queues, Redis/S3/OIDC adapters, hosted offering. Not in v0.1: MCP write tools, bulk
-operations, multi-level include, R2 storage, multi-tenancy, plugin SDK and custom hooks, admin UI. Remote MCP is
-read-only and exposes no write tool.
+(Durable Objects), queues, Redis/S3/OIDC adapters, hosted offering. Not in v0.1: bulk
+operations, multi-level include, R2 storage, multi-tenancy, plugin SDK and custom hooks, admin UI. MCP writes are
+single-row only.
 
 Also not done: stdio MCP against the remote D1 via the API token, automatic audit retention, a `castra mcp token list`
 command, HTTP endpoints for API key management, and `castra init` (the CLI prints "not implemented yet",

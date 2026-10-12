@@ -88,7 +88,7 @@ const FEATURES = [
   ["Policies are SQL", "Rules compile to <code>WHERE</code> clauses, so pagination and counts stay correct."],
   ["Checked writes", "Every create and update is verified on the stored row, atomically. Server-set columns never come from the client."],
   ["Auth included", "Better Auth (email, GitHub), roles and API keys, checked against D1 on every request."],
-  ["Agent-safe MCP", "Read-only tools on the same engine as REST, with scoped tokens and an audit log."],
+  ["Agent-safe MCP", "Read and write tools on the same engine and write path as REST, with scoped tokens and an audit log."],
   ["Your account", "One Worker and one D1 database in your Cloudflare account. No hosted service in between."],
 ];
 

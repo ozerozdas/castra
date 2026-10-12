@@ -17,8 +17,10 @@ import {
   parseScopes,
   revokeMcpToken,
   revokeMcpTokenQuery,
+  TOOL_NAMES,
   TOOL_SCOPES,
   verifyMcpToken,
+  WRITE_TOOLS,
   type D1Like,
   type McpScope,
   type ToolName,
@@ -124,7 +126,7 @@ describe("remote auth", () => {
     expect(init.status).toBe(200);
     expect(init.json.result.serverInfo.name).toBe("castra");
     const list = await post(t.token, { jsonrpc: "2.0", id: 2, method: "tools/list" });
-    expect(list.json.result.tools.map((x: { name: string }) => x.name).sort()).toEqual(["check_access", "describe_schema", "explain_query", "query_data"]);
+    expect(list.json.result.tools.map((x: { name: string }) => x.name).sort()).toEqual([...TOOL_NAMES].sort());
     expect(await lastAudit()).toMatchObject({ token_id: t.id, tool: "tools/list", outcome: "ok", status: 200 });
     const get = await post(t.token, null, { method: "GET" });
     expect(get.status).toBe(405);
@@ -140,7 +142,7 @@ describe("remote auth", () => {
   });
 });
 
-// Every non-empty subset of the four scopes.
+// Every non-empty subset of the scopes.
 const COMBOS: McpScope[][] = [];
 for (let mask = 1; mask < 1 << MCP_SCOPES.length; mask++) COMBOS.push(MCP_SCOPES.filter((_, i) => mask & (1 << i)));
 
@@ -149,6 +151,10 @@ const CALLS: Record<ToolName, { self: Record<string, unknown>; other?: Record<st
   check_access: { self: { table: "notes", op: "read" }, other: { table: "notes", op: "read", as: { userId: USERS.admin } } },
   explain_query: { self: { method: "GET", path: "/api/notes" }, other: { method: "GET", path: "/api/notes", as: "anonymous" } },
   query_data: { self: { path: "/api/notes" }, other: { path: "/api/notes", as: { userId: USERS.bob } } },
+  // Writes: the scope check only; their policy outcomes are covered by write-tools.test.ts.
+  create_data: { self: { path: "/api/notes", body: { id: "x" } }, other: { path: "/api/notes", body: { id: "x" }, as: { userId: USERS.bob } } },
+  update_data: { self: { path: "/api/notes/nope", body: { title: "t" } }, other: { path: "/api/notes/nope", body: { title: "t" }, as: "anonymous" } },
+  delete_data: { self: { path: "/api/notes/nope" }, other: { path: "/api/notes/nope", as: { userId: USERS.alice, roles: ["admin"] } } },
 };
 
 describe("scope matrix: every tool × every scope combination", () => {
@@ -159,8 +165,14 @@ describe("scope matrix: every tool × every scope combination", () => {
       const needed = TOOL_SCOPES[name];
       const before = await count("_castra_audit");
       const self = await tool(t.token, name, c.self);
-      expect(await count("_castra_audit")).toBe(before + 1);
-      if (granted.includes(needed)) {
+      // A write past its scope check also leaves an `attempt` row, stored before any data is touched.
+      expect(await count("_castra_audit")).toBe(before + (granted.includes(needed) && WRITE_TOOLS.includes(name) ? 2 : 1));
+      if (granted.includes(needed) && WRITE_TOOLS.includes(name)) {
+        // Past the scope check, into the REST pipeline (which refuses these on purpose: no write happens).
+        expect(self.data, `${name} as self with ${scopes}`).toMatchObject({ status: expect.any(Number) });
+        expect(self.data.scope).toBeUndefined();
+        expect((await lastAudit())!.outcome).toBe("error");
+      } else if (granted.includes(needed)) {
         expect(self.isError, `${name} as self with ${scopes}`).toBe(false);
         expect((await lastAudit())!.outcome).toBe("ok");
       } else {
@@ -170,6 +182,12 @@ describe("scope matrix: every tool × every scope combination", () => {
       }
       if (!c.other) continue;
       const other = await tool(t.token, name, c.other);
+      if (WRITE_TOOLS.includes(name)) {
+        // No scope lets a write run as anyone but the token's user.
+        expect(other.isError).toBe(true);
+        expect(other.data.detail).toBe(granted.includes(needed) ? "write tools run only as the token's own user; omit as" : `missing scope: ${needed}`);
+        continue;
+      }
       const allowed = granted.includes(needed) && granted.includes("data:read:any_user");
       expect(other.isError, `${name} as other with ${scopes}`).toBe(!allowed);
       if (!allowed) expect(other.data.detail).toBe(`missing scope: ${granted.includes(needed) ? "data:read:any_user" : needed}`);

@@ -117,7 +117,8 @@ Hono routes under `src/routes` get the same `ctx` and policy helpers.
 
 ## 5. MCP layer
 
-MCP never bypasses the policy engine. Local and remote share the tool set; write tools are local only.
+MCP never bypasses the policy engine. Local and remote share the tool set. Remote writes need `data:write` and run
+only as the token's own user (ADR 0081).
 
 | Tool | Purpose | Local | Remote | Version |
 | --- | --- | --- | --- | --- |
@@ -125,13 +126,14 @@ MCP never bypasses the policy engine. Local and remote share the tool set; write
 | `check_access` | Dry-run user/role × op × row → decision + explanation | yes | yes | v0.1 |
 | `explain_query` | REST request → generated SQL + applied policies | yes | yes | v0.1 |
 | `query_data` | Policy-bound read as a given identity | yes | scoped token | v0.1 |
+| `create_data` / `update_data` / `delete_data` | Write through the REST write path | yes | `data:write`, own user | v0.2 |
 | `propose_policy` | Config diff proposal, never applied | yes | no | v0.2 |
 | `generate_migration` / `apply_migration` | Migration; apply requires approval | yes | no | v0.2 |
 | `deploy_status` | Provisioning, bindings, schema drift | yes | no | v0.2 |
 
 - **Local:** `npx castra mcp` (stdio), uses `wrangler dev` bindings or the Cloudflare API token.
 - **Remote:** `/mcp` on the Worker. Separate MCP tokens with scopes `schema:read`, `access:check`,
-  `data:read`; no scope grants admin. Reading as another user needs its own scope. Every call is
+  `data:read`, `data:write`; no scope grants admin. Reading as another user needs its own scope. Every call is
   written to `_castra_audit`.
 
 ## 6. CLI & provisioning

@@ -14,7 +14,7 @@ agents inspect exactly what production enforces.
 - **Policies are SQL.** Rules become `WHERE` clauses, so pagination and counts stay correct.
 - **Checked writes.** Every create and update is verified on the stored row, atomically.
 - **Auth included.** Better Auth (email, GitHub), roles and API keys.
-- **Agent-safe MCP.** Read-only tools on the same engine as REST, with scoped tokens and an audit log.
+- **Agent-safe MCP.** Read and write tools on the same engine and write path as REST, with scoped tokens and an audit log.
 
 > **Status: v0.1.2** ([changelog](CHANGELOG.md)). Early, but deployed
 > and working. Read [Status and limits](docs/limits.md) before using it for anything important.

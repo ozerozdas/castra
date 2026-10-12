@@ -8,7 +8,7 @@
 /** Package identifier. */
 export const name = "@castra-kit/mcp";
 
-export { ANY_USER_SCOPE, isMcpScope, MCP_SCOPES, parseScopes, TOOL_NAMES, TOOL_SCOPES } from "./scopes.js";
+export { ANY_USER_SCOPE, isMcpScope, MCP_SCOPES, parseScopes, TOOL_NAMES, TOOL_SCOPES, WRITE_TOOLS } from "./scopes.js";
 export type { McpScope, ToolName } from "./scopes.js";
 export {
   createMcpToken,

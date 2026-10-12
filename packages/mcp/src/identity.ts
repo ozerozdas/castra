@@ -1,8 +1,9 @@
 import { getRoles, type AuthDbInput } from "@castra-kit/auth";
 import { ApiError, type CastraConfig, type CastraContext, type ContextVia } from "@castra-kit/core";
 import { z } from "zod";
+import { auditArguments, writeAudit } from "./audit.js";
 import type { McpDb } from "./db.js";
-import { ANY_USER_SCOPE, TOOL_SCOPES, type McpScope, type ToolName } from "./scopes.js";
+import { ANY_USER_SCOPE, TOOL_SCOPES, WRITE_TOOLS, type McpScope, type ToolName } from "./scopes.js";
 
 /**
  * The identity a tool evaluates as: `"anonymous"`, or a user id with optional explicit roles.
@@ -44,6 +45,11 @@ export class ToolDenied extends Error {
 export interface ToolAccess {
   /** Throws {@link ToolDenied} or an `ApiError`; otherwise returns the context to evaluate policies with. */
   authorize(tool: ToolName, as: AsInput | undefined): Promise<CastraContext>;
+  /**
+   * Runs after `authorize` and before a write tool touches data. The remote server stores an `attempt` audit row
+   * here; if that throws, the write does not run (ADR 0081).
+   */
+  beforeWrite?(tool: ToolName, args: Record<string, unknown>): Promise<void>;
 }
 
 /** An anonymous context outside any HTTP request. */
@@ -110,6 +116,8 @@ export interface TokenIdentity {
  * - Explicit `roles` are then rejected (400 `roles_not_allowed`): roles always come from
  *   `_castra_roles`, so no scope can evaluate as a role set nobody holds (default closed).
  * - A user id that does not exist is a 400 `unknown_user`, never an anonymous-like fallback.
+ * - Write tools (`data:write`, ADR 0081) run only as the token's own user: any other `as` is a 403
+ *   `write_as_other_user`, whatever the scopes.
  */
 export function remoteAccess(db: McpDb, config: CastraConfig, token: TokenIdentity): ToolAccess {
   return {
@@ -118,12 +126,18 @@ export function remoteAccess(db: McpDb, config: CastraConfig, token: TokenIdenti
       if (!token.scopes.includes(needed)) throw new ToolDenied(needed);
       if (tool === "describe_schema") return anonymous("mcpToken");
       const self = as === undefined || (as !== "anonymous" && (as.userId === undefined || as.userId === token.userId) && as.roles === undefined);
+      if (!self && WRITE_TOOLS.includes(tool)) {
+        throw new ApiError(403, "write_as_other_user", "write tools run only as the token's own user; omit as");
+      }
       if (!self && !token.scopes.includes(ANY_USER_SCOPE)) throw new ToolDenied(ANY_USER_SCOPE);
       if (as === "anonymous") return anonymous("mcpToken");
       if (as?.roles !== undefined) {
         throw new ApiError(400, "roles_not_allowed", "as.roles is not accepted on the remote server; roles come from _castra_roles");
       }
       return contextFor(db, config, as?.userId ?? token.userId, undefined, "mcpToken", true);
+    },
+    async beforeWrite(tool, args) {
+      await writeAudit(db, [{ token_id: token.tokenId, user_id: token.userId, tool, arguments: auditArguments(args), outcome: "attempt", status: 0 }]);
     },
   };
 }

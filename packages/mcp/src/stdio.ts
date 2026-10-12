@@ -5,7 +5,7 @@
 import type { Readable, Writable } from "node:stream";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CastraConfig, PolicyEngine, SchemaSnapshot } from "@castra-kit/core";
+import type { CastraConfig, D1DatabaseLike, PolicyEngine, SchemaSnapshot } from "@castra-kit/core";
 import { mcpDb, type D1Like } from "./db.js";
 import { localAccess } from "./identity.js";
 import { createCastraMcpServer, type DeployStatusFn } from "./server.js";
@@ -37,6 +37,7 @@ export async function serveStdio(options: ServeStdioOptions): Promise<McpServer>
     snapshot: options.snapshot,
     engine: options.engine,
     db,
+    d1: options.d1 as unknown as D1DatabaseLike,
     basePath: options.basePath,
     access: localAccess(db, options.config),
     name: "castra-local",

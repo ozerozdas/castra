@@ -5,7 +5,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { SchemaSnapshot } from "@castra-kit/core";
 import { beforeAll, describe, expect, it } from "vitest";
-import { localAccess, mcpDb, parseRestPath, TOOL_NAMES } from "../src/index.js";
+import { localAccess, mcpDb, parseRestPath, TOOL_NAMES, WRITE_TOOLS } from "../src/index.js";
 import { call, config, connect, count, NOTES, SECRET, setup, testDb, USERS } from "./fixtures.js";
 
 let snapshot: SchemaSnapshot;
@@ -19,12 +19,13 @@ beforeAll(async () => {
 const RESERVED = ["user", "_castra_roles", "_castra_mcp_tokens", "_castra_audit", "logs", "session", "account", "verification"];
 
 describe("tools/list", () => {
-  it("lists exactly the four read-only tools", async () => {
+  it("lists the shared tools; only the write tools are not read-only", async () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([...TOOL_NAMES].sort());
     for (const t of tools) {
-      expect(t.annotations?.readOnlyHint).toBe(true);
-      expect(t.annotations?.destructiveHint).toBe(false);
+      const write = (WRITE_TOOLS as readonly string[]).includes(t.name);
+      expect(t.annotations?.readOnlyHint).toBe(!write);
+      expect(t.annotations?.destructiveHint).toBe(write && t.name !== "create_data");
       expect(t.inputSchema.type).toBe("object");
     }
   });

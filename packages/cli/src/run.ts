@@ -134,7 +134,7 @@ Options (serve):
 
 Options (token):
   --config <path>      Wrangler config (default: wrangler.jsonc)
-  --scopes "<list>"    schema:read access:check data:read data:read:any_user (space or comma separated)
+  --scopes "<list>"    schema:read access:check data:read data:read:any_user data:write (space or comma separated)
   --local              Write to the local D1 database (default)
   --remote             Write to the Cloudflare database (needs CLOUDFLARE_API_TOKEN)
   --account-id <id>    Cloudflare account for --remote`;
