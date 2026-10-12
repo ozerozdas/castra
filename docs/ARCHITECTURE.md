@@ -144,7 +144,7 @@ Idempotent: re-running never duplicates resources. State lives in `wrangler.json
 | `castra init` | Add to an existing Workers project |
 | `castra provision` | Create D1, KV and (if enabled) R2 |
 | `castra generate` | Schema snapshot + TS types |
-| `castra migrate` | Auth, internal and user migrations |
+| `castra migrate` | Auth, internal and user migrations; `create`, `status` (ADR 0080) |
 | `castra deploy` | provision → migrate → wrangler deploy |
 | `castra test policies` | Policy tests |
 | `castra mcp` | Local MCP server |

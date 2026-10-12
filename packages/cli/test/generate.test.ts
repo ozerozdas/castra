@@ -174,13 +174,13 @@ describe("castra dispatch", () => {
 
 describe("readD1Target", () => {
   it("parses JSONC and picks the only binding", () => {
-    expect(readD1Target(WRANGLER)).toEqual({ binding: "DB", databaseName: "app-db" });
+    expect(readD1Target(WRANGLER)).toMatchObject({ binding: "DB", databaseName: "app-db", migrationsDir: "migrations", migrationsTable: "d1_migrations" });
   });
 
   it("requires --binding when several databases exist", () => {
     const two = `{ "d1_databases": [{ "binding": "A" }, { "binding": "B", "database_name": "b" }] }`;
     expect(() => readD1Target(two)).toThrow(/--binding/);
-    expect(readD1Target(two, "B")).toEqual({ binding: "B", databaseName: "b" });
+    expect(readD1Target(two, "B")).toMatchObject({ binding: "B", databaseName: "b" });
   });
 
   it("rejects configs without D1 or with syntax errors", () => {

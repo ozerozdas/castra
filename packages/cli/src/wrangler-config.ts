@@ -7,6 +7,12 @@ export interface D1Target {
   binding: string;
   /** `database_name` from the config, if present. */
   databaseName?: string;
+  /** `migrations_dir` (wrangler's default `migrations`). */
+  migrationsDir: string;
+  /** `migrations_table` (wrangler's default `d1_migrations`). */
+  migrationsTable: string;
+  /** `migrations_pattern`, when set (nested layouts; `castra migrate create/status` do not support it). */
+  migrationsPattern?: string;
 }
 
 /**
@@ -35,7 +41,7 @@ export function readD1Target(text: string, binding?: string): D1Target {
 
   const raw = (config as { d1_databases?: unknown } | null)?.d1_databases;
   const databases = (Array.isArray(raw) ? raw : []).filter(
-    (d): d is { binding: string; database_name?: string } =>
+    (d): d is { binding: string; database_name?: string; migrations_dir?: string; migrations_table?: string; migrations_pattern?: string } =>
       typeof d === "object" && d !== null && typeof (d as { binding?: unknown }).binding === "string",
   );
 
@@ -56,7 +62,14 @@ export function readD1Target(text: string, binding?: string): D1Target {
     );
   }
 
-  return { binding: chosen.binding, databaseName: chosen.database_name };
+  const str = (v: unknown) => (typeof v === "string" && v.trim() !== "" ? v : undefined);
+  return {
+    binding: chosen.binding,
+    databaseName: chosen.database_name,
+    migrationsDir: str(chosen.migrations_dir) ?? "migrations",
+    migrationsTable: str(chosen.migrations_table) ?? "d1_migrations",
+    migrationsPattern: str(chosen.migrations_pattern),
+  };
 }
 
 /** Ids treated as "not provisioned": empty, or only zeros and dashes (e.g. `00000000-0000-0000-0000-000000000000`). */

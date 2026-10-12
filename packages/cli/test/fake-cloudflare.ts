@@ -36,8 +36,8 @@ export class FakeCloudflare {
   /** Worker name -> secret names. Absent = Worker does not exist. */
   secrets = new Map<string, string[]>();
   subdomain = "testsub";
-  /** Rows returned for D1 HTTP queries, keyed by SQL. */
-  d1Query: (sql: string, params: unknown[]) => Record<string, unknown>[] = () => [];
+  /** Rows returned for D1 HTTP queries, keyed by SQL. May be async (e.g. backed by a real local D1). */
+  d1Query: (sql: string, params: unknown[]) => Record<string, unknown>[] | Promise<Record<string, unknown>[]> = () => [];
   private seq = 0;
 
   get posts(): Call[] {
@@ -55,6 +55,9 @@ export class FakeCloudflare {
     this.calls.push({ method, path: path + url.search, body });
     const auth = new Headers(init?.headers).get("authorization");
     if (auth !== `Bearer ${FAKE_TOKEN}` || !this.tokenValid) return this.fail(401, 1000, "Invalid API Token");
+    if (/^\/accounts\/[^/]+\/d1\/database\/[^/]+\/query$/.test(path) && method === "POST") {
+      return this.deny("d1") ?? this.ok([{ results: await this.d1Query(String(body?.sql), (body?.params as unknown[] | undefined) ?? []), success: true }]);
+    }
     return this.route(method, path, url.searchParams, body);
   };
 
@@ -142,9 +145,6 @@ export class FakeCloudflare {
       if (denied) return denied;
       if (!this.secrets.delete(decodeURIComponent(m[1]!))) return this.fail(404, 10007, "This Worker does not exist on your account.");
       return this.ok({});
-    }
-    if (/^\/accounts\/[^/]+\/d1\/database\/[^/]+\/query$/.test(path) && method === "POST") {
-      return this.deny("d1") ?? this.ok([{ results: this.d1Query(String(body?.sql), (body?.params as unknown[] | undefined) ?? []), success: true }]);
     }
     if (/^\/accounts\/[^/]+\/storage\/kv\/namespaces$/.test(path)) {
       const denied = this.deny("kv");

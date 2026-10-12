@@ -9,7 +9,7 @@ import { doctor } from "./commands/doctor.js";
 import { generate } from "./commands/generate.js";
 import { createMcpTokenCommand, pruneMcpAuditCommand, revokeMcpTokenCommand } from "./commands/mcp-token.js";
 import { mcp } from "./commands/mcp.js";
-import { migrate } from "./commands/migrate.js";
+import { migrate, migrateCreate, migrateStatus } from "./commands/migrate.js";
 import { provision } from "./commands/provision.js";
 import { testPolicies } from "./commands/test-policies.js";
 import { spawnExec } from "./exec.js";
@@ -31,7 +31,7 @@ Usage: castra <command> [options]
 Commands:
   generate   Write castra/schema.json and castra/db.d.ts from the local D1 database
   provision  Create D1, KV (CACHE) and, with storage, R2; write their ids into wrangler.jsonc
-  migrate    Apply migrations with wrangler (--local by default, or --remote)
+  migrate    Apply migrations with wrangler (--local by default, or --remote); create <name>; status
   doctor     Check the API token, its permissions, bindings and schema drift
   deploy     provision -> migrate --remote -> drift check -> secrets -> wrangler deploy
   destroy    Delete the Worker, D1 (exported first), KV and R2 recorded in wrangler.jsonc
@@ -63,9 +63,13 @@ Options:
   --account-id <id>    Cloudflare account (default: CLOUDFLARE_ACCOUNT_ID, or the token's only account)
   --storage            Also provision an R2 bucket`;
 
-const MIGRATE_USAGE = `Usage: castra migrate [--local | --remote] [options]
+const MIGRATE_USAGE = `Usage: castra migrate [apply] [--local | --remote] [options]
+       castra migrate create <name> [--config <path>] [--binding <name>]
+       castra migrate status [--local | --remote] [options]
 
-Runs \`wrangler d1 migrations apply <database>\` for the migrations directory in wrangler.jsonc.
+apply (default)  Runs \`wrangler d1 migrations apply <database>\` for the migrations directory in wrangler.jsonc.
+create <name>    Writes <migrations_dir>/NNNN_<name>.sql, numbered after the last file. Edit it, then apply.
+status           Lists applied, pending and unknown migrations from the database's migrations table. Read-only.
 
 Options:
   --local              Apply to the local database (default)
@@ -287,6 +291,26 @@ async function runProvision(args: string[], env: RunEnv): Promise<number> {
 }
 
 async function runMigrate(args: string[], env: RunEnv): Promise<number> {
+  const sub = args[0] === "create" || args[0] === "status" || args[0] === "apply" ? args[0] : undefined;
+  if (sub) args = args.slice(1);
+  if (sub === "create") {
+    let parsed;
+    try {
+      parsed = parseArgs({ args, strict: true, allowPositionals: true, options: { ...COMMON, binding: { type: "string" } } });
+    } catch (e) {
+      throw new UsageError(`${e instanceof Error ? e.message : String(e)}\n\n${MIGRATE_USAGE}`);
+    }
+    if (parsed.values.help) {
+      env.log(MIGRATE_USAGE);
+      return 0;
+    }
+    if (parsed.positionals.length === 0) throw new UsageError(`Missing the migration name.\n\n${MIGRATE_USAGE}`);
+    await migrateCreate(
+      { cwd: env.cwd, config: parsed.values.config, binding: parsed.values.binding, name: parsed.positionals.join(" ") },
+      env,
+    );
+    return 0;
+  }
   const values = parse(
     args,
     {
@@ -303,6 +327,18 @@ async function runMigrate(args: string[], env: RunEnv): Promise<number> {
     return 0;
   }
   if (values.local && values.remote) throw new UsageError(`Pass either --local or --remote, not both.\n\n${MIGRATE_USAGE}`);
+  if (sub === "status") {
+    let openDatabase = env.openDatabase;
+    if (values.remote) {
+      const session = await connect({ env: env.env, fetch: env.fetch, accountId: values["account-id"] });
+      openDatabase = remoteD1Opener(session.api, session.accountId);
+    }
+    await migrateStatus(
+      { cwd: env.cwd, config: values.config, binding: values.binding, target: values.remote ? "remote" : "local" },
+      { openDatabase, log: env.log },
+    );
+    return 0;
+  }
   return migrate(
     {
       cwd: env.cwd,
