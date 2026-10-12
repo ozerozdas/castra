@@ -1,6 +1,6 @@
 {
   "name": "@castra-kit/core",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Policy engine, schema snapshot and REST router for Castra, a Cloudflare-native BaaS on Workers and D1.",
   "license": "MIT",
   "author": "Mehmet Özer Özdaş",

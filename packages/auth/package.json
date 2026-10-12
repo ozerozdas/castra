@@ -1,6 +1,6 @@
 {
   "name": "@castra-kit/auth",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Better Auth wiring, roles and request identity for Castra.",
   "license": "MIT",
   "author": "Mehmet Özer Özdaş",

@@ -2,7 +2,10 @@
 
 All `@castra-kit/*` packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/).
 
-## Unreleased
+## 0.2.0 (2026-10-12)
+
+Upgrading an existing project: follow [docs/upgrading/0.2.0.md](docs/upgrading/0.2.0.md) (package commands, scripts
+and template diffs; `src/index.ts` becomes one `createCastraApp` call).
 
 ### Added
 - Upgrade notes have a generated "Template changes" section (`pnpm add` / `pnpm remove` commands, scripts, and a diff

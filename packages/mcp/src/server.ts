@@ -9,7 +9,7 @@ import { proposePolicy } from "./propose.js";
 import { castraTools, type CastraToolsOptions, type ToolOutcome } from "./tools.js";
 
 /** Package version reported in the MCP `initialize` result. */
-export const SERVER_VERSION = "0.1.2";
+export const SERVER_VERSION = "0.2.0";
 
 /** A finished tool call, reported to {@link CastraMcpServerOptions.onToolResult} (the audit log uses it). */
 export interface ToolCallRecord {

@@ -1,6 +1,6 @@
 {
   "name": "@castra-kit/app",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "The Castra Worker app in one call: auth, REST, MCP, rate limiting and problem+json, wired in order.",
   "license": "MIT",
   "author": "Mehmet Özer Özdaş",
