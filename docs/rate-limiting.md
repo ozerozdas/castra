@@ -21,14 +21,11 @@ Over the limit the API answers `429` with the problem type
 "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } }]
 ```
 
-`src/index.ts`, before every other route:
-
-```ts
-app.use("*", rateLimitWrites<AppEnv>((c) => c.env.RATE_LIMITER));
-```
+`createCastraApp` (from `@castra-kit/app`) applies `rateLimitWrites` over that binding before every other route.
+Without the binding it logs one warning per isolate and does not limit. `rateLimit: false` turns it off.
 
 - 60 writes per 60 seconds per IP address. `period` can only be `10` or `60`. If you change it, pass the same number as
-  the second argument (`Retry-After`).
+  `rateLimit: { retryAfterSeconds }` (`Retry-After`).
 - Counters are kept per Cloudflare location and are approximate. This stops scripts and brute force; it is not exact
   accounting.
 - The key is `<host>:<client IP>`, so several apps on one account can use the same `namespace_id`.

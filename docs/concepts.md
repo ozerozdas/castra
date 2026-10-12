@@ -94,7 +94,7 @@ The Worker also needs env: `BETTER_AUTH_SECRET` (Worker secret, >= 32 chars, pla
 A weak or placeholder secret does not stop the Worker from starting: `/health` still returns 200, and the first
 request that needs auth fails with a generic 500.
 
-Auth options (`roles`, `trustedOrigins`, `basePath`, `mirrorUsers`) are passed to `authRoutes` in `src/index.ts`.
+Auth options (`roles`, `trustedOrigins`, `basePath`, `mirrorUsers`) are the `auth` option of `createCastraApp` in `src/index.ts`.
 Neither the blog example nor the template sets `trustedOrigins`, so Better Auth trusts only the origin of
 `BETTER_AUTH_URL`. Set it to the origin you call from: `http://localhost:8787` for `wrangler dev`, and your real URL
 in production. A request to `/api/auth/*` with any other `Origin` header gets 403 `INVALID_ORIGIN`. A request without

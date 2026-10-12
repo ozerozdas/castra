@@ -1,0 +1,60 @@
+{
+  "name": "@castra-kit/app",
+  "version": "0.1.2",
+  "description": "The Castra Worker app in one call: auth, REST, MCP, rate limiting and problem+json, wired in order.",
+  "license": "MIT",
+  "author": "Mehmet Özer Özdaş",
+  "homepage": "https://github.com/ozerozdas/castra#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ozerozdas/castra.git",
+    "directory": "packages/app"
+  },
+  "bugs": "https://github.com/ozerozdas/castra/issues",
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "d1",
+    "baas",
+    "hono",
+    "policy"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@castra-kit/auth": "workspace:*",
+    "@castra-kit/core": "workspace:*",
+    "@castra-kit/mcp": "workspace:*",
+    "hono": "4.13.13",
+    "kysely": "0.29.6",
+    "kysely-d1": "0.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.4.0",
+    "@cloudflare/workers-types": "5.20261010.1",
+    "tsup": "8.5.1",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -6,6 +6,7 @@
     "ignoreDeprecations": "6.0",
     "paths": {
       "@castra-kit/auth": ["../auth/src/index.ts"],
+      "@castra-kit/app": ["../app/src/index.ts"],
       "@castra-kit/mcp": ["../mcp/src/index.ts"],
       "@castra-kit/core": ["../core/src/index.ts"]
     }

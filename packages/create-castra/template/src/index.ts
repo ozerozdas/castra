@@ -1,96 +1,22 @@
-import {
-  authRoutes,
-  castraContext,
-  type AuthEnv,
-  type CastraAuthOptions,
-  type CastraAuthVariables,
-} from "@castra-kit/auth";
-import { createMcpRoute } from "@castra-kit/mcp";
-import {
-  createPolicyEngine,
-  createRestRouter,
-  rateLimitWrites,
-  withProblemHandlers,
-  type PolicyEngine,
-  type RateLimiterLike,
-  type SchemaSnapshot,
-} from "@castra-kit/core";
-import { Hono } from "hono";
-import { Kysely } from "kysely";
-import { D1Dialect } from "kysely-d1";
+import { createCastraApp, type CastraBindings } from "@castra-kit/app";
+import type { CastraAuthOptions } from "@castra-kit/auth";
+import type { SchemaSnapshot } from "@castra-kit/core";
 import config from "../castra.config";
 import schema from "../castra/schema.json";
 
-export interface Env extends AuthEnv {
-  DB: D1Database;
-  /** Workers Rate Limiting binding (`ratelimits` in wrangler.jsonc). */
-  RATE_LIMITER?: RateLimiterLike;
-}
+/** The Worker's bindings. Add your own here. */
+export type Env = CastraBindings;
 
-type AppEnv = { Bindings: Env; Variables: CastraAuthVariables };
-
-/** Roles known to auth (mirrors `roles` in castra.config.ts). */
+/** Roles known to auth (mirrors `roles` in castra.config.ts). Add `trustedOrigins` etc. here. */
 export const authOptions: CastraAuthOptions = {
   roles: config.roles,
 };
 
-/** The committed schema snapshot (`castra generate`). */
-export const snapshot = schema as unknown as SchemaSnapshot;
-
-/** The policy engine shared by REST and MCP. */
-export const engine: PolicyEngine = createPolicyEngine({ config, snapshot });
-
-// One Kysely instance per D1 binding object.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const dbs = new WeakMap<D1Database, Kysely<any>>();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function kyselyFor(d1: D1Database): Kysely<any> {
-  let db = dbs.get(d1);
-  if (!db) {
-    db = new Kysely({ dialect: new D1Dialect({ database: d1 }) });
-    dbs.set(d1, db);
-  }
-  return db;
-}
-
-/** Builds the Worker app. */
-export function createApp() {
-  // Unmatched routes and uncaught errors answer application/problem+json.
-  const app = withProblemHandlers(new Hono<AppEnv>());
-
-  // Limits writes per client IP before anything else runs (ADR 0072).
-  app.use("*", rateLimitWrites<AppEnv>((c) => c.env.RATE_LIMITER));
-
-  app.get("/health", (c) => c.json({ ok: true }));
-
-  // Remote MCP (read-only tools, MCP tokens only, every call audited). Mounted before the session /
-  // API-key middleware: /mcp never accepts sessions or API keys.
-  app.route("/", createMcpRoute<AppEnv>({ config, snapshot, engine, getD1: (c) => c.env.DB }));
-
-  // Better Auth under /api/auth/*, then the request context (session, API key or anonymous).
-  authRoutes(app, authOptions);
-  app.use("*", castraContext(authOptions));
-
-  app.get("/me", (c) => {
-    const ctx = c.get("ctx");
-    return c.json({ user: ctx.user, roles: ctx.roles, via: ctx.via });
-  });
-
-  // Auto-CRUD under /api/<table> for tables with a policy, plus /openapi.json.
-  app.route(
-    "/",
-    createRestRouter<AppEnv>({
-      config,
-      snapshot,
-      engine,
-      getDb: (c) => kyselyFor(c.env.DB),
-      getD1: (c) => c.env.DB,
-      getContext: (c) => c.get("ctx"),
-      openapi: { title: "Castra app" },
-    }),
-  );
-
-  return app;
-}
-
-export default createApp();
+// Auth, REST, MCP, rate limiting and problem+json come from @castra-kit/app (ADR 0077), so upgrades are a
+// package bump. Use `before` for CORS or logging and `routes` for custom routes (they see `c.get("ctx")`).
+export default createCastraApp<Env>({
+  config,
+  snapshot: schema as unknown as SchemaSnapshot,
+  auth: authOptions,
+  openapi: { title: "Castra app" },
+});

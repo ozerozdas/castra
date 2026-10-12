@@ -11,6 +11,7 @@ packages/
   core/           # policy engine, schema snapshot, query builder, REST router (Hono), OpenAPI
   auth/           # Better Auth wiring, roles table, ctx resolution
   mcp/            # MCP tools (shared), stdio entry + Worker /mcp route
+  app/            # createCastraApp: the Worker wiring (ADR 0077)
   cli/            # `castra` binary: provision, generate, migrate, deploy, test, mcp, doctor
   create-castra/  # `npm create @castra-kit@latest <name>` scaffolder
 examples/

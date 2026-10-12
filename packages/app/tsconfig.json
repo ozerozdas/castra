@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "@cloudflare/workers-types"],
+    "paths": {
+      "@castra-kit/core": ["../core/src/index.ts"],
+      "@castra-kit/auth": ["../auth/src/index.ts"],
+      "@castra-kit/mcp": ["../mcp/src/index.ts"]
+    }
+  },
+  "include": ["src", "test", "tsup.config.ts", "vitest.config.ts"]
+}

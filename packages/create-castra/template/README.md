@@ -59,7 +59,7 @@ in `castra-backups/` are full copies of your data; the folder is gitignored, so 
 | `castra.config.ts` | Roles and per-table policies (`read`, `create`, `update`, `delete`, fields) |
 | `migrations/` | `0001` app tables, `0002` Better Auth + roles + API keys, `0003` MCP tokens + audit |
 | `castra/` | Generated schema snapshot and Kysely types (`pnpm generate`) |
-| `src/index.ts` | The Worker: auth, `/mcp`, REST router |
+| `src/index.ts` | The Worker: `createCastraApp` (auth, `/mcp`, REST router) plus your own routes |
 | `test/` | Workers-runtime tests on a local D1 |
 
 Docs: https://github.com/ozerozdas/castra (`docs/ARCHITECTURE.md`, `docs/cloudflare-token.md`).

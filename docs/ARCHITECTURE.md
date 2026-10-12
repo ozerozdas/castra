@@ -43,6 +43,8 @@ auth, provisioning and auto-CRUD are conveniences around it.
 ```
 
 No request — from an app or an agent — reaches data without passing auth and the policy engine.
+`@castra-kit/app` (`createCastraApp`) wires these layers into one Hono app, so the order ships with the packages
+([ADR 0077](adr/0077-create-castra-app.md)).
 
 ## 3. Policy engine (the core)
 

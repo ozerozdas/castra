@@ -32,6 +32,9 @@ importers:
 
   examples/blog:
     dependencies:
+      '@castra-kit/app':
+        specifier: workspace:*
+        version: link:../../packages/app
       '@castra-kit/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -69,6 +72,43 @@ importers:
       wrangler:
         specifier: 4.149.0
         version: 4.149.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)
+
+  packages/app:
+    dependencies:
+      '@castra-kit/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@castra-kit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@castra-kit/mcp':
+        specifier: workspace:*
+        version: link:../mcp
+      hono:
+        specifier: 4.13.13
+        version: 4.13.13
+      kysely:
+        specifier: 0.29.6
+        version: 0.29.6
+      kysely-d1:
+        specifier: 0.4.0
+        version: 0.4.0(kysely@0.29.6)
+    devDependencies:
+      '@cloudflare/vitest-plugin':
+        specifier: 1.4.0
+        version: 1.4.0(@cloudflare/workers-types@5.20261010.1)(@types/node@22.20.5)(vitest@5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
+      '@cloudflare/workers-types':
+        specifier: 5.20261010.1
+        version: 5.20261010.1
+      tsup:
+        specifier: 8.5.1
+        version: 8.5.1(postcss@8.5.29)(typescript@6.0.3)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 5.0.3
+        version: 5.0.3(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
 
   packages/auth:
     dependencies:
@@ -168,6 +208,9 @@ importers:
 
   packages/create-castra:
     devDependencies:
+      '@castra-kit/app':
+        specifier: workspace:*
+        version: link:../app
       '@castra-kit/auth':
         specifier: workspace:*
         version: link:../auth

@@ -1,99 +1,21 @@
-import {
-  authRoutes,
-  castraContext,
-  requireRole,
-  type AuthEnv,
-  type CastraAuthOptions,
-  type CastraAuthVariables,
-} from "@castra-kit/auth";
-import { createMcpRoute } from "@castra-kit/mcp";
-import {
-  createPolicyEngine,
-  createRestRouter,
-  rateLimitWrites,
-  withProblemHandlers,
-  type PolicyEngine,
-  type RateLimiterLike,
-  type SchemaSnapshot,
-} from "@castra-kit/core";
-import { Hono } from "hono";
-import { Kysely } from "kysely";
-import { D1Dialect } from "kysely-d1";
+import { createCastraApp, type CastraBindings } from "@castra-kit/app";
+import { requireRole, type CastraAuthOptions } from "@castra-kit/auth";
+import type { SchemaSnapshot } from "@castra-kit/core";
 import config from "../castra.config";
 import schema from "../castra/schema.json";
 
-export interface Env extends AuthEnv {
-  DB: D1Database;
-  /** Workers Rate Limiting binding (`ratelimits` in wrangler.jsonc). */
-  RATE_LIMITER?: RateLimiterLike;
-}
-
-type AppEnv = { Bindings: Env; Variables: CastraAuthVariables };
+export type Env = CastraBindings;
 
 /** Role list for the example (mirrors `roles` in castra.config.ts). */
 export const authOptions: CastraAuthOptions = {
   roles: config.roles,
 };
 
-/** The committed schema snapshot (`castra generate`). */
-export const snapshot = schema as unknown as SchemaSnapshot;
-
-/** The policy engine shared by REST and MCP. */
-export const engine: PolicyEngine = createPolicyEngine({ config, snapshot });
-
-// One Kysely instance per D1 binding object.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const dbs = new WeakMap<D1Database, Kysely<any>>();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function kyselyFor(d1: D1Database): Kysely<any> {
-  let db = dbs.get(d1);
-  if (!db) {
-    db = new Kysely({ dialect: new D1Dialect({ database: d1 }) });
-    dbs.set(d1, db);
-  }
-  return db;
-}
-
-/** Builds the blog Worker. Tests pass their own engine; production uses {@link engine}. */
-export function createApp(options: { engine?: PolicyEngine } = {}) {
-  // Hono's route() does not carry notFound/onError over: set the problem+json fallbacks on the root app.
-  const app = withProblemHandlers(new Hono<AppEnv>());
-
-  // Limits writes per client IP before anything else runs (ADR 0072).
-  app.use("*", rateLimitWrites<AppEnv>((c) => c.env.RATE_LIMITER));
-
-  app.get("/health", (c) => c.json({ ok: true }));
-
-  // Remote MCP (read-only tools, MCP tokens only, every call audited). Mounted before the session /
-  // API-key middleware: /mcp never accepts sessions or API keys.
-  app.route("/", createMcpRoute<AppEnv>({ config, snapshot, engine: options.engine ?? engine, getD1: (c) => c.env.DB }));
-
-  authRoutes(app, authOptions);
-  app.use("*", castraContext(authOptions));
-
-  app.get("/me", (c) => {
-    const ctx = c.get("ctx");
-    return c.json({ user: ctx.user, roles: ctx.roles, via: ctx.via });
-  });
-
+export default createCastraApp<Env>({
+  config,
+  snapshot: schema as unknown as SchemaSnapshot,
+  auth: authOptions,
+  openapi: { title: "Castra blog example" },
   // Demo of a role-gated custom route.
-  app.get("/admin/ping", requireRole("admin"), (c) => c.json({ pong: true }));
-
-  // Auto-CRUD + /openapi.json. Mounted after /api/auth/* so the auth handler wins on its paths.
-  app.route(
-    "/",
-    createRestRouter<AppEnv>({
-      config,
-      snapshot,
-      engine: options.engine ?? engine,
-      getDb: (c) => kyselyFor(c.env.DB),
-      getD1: (c) => c.env.DB,
-      getContext: (c) => c.get("ctx"),
-      openapi: { title: "Castra blog example" },
-    }),
-  );
-
-  return app;
-}
-
-export default createApp();
+  routes: (app) => app.get("/admin/ping", requireRole("admin"), (c) => c.json({ pong: true })),
+});

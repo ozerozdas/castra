@@ -204,7 +204,7 @@ command, HTTP endpoints for API key management, and `castra init` (the CLI print
       for anything except trusted verification tooling.
 - [ ] Revoke a token with `castra mcp token revoke <id> [--remote]`. Revoking a user's role takes effect on the next call.
 - [ ] Review `_castra_audit` regularly (`outcome` of `denied`, `unauthorized:*`, `rejected`), and prune old rows with `castra mcp audit prune --older-than <days> --remote`.
-- [ ] Keep the `RATE_LIMITER` binding and `rateLimitWrites` (new projects have both); tune `limit` for your users. On a
+- [ ] Keep the `RATE_LIMITER` binding (`createCastraApp` applies `rateLimitWrites`; it warns once when the binding is missing); tune `limit` for your users. On a
       custom domain, add a WAF rule for reads ([rate limiting](rate-limiting.md)).
 - [ ] Restrict `trustedOrigins` for Better Auth to your real front-end origins.
 - [ ] Review every `custom()` and `where()` rule and give each allow and deny tests.

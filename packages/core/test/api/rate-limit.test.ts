@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { rateLimitWrites, type RateLimiterLike } from "../../src/index.js";
 
 /** A fake binding: allows `max` calls per key and records every key. */
@@ -57,10 +57,18 @@ describe("rateLimitWrites (ADR 0072)", () => {
     expect(keys).toEqual(["one.dev:1.1.1.1", "two.dev:1.1.1.1"]);
   });
 
-  it("does not limit without a client IP or without a binding", async () => {
+  it("does not limit without a client IP or without a binding; a missing binding warns once (ADR 0077)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { limiter, keys } = fakeLimiter(0);
     expect((await app(limiter).request("https://x.dev/api/notes", { method: "POST" })).status).toBe(200);
     expect(keys).toEqual([]);
-    expect((await app(undefined).request("https://x.dev/api/notes", { method: "POST", headers: ip("1.1.1.1") })).status).toBe(200);
+    expect((await app(undefined).request("https://x.dev/api/notes", { method: "GET", headers: ip("1.1.1.1") })).status).toBe(200);
+    expect(warn).not.toHaveBeenCalled();
+    for (let i = 0; i < 2; i++) {
+      expect((await app(undefined).request("https://x.dev/api/notes", { method: "POST", headers: ip("1.1.1.1") })).status).toBe(200);
+    }
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain("RATE_LIMITER");
+    warn.mockRestore();
   });
 });

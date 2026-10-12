@@ -22,6 +22,7 @@ pnpm --filter @castra-kit/create test:e2e   # scaffold + install + wrangler dev 
 | `packages/core` (`@castra-kit/core`) | Policy engine, schema snapshot, REST router, OpenAPI |
 | `packages/auth` (`@castra-kit/auth`) | Better Auth wiring, roles, API keys, context |
 | `packages/mcp` (`@castra-kit/mcp`) | MCP tools, stdio entry, `/mcp` route |
+| `packages/app` (`@castra-kit/app`) | `createCastraApp`: the Worker wiring (ADR 0077) |
 | `packages/cli` (`@castra-kit/cli`) | The `castra` binary |
 | `packages/create-castra` (`@castra-kit/create`) | Scaffolder and template |
 | `examples/blog` | Reference app and e2e test target |

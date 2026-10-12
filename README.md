@@ -89,6 +89,7 @@ Troubleshooting and FAQ: [Wiki](https://github.com/ozerozdas/castra/wiki).
 | [`@castra-kit/core`](https://www.npmjs.com/package/@castra-kit/core) | Policy engine, schema snapshot, REST router, OpenAPI |
 | [`@castra-kit/auth`](https://www.npmjs.com/package/@castra-kit/auth) | Better Auth wiring, roles, API keys |
 | [`@castra-kit/mcp`](https://www.npmjs.com/package/@castra-kit/mcp) | MCP tools, stdio server, `/mcp` route |
+| [`@castra-kit/app`](https://www.npmjs.com/package/@castra-kit/app) | `createCastraApp`: the Worker wiring in one call |
 | [`@castra-kit/cli`](https://www.npmjs.com/package/@castra-kit/cli) | The `castra` command |
 | [`@castra-kit/create`](https://www.npmjs.com/package/@castra-kit/create) | Project scaffolder |
 

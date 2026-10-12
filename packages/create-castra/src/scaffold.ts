@@ -36,6 +36,7 @@ export const CASTRA_PACKAGES: Readonly<Record<string, string>> = {
   "@castra-kit/core": "packages/core",
   "@castra-kit/auth": "packages/auth",
   "@castra-kit/mcp": "packages/mcp",
+  "@castra-kit/app": "packages/app",
   "@castra-kit/cli": "packages/cli",
 };
 
