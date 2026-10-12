@@ -2,6 +2,17 @@
 
 All `@castra-kit/*` packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## 0.2.1 (2026-10-12)
+
+Bump the `@castra-kit/*` packages; no template changes. Coming from 0.1.x, follow
+[docs/upgrading/0.2.0.md](docs/upgrading/0.2.0.md) and use `0.2.1` in its `pnpm add` line.
+
+### Fixed
+- `checkRow` (dry run, `check_access`) now stores numeric text with a fraction or exponent in INTEGER/NUMERIC columns
+  as SQLite does: REAL, then INTEGER when integral (`"1e3"`, `"123456789012345678.5"`). `typeof()` and
+  `CAST(... AS TEXT)` rules could get a different answer than the real write. The guarded write was already exact.
+  The npm 0.2.0 packages were published without this fix (the `v0.2.0` tag includes it).
+
 ## 0.2.0 (2026-10-12)
 
 Upgrading an existing project: follow [docs/upgrading/0.2.0.md](docs/upgrading/0.2.0.md) (package commands, scripts
@@ -41,11 +52,6 @@ and template diffs; `src/index.ts` becomes one `createCastraApp` call).
   after a plan and typing the Worker name (`--confirm` in scripts, `--dry-run` to only list). D1 is exported with
   `wrangler d1 export` first unless `--skip-backup`. Recorded ids are reset to placeholders, so a rerun deletes
   nothing and `castra deploy` starts fresh ([ADR 0076](docs/adr/0076-castra-destroy.md), #16).
-
-### Fixed
-- `checkRow` (dry run, `check_access`) now stores numeric text with a fraction or exponent in INTEGER/NUMERIC columns
-  as SQLite does: REAL, then INTEGER when integral (`"1e3"`, `"123456789012345678.5"`). `typeof()` and
-  `CAST(... AS TEXT)` rules could get a different answer than the real write. The guarded write was already exact.
 
 ## 0.1.2 (2026-10-11)
 
