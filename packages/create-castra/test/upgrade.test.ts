@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { stripVTControlCharacters } from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { localPackageSpecs, scaffold } from "../src/scaffold.js";
 
@@ -33,7 +34,8 @@ function run(command: string, args: string[], cwd: string): Promise<{ code: numb
 async function expectOk(command: string, args: string[], cwd: string): Promise<string> {
   const r = await run(command, args, cwd);
   expect(r.code, `${command} ${args.join(" ")}\n${r.output}`).toBe(0);
-  return r.output;
+  // CI forces colour; strip it so the summary lines match.
+  return stripVTControlCharacters(r.output);
 }
 
 /** Fenced blocks of one language (``` or ````). */
