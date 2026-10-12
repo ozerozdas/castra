@@ -55,8 +55,14 @@ A change that deviates from ARCHITECTURE.md starts with an ADR in `docs/adr/NNNN
 
 ## Releasing (maintainer)
 
-All five packages share one version. Bump them together, add a `CHANGELOG.md` entry, run the full pipeline,
+All `@castra-kit/*` packages share one version. Bump them together, add a `CHANGELOG.md` entry, run the full pipeline,
 `pnpm -r publish`, tag `vX.Y.Z` and create a GitHub release.
+
+Every release that changes the template gets an upgrade note, `docs/upgrading/X.Y.Z.md`, starting with
+`<!-- upgrade-from: vPREVIOUS -->`. Its "Template changes" section is generated: run
+`node scripts/upgrade-note.mjs X.Y.Z --write` before tagging, and link the note from the CHANGELOG entry. CI checks the
+section is current (`--check`) and runs `pnpm --filter @castra-kit/create test:upgrade`, which scaffolds the previous
+release's template, applies the note as written and runs the project's tests ([ADR 0083](docs/adr/0083-upgrade-notes.md)).
 
 By contributing you agree that your contributions are licensed under the [MIT License](LICENSE) and that you follow the
 [Code of Conduct](CODE_OF_CONDUCT.md).
