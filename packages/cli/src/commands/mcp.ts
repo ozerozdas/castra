@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { pathToFileURL } from "node:url";
 import type { CastraConfig, SchemaSnapshot } from "@castra-kit/core";
@@ -99,6 +99,8 @@ export async function mcp(options: McpOptions, deps: Omit<DoctorDeps, "log" | "e
         );
         return { ok: r.code === 0, checks: r.checks, drift: r.drift };
       },
+      // propose_policy (ADR 0082) diffs the file as it is now; the running config stays the one loaded above.
+      configSource: async () => ({ path: relative(options.cwd, configPath), source: await readFile(configPath, "utf8") }),
     });
     process.stderr.write(`castra mcp: serving ${Object.keys(config.tables).length} configured table(s) from local D1 "${binding}" over stdio\n`);
     await closed;

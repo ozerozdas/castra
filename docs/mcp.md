@@ -11,6 +11,10 @@ policies, field rules and the write guard apply unchanged. There are no admin to
   It also serves **`deploy_status`**, which runs the `castra doctor` checks (token permissions, bindings, package
   versions, schema drift; `remote: true` compares with the deployed D1) and returns one row per check with a fix
   ([ADR 0079](adr/0079-deploy-status-and-doctor-checks.md)). It uses `CLOUDFLARE_API_TOKEN` if set.
+  And **`propose_policy`** `{ table, op, rule }`: returns a unified diff of `castra.config.ts` that sets the rule
+  (`isPublic()`, `authenticated()`, `role(...)`, `owner(...)`, `.and()`, `.or()`) or removes it (`rule: null`). The rule
+  is parsed, never evaluated, and checked against the current roles and schema. Nothing is applied: the file and the
+  running policy stay as they are until you apply the diff and add tests ([ADR 0082](adr/0082-propose-policy.md)).
 - **Remote, `POST /mcp` on the deployed Worker:** needs `Authorization: Bearer castra_mcp_...`.
 
   ```sh

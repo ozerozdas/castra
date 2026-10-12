@@ -5,6 +5,10 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 ## Unreleased
 
 ### Added
+- MCP tool `propose_policy` (local `castra mcp` only): `{ table, op, rule }` returns a unified diff of
+  `castra.config.ts`, validated against the current roles and schema and never applied. Rules are parsed from a small
+  grammar (`isPublic`, `authenticated`, `role`, `owner`, `.and`, `.or`), never evaluated
+  ([ADR 0082](docs/adr/0082-propose-policy.md), #12).
 - MCP write tools `create_data`, `update_data`, `delete_data` run `POST` / `PATCH` / `DELETE` through the REST write
   path (policies, field rules, write guard). Local stdio: any `as`. Remote `/mcp`: new scope `data:write`, only as
   the token's own user; an `attempt` audit row is stored before each write

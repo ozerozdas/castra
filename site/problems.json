@@ -48,6 +48,16 @@
     ],
     "fix": "Create a token with the missing scope: `castra mcp token create --scopes ...`. The response names the missing scope."
   },
+  "invalid_rule": {
+    "status": 400,
+    "summary": "`propose_policy` could not turn the rule into a valid config change.",
+    "causes": [
+      "The rule uses something other than `isPublic()`, `authenticated()`, `role(...)`, `owner(...)`, `.and()` or `.or()`; `.where()` and `custom()` need code and are added by hand.",
+      "It names a role that is not in `roles`, or an owner column the table does not have.",
+      "The config is not a `tables: { ... }` object literal the tool can edit (spread or computed keys)."
+    ],
+    "fix": "Read `detail`, fix the rule, or edit castra.config.ts by hand (ADR 0082)."
+  },
   "invalid_request": {
     "status": 400,
     "summary": "The query string or request shape is not valid.",

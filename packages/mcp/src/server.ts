@@ -2,8 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { jsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/types.js";
 import { z } from "zod";
+import { toProblem } from "@castra-kit/core";
 import type { ToolAccess } from "./identity.js";
 import type { ToolName } from "./scopes.js";
+import { proposePolicy } from "./propose.js";
 import { castraTools, type CastraToolsOptions, type ToolOutcome } from "./tools.js";
 
 /** Package version reported in the MCP `initialize` result. */
@@ -30,7 +32,15 @@ export interface CastraMcpServerOptions extends CastraToolsOptions {
    * `/mcp` route never sets it.
    */
   deployStatus?: DeployStatusFn;
+  /**
+   * Registers `propose_policy` (local only, ADR 0082): reads the current `castra.config.ts` for the diff. The remote
+   * `/mcp` route never sets it.
+   */
+  configSource?: ConfigSourceFn;
 }
+
+/** Reads the project's config file for `propose_policy`: its path (as shown in the diff) and text. */
+export type ConfigSourceFn = () => Promise<{ path: string; source: string }>;
 
 /** Runs the `castra doctor` checks for `deploy_status`; `remote` compares the snapshot with the deployed D1. */
 export type DeployStatusFn = (input: { remote: boolean }) => Promise<Record<string, unknown>>;
@@ -101,6 +111,34 @@ export function createCastraMcpServer(options: CastraMcpServerOptions): McpServe
           return toResult({ outcome: "ok", status: 200, data: await deployStatus({ remote: args.remote === true }) });
         } catch (e) {
           return toResult({ outcome: "error", status: 500, data: { detail: e instanceof Error ? e.message : String(e) } });
+        }
+      },
+    );
+  }
+  const configSource = options.configSource;
+  if (configSource) {
+    server.registerTool(
+      "propose_policy",
+      {
+        title: "Propose a policy change",
+        description:
+          "Returns a unified diff of castra.config.ts that sets (or, with rule: null, removes) one table's policy for one operation. " +
+          'The rule uses isPublic(), authenticated(), role("..."), owner("column"), .and(), .or(); .where() and custom() need code and are added by hand. ' +
+          "It is checked against the current roles and schema. NEVER applied: the file and the running policy stay unchanged until a developer applies the diff.",
+        inputSchema: {
+          table: z.string().min(1).max(256),
+          op: z.enum(["read", "create", "update", "delete"]),
+          rule: z.string().max(2048).nullable().describe('e.g. owner("author_id").or(role("admin")); null closes the operation.'),
+        },
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      },
+      async (args: { table: string; op: "read" | "create" | "update" | "delete"; rule: string | null }) => {
+        try {
+          const { path, source } = await configSource();
+          return toResult({ outcome: "ok", status: 200, data: proposePolicy(args, { config: options.config, snapshot: options.snapshot, path, source }) });
+        } catch (e) {
+          const p = toProblem(e);
+          return toResult({ outcome: "error", status: p.status, data: { ...p } });
         }
       },
     );

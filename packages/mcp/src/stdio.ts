@@ -8,7 +8,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CastraConfig, D1DatabaseLike, PolicyEngine, SchemaSnapshot } from "@castra-kit/core";
 import { mcpDb, type D1Like } from "./db.js";
 import { localAccess } from "./identity.js";
-import { createCastraMcpServer, type DeployStatusFn } from "./server.js";
+import { createCastraMcpServer, type ConfigSourceFn, type DeployStatusFn } from "./server.js";
 
 /** Options of {@link serveStdio}. */
 export interface ServeStdioOptions {
@@ -23,6 +23,8 @@ export interface ServeStdioOptions {
   stdout?: Writable;
   /** Registers `deploy_status` (ADR 0079). */
   deployStatus?: DeployStatusFn;
+  /** Registers `propose_policy` (ADR 0082). */
+  configSource?: ConfigSourceFn;
 }
 
 /**
@@ -42,6 +44,7 @@ export async function serveStdio(options: ServeStdioOptions): Promise<McpServer>
     access: localAccess(db, options.config),
     name: "castra-local",
     deployStatus: options.deployStatus,
+    configSource: options.configSource,
   });
   await server.connect(new StdioServerTransport(options.stdin, options.stdout));
   return server;

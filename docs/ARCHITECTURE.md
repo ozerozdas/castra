@@ -127,7 +127,7 @@ only as the token's own user (ADR 0081).
 | `explain_query` | REST request → generated SQL + applied policies | yes | yes | v0.1 |
 | `query_data` | Policy-bound read as a given identity | yes | scoped token | v0.1 |
 | `create_data` / `update_data` / `delete_data` | Write through the REST write path | yes | `data:write`, own user | v0.2 |
-| `propose_policy` | Config diff proposal, never applied | yes | no | v0.2 |
+| `propose_policy` | Config diff proposal, never applied (ADR 0082) | yes | no | v0.2 |
 | `generate_migration` / `apply_migration` | Migration; apply requires approval | yes | no | v0.2 |
 | `deploy_status` | Provisioning, bindings, schema drift | yes | no | v0.2 |
 

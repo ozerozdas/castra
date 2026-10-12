@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -229,9 +229,19 @@ export default defineConfig({
         "deploy_status",
         "describe_schema",
         "explain_query",
+        "propose_policy",
         "query_data",
         "update_data",
       ]);
+      // propose_policy returns a diff of the real castra.config.ts and leaves it (and the running policy) alone.
+      const configBefore = await readFile(join(project, "castra.config.ts"), "utf8");
+      const proposal = (await rpc("tools/call", { name: "propose_policy", arguments: { table: "notes", op: "delete", rule: 'role("admin")' } })).result.structuredContent;
+      expect(proposal.applied).toBe(false);
+      expect(proposal.diff).toContain('+    delete: role("admin"),');
+      expect(proposal.diff).toContain('+import { defineConfig, isPublic, owner, role } from "@castra-kit/core";');
+      expect(await readFile(join(project, "castra.config.ts"), "utf8")).toBe(configBefore);
+      const del = await rpc("tools/call", { name: "check_access", arguments: { table: "notes", op: "delete", as: { userId: "u1" } } });
+      expect(del.result.structuredContent.allowed).toBe(false);
       // Writes over stdio (ADR 0081): the owner may update, anonymous may not; the row shows which happened.
       const write = async (as: unknown, status: string) =>
         (await rpc("tools/call", { name: "update_data", arguments: { path: "/api/notes/n2", body: { status }, as } })).result.structuredContent.status;
