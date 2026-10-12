@@ -207,6 +207,20 @@ describe("FINDING B: integral JS numbers are REAL in checkRow but INTEGER once s
       const rule = authenticated().where((q) => sql<boolean>`CAST(${q.eb.ref(col)} AS TEXT) LIKE '%.0'`);
       expectAgreement(await checkVsStored("r2_aff", rule, { [col]: 3 }), { col });
     });
+    // Numeric text with a fraction or exponent is a REAL first, then an INTEGER if integral (CI seed -167597892).
+    for (const text of ["123456789012345678.5", "1e3", " 2.0 "]) {
+      it(`typeof(${col}) for ${JSON.stringify(text)}: 'integer' allows, 'real' denies`, async () => {
+        for (const type of ["integer", "real"]) {
+          const rule = authenticated().where((q) => sql<boolean>`typeof(${q.eb.ref(col)}) = ${type}`);
+          const o = await checkVsStored("r2_aff", rule, { [col]: text });
+          expect({ type, stored: o.stored, check: o.check, guarded: o.guarded }).toEqual({ type, stored: type === "integer", check: type === "integer", guarded: type === "integer" });
+        }
+      });
+    }
+    it(`typeof(${col}) for "1.5" stays 'real'`, async () => {
+      const rule = authenticated().where((q) => sql<boolean>`typeof(${q.eb.ref(col)}) = 'real'`);
+      expectAgreement(await checkVsStored("r2_aff", rule, { [col]: "1.5" }), { col });
+    });
   }
 
   it("property: typeof / CAST AS TEXT / length predicates on every affinity", async () => {

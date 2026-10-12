@@ -42,6 +42,11 @@ and template diffs; `src/index.ts` becomes one `createCastraApp` call).
   `wrangler d1 export` first unless `--skip-backup`. Recorded ids are reset to placeholders, so a rerun deletes
   nothing and `castra deploy` starts fresh ([ADR 0076](docs/adr/0076-castra-destroy.md), #16).
 
+### Fixed
+- `checkRow` (dry run, `check_access`) now stores numeric text with a fraction or exponent in INTEGER/NUMERIC columns
+  as SQLite does: REAL, then INTEGER when integral (`"1e3"`, `"123456789012345678.5"`). `typeof()` and
+  `CAST(... AS TEXT)` rules could get a different answer than the real write. The guarded write was already exact.
+
 ## 0.1.2 (2026-10-11)
 
 Upgrading an existing project: bump the `@castra-kit/*` packages, add the `RATE_LIMITER` binding and the

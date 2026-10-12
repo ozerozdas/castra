@@ -798,6 +798,9 @@ function castToAffinity(col: ColumnSnapshot, value: unknown, strict: boolean): R
     case "NUMERIC":
       // D1 binds every JS number as REAL; storage turns an integral REAL into an INTEGER (finding B).
       if (isExactInteger(value)) return sql`CAST(${value} AS INTEGER)`;
+      // Numeric text that is not an integer literal is stored as a REAL, then as an INTEGER when integral
+      // ("1e3", "123456789012345678.5"); CAST(... AS NUMERIC) keeps it REAL.
+      if (isNumericText && !INT_LITERAL.test(value.trim()) && isExactInteger(Number(value))) return sql`CAST(${Number(value)} AS INTEGER)`;
       return isNumberLike || isNumericText ? sql`CAST(${value} AS NUMERIC)` : sql`${value}`;
     case "REAL":
       return isNumberLike || isNumericText ? sql`CAST(${value} AS REAL)` : sql`${value}`;
