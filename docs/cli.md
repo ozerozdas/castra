@@ -10,11 +10,12 @@ Exit codes: 0 success, 1 check or runtime failure, 2 usage error or not implemen
 | `castra migrate` | `wrangler d1 migrations apply` | `--local` (default), `--remote`, `--config`, `--binding`, `--account-id` |
 | `castra doctor` | Verify token, permissions, bindings and local drift; read-only | `--config`, `--account-id`, `--storage`, `--out` |
 | `castra deploy` | provision -> migrate --remote -> drift check -> `BETTER_AUTH_SECRET` if missing -> `wrangler deploy` | `--config`, `--account-id`, `--storage`, `--binding`, `--out` |
+| `castra destroy` | Delete the Worker, D1 (exported first), KV `CACHE` and R2 recorded in `wrangler.jsonc`, after typing the Worker name; resets the ids to placeholders; idempotent ([ADR 0076](adr/0076-castra-destroy.md)) | `--config`, `--account-id`, `--dry-run`, `--confirm <worker>`, `--backup-dir <dir>`, `--skip-backup` |
 | `castra test policies` | Run the project's `vitest run policies` (files whose path contains `policies`); no matching file fails ([ADR 0037](adr/0037-castra-test-policies.md)) | extra vitest args after `--` |
 | `castra mcp` | Local stdio MCP server | `--config <castra.config.ts>`, `--wrangler <path>`, `--binding`, `--out` |
 | `castra mcp token create` / `revoke <id>` | Manage `/mcp` tokens | `--user`, `--scopes`, `--name`, `--expires-in`, `--local`, `--remote`, `--config`, `--binding`, `--account-id` |
 | `castra mcp audit prune` | Delete `_castra_audit` rows older than N days ([ADR 0070](adr/0070-audit-prune-command.md)) | `--older-than <days>` (required), `--local`, `--remote`, `--config`, `--binding`, `--account-id` |
 | `castra init` | Add Castra to an existing project | Deferred, prints "not implemented yet" and exits 2 ([ADR 0038](adr/0038-castra-init-deferred.md)). Copy the migrations, config and `src/index.ts` wiring from a scaffold by hand. |
 
-Environment: `CLOUDFLARE_API_TOKEN` (provision, doctor, deploy, `migrate --remote`, `mcp token --remote`),
+Environment: `CLOUDFLARE_API_TOKEN` (provision, doctor, deploy, destroy, `migrate --remote`, `mcp token --remote`),
 `CLOUDFLARE_ACCOUNT_ID` (optional when the token sees one account).

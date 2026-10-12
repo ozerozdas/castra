@@ -31,6 +31,8 @@ export class FakeCloudflare {
   d1: { uuid: string; name: string }[] = [];
   kv: { id: string; title: string }[] = [];
   r2: { name: string }[] = [];
+  /** R2 buckets that still hold objects: DELETE fails like Cloudflare does. */
+  r2NonEmpty = new Set<string>();
   /** Worker name -> secret names. Absent = Worker does not exist. */
   secrets = new Map<string, string[]>();
   subdomain = "testsub";
@@ -107,6 +109,39 @@ export class FakeCloudflare {
         this.d1.push(db);
         return this.ok(db);
       }
+    }
+    if ((m = path.match(/^\/accounts\/[^/]+\/d1\/database\/([^/]+)$/)) && (method === "GET" || method === "DELETE")) {
+      const denied = this.deny("d1");
+      if (denied) return denied;
+      const i = this.d1.findIndex((d) => d.uuid === decodeURIComponent(m![1]!));
+      if (i < 0) return this.fail(404, 7404, "The database could not be found");
+      if (method === "GET") return this.ok(this.d1[i]);
+      this.d1.splice(i, 1);
+      return this.ok(null);
+    }
+    if ((m = path.match(/^\/accounts\/[^/]+\/storage\/kv\/namespaces\/([^/]+)$/)) && method === "DELETE") {
+      const denied = this.deny("kv");
+      if (denied) return denied;
+      const i = this.kv.findIndex((n) => n.id === decodeURIComponent(m![1]!));
+      if (i < 0) return this.fail(404, 10013, "namespace not found");
+      this.kv.splice(i, 1);
+      return this.ok(null);
+    }
+    if ((m = path.match(/^\/accounts\/[^/]+\/r2\/buckets\/([^/]+)$/)) && method === "DELETE") {
+      const denied = this.deny("r2");
+      if (denied) return denied;
+      const name = decodeURIComponent(m[1]!);
+      const i = this.r2.findIndex((b) => b.name === name);
+      if (i < 0) return this.fail(404, 10006, "The specified bucket does not exist.");
+      if (this.r2NonEmpty.has(name)) return this.fail(409, 10008, "The bucket you tried to delete is not empty.");
+      this.r2.splice(i, 1);
+      return this.ok({});
+    }
+    if ((m = path.match(/^\/accounts\/[^/]+\/workers\/scripts\/([^/]+)$/)) && method === "DELETE") {
+      const denied = this.deny("workers");
+      if (denied) return denied;
+      if (!this.secrets.delete(decodeURIComponent(m[1]!))) return this.fail(404, 10007, "This Worker does not exist on your account.");
+      return this.ok({});
     }
     if (/^\/accounts\/[^/]+\/d1\/database\/[^/]+\/query$/.test(path) && method === "POST") {
       return this.deny("d1") ?? this.ok([{ results: this.d1Query(String(body?.sql), (body?.params as unknown[] | undefined) ?? []), success: true }]);

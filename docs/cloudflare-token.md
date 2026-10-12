@@ -1,6 +1,6 @@
 # Cloudflare API token for Castra
 
-`castra provision`, `castra doctor`, `castra migrate --remote` and `castra deploy` read the token from
+`castra provision`, `castra doctor`, `castra migrate --remote`, `castra deploy` and `castra destroy` read the token from
 `CLOUDFLARE_API_TOKEN`. Set `CLOUDFLARE_ACCOUNT_ID` too unless the token can see exactly one account.
 Never commit the token; in CI store it as a secret.
 
@@ -29,9 +29,9 @@ Tokens created before the prefixed format are 40 plain characters and still work
 
 | Scope | Permission group | Level | Needed for |
 | --- | --- | --- | --- |
-| Account | **Workers Scripts** | Edit | `wrangler deploy`, `wrangler secret put`, listing secrets, workers.dev subdomain |
-| Account | **D1** | Edit | find/create the database, `wrangler d1 migrations apply --remote`, deploy drift check |
-| Account | **Workers KV Storage** | Edit | find/create the `CACHE` namespace |
+| Account | **Workers Scripts** | Edit | `wrangler deploy`, `wrangler secret put`, listing secrets, workers.dev subdomain; `castra destroy` deletes the Worker |
+| Account | **D1** | Edit | find/create the database, `wrangler d1 migrations apply --remote`, deploy drift check; `destroy` exports and deletes it |
+| Account | **Workers KV Storage** | Edit | find/create (and with `destroy`, delete) the `CACHE` namespace |
 | Account | **Workers R2 Storage** | Edit | only with storage enabled (`--storage` or `r2_buckets` in `wrangler.jsonc`) |
 
 The API lists the Edit level under two names, e.g. "D1 Edit" and "D1 Write"; either works. `castra doctor` accepts

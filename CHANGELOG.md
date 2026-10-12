@@ -2,6 +2,14 @@
 
 All `@castra-kit/*` packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## Unreleased
+
+### Added
+- `castra destroy` deletes what `castra deploy` created and `wrangler.jsonc` records (Worker, D1, `CACHE` KV, R2),
+  after a plan and typing the Worker name (`--confirm` in scripts, `--dry-run` to only list). D1 is exported with
+  `wrangler d1 export` first unless `--skip-backup`. Recorded ids are reset to placeholders, so a rerun deletes
+  nothing and `castra deploy` starts fresh ([ADR 0076](docs/adr/0076-castra-destroy.md), #16).
+
 ## 0.1.2 (2026-10-11)
 
 Upgrading an existing project: bump the `@castra-kit/*` packages, add the `RATE_LIMITER` binding and the

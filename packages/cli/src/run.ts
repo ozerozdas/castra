@@ -2,7 +2,9 @@ import { parseArgs } from "node:util";
 import type { ParseArgsConfig } from "node:util";
 import type { FetchFn } from "./cloudflare/api.js";
 import type { CloudflareEnv } from "./cloudflare/connect.js";
+import { createInterface } from "node:readline/promises";
 import { deploy } from "./commands/deploy.js";
+import { destroy } from "./commands/destroy.js";
 import { doctor } from "./commands/doctor.js";
 import { generate } from "./commands/generate.js";
 import { createMcpTokenCommand, pruneMcpAuditCommand, revokeMcpTokenCommand } from "./commands/mcp-token.js";
@@ -32,11 +34,12 @@ Commands:
   migrate    Apply migrations with wrangler (--local by default, or --remote)
   doctor     Check the API token, its permissions, bindings and schema drift
   deploy     provision -> migrate --remote -> drift check -> secrets -> wrangler deploy
+  destroy    Delete the Worker, D1 (exported first), KV and R2 recorded in wrangler.jsonc
   mcp        Serve the read-only MCP tools over stdio against the local D1; \`mcp token\` and \`mcp audit\` manage /mcp
   test       \`test policies\`: run the project's policy allow/deny tests (vitest, local D1)
   ${PLANNED.join(", ")}   (not implemented yet)
 
-Environment: CLOUDFLARE_API_TOKEN (required for provision/doctor/deploy/migrate --remote),
+Environment: CLOUDFLARE_API_TOKEN (required for provision/doctor/deploy/destroy/migrate --remote),
              CLOUDFLARE_ACCOUNT_ID (optional when the token sees a single account).
 
 Run \`castra <command> --help\` for command options.`;
@@ -94,6 +97,20 @@ Options:
   --binding <name>     D1 binding when the config declares several
   --out <dir>          Snapshot directory (default: castra)`;
 
+const DESTROY_USAGE = `Usage: castra destroy [options]
+
+Deletes what castra deploy created and wrangler.jsonc records: the Worker, the D1 database(s), the CACHE KV
+namespace and R2 buckets (which must be empty). Prints the plan, asks you to type the Worker name, exports every
+D1 database with \`wrangler d1 export\`, then deletes. Recorded ids are reset to placeholders. Safe to re-run.
+
+Options:
+  --config <path>      Wrangler config (default: wrangler.jsonc)
+  --account-id <id>    Cloudflare account
+  --dry-run            Print the plan; delete nothing
+  --confirm <name>     Confirm without a prompt (must equal the Worker name)
+  --backup-dir <dir>   Where D1 exports go (default: castra-backups)
+  --skip-backup        Do not export D1 first (the data cannot be recovered)`;
+
 const MCP_USAGE = `Usage: castra mcp [options]
        castra mcp token create --user <id> --scopes "<scopes>" [--name <n>] [--expires-in <days>] [--local | --remote]
        castra mcp token revoke <id> [--local | --remote]
@@ -133,6 +150,17 @@ export interface RunEnv {
   exec: ExecFn;
   /** Environment variables (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID). */
   env: CloudflareEnv;
+  /** Asks a question on the terminal; absent when stdin is not a TTY. */
+  prompt?: (question: string) => Promise<string>;
+}
+
+async function terminalPrompt(question: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stderr });
+  try {
+    return await rl.question(question);
+  } finally {
+    rl.close();
+  }
 }
 
 const defaultEnv = (): RunEnv => ({
@@ -143,6 +171,7 @@ const defaultEnv = (): RunEnv => ({
   fetch: (input, init) => globalThis.fetch(input, init),
   exec: spawnExec,
   env: process.env,
+  prompt: process.stdin.isTTY ? terminalPrompt : undefined,
 });
 
 /**
@@ -175,6 +204,8 @@ export async function run(argv: string[], overrides: Partial<RunEnv> = {}): Prom
         return await runDoctor(rest, env);
       case "deploy":
         return await runDeploy(rest, env);
+      case "destroy":
+        return await runDestroy(rest, env);
       case "mcp":
         return await runMcp(rest, env);
       case "test":
@@ -328,6 +359,38 @@ async function runDeploy(args: string[], env: RunEnv): Promise<number> {
       storage: values.storage,
       binding: values.binding,
       out: values.out,
+    },
+    env,
+  );
+  return result.code;
+}
+
+async function runDestroy(args: string[], env: RunEnv): Promise<number> {
+  const values = parse(
+    args,
+    {
+      ...COMMON,
+      "account-id": { type: "string" },
+      "dry-run": { type: "boolean", default: false },
+      confirm: { type: "string" },
+      "backup-dir": { type: "string" },
+      "skip-backup": { type: "boolean", default: false },
+    },
+    DESTROY_USAGE,
+  );
+  if (values.help) {
+    env.log(DESTROY_USAGE);
+    return 0;
+  }
+  const result = await destroy(
+    {
+      cwd: env.cwd,
+      config: values.config,
+      accountId: values["account-id"],
+      dryRun: values["dry-run"],
+      confirm: values.confirm,
+      backupDir: values["backup-dir"],
+      skipBackup: values["skip-backup"],
     },
     env,
   );

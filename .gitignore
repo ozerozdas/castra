@@ -11,3 +11,6 @@ dist/
 coverage/
 .claude/worktrees/
 .serena/
+
+# castra destroy D1 exports (full data copies)
+castra-backups/

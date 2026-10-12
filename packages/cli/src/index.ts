@@ -19,6 +19,8 @@ export type { MigrateDeps, MigrateOptions } from "./commands/migrate.js";
 export { doctor, formatTable, PERMISSIONS } from "./commands/doctor.js";
 export type { CheckStatus, DoctorCheck, DoctorDeps, DoctorOptions, PermissionSpec } from "./commands/doctor.js";
 export { deploy, parseDeployedUrl, AUTH_SECRET_NAME } from "./commands/deploy.js";
+export { destroy, PLACEHOLDER_ID } from "./commands/destroy.js";
+export type { DestroyDeps, DestroyOptions, DestroyResult, DestroyTarget } from "./commands/destroy.js";
 export type { DeployDeps, DeployOptions, DeployResult } from "./commands/deploy.js";
 export { mcp, loadCastraConfig } from "./commands/mcp.js";
 export type { McpOptions } from "./commands/mcp.js";

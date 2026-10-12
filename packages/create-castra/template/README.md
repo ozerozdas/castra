@@ -32,6 +32,17 @@ curl https://castra-app.<your-subdomain>.workers.dev/health
 and sets `BETTER_AUTH_SECRET` as a Worker secret the first time. It prints the API, `/openapi.json` and `/mcp`
 URLs. Commit `wrangler.jsonc` after the first provision.
 
+## Remove the deployment
+
+```sh
+pnpm run destroy -- --dry-run    # lists what would be deleted
+pnpm run destroy                 # asks for the Worker name, exports D1 to castra-backups/, then deletes
+```
+
+`castra destroy` deletes only what `wrangler.jsonc` records: the Worker, the D1 database, the `CACHE` KV namespace
+and R2 buckets (empty them first). The ids go back to placeholders, so `pnpm run deploy` starts fresh. The exports
+in `castra-backups/` are full copies of your data; the folder is gitignored, so keep them somewhere safe.
+
 ## Change the schema
 
 1. Add `migrations/000N_name.sql`.

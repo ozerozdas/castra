@@ -13,7 +13,8 @@
     "provision": "castra provision",
     "doctor": "castra doctor",
     "migrate": "castra migrate --remote",
-    "deploy": "castra deploy"
+    "deploy": "castra deploy",
+    "destroy": "castra destroy"
   },
   "dependencies": {
     "@castra-kit/auth": "workspace:*",

@@ -147,6 +147,20 @@ export class CloudflareApi {
     return this.paged<D1Database>(`/accounts/${accountId}/d1/database`, 100, query);
   }
 
+  /** A D1 database by id, or `null` when it does not exist. */
+  async getD1(accountId: string, databaseId: string): Promise<D1Database | null> {
+    try {
+      return (await this.request<D1Database>("GET", `/accounts/${accountId}/d1/database/${encodeURIComponent(databaseId)}`)).result;
+    } catch (e) {
+      if (e instanceof CloudflareApiError && (e.isNotFound || e.errors.some((x) => x.code === 7404))) return null;
+      throw e;
+    }
+  }
+
+  async deleteD1(accountId: string, databaseId: string): Promise<void> {
+    await this.request("DELETE", `/accounts/${accountId}/d1/database/${encodeURIComponent(databaseId)}`);
+  }
+
   async createD1(accountId: string, name: string): Promise<D1Database> {
     return (await this.request<D1Database>("POST", `/accounts/${accountId}/d1/database`, { name })).result;
   }
@@ -167,6 +181,20 @@ export class CloudflareApi {
 
   async createKv(accountId: string, title: string): Promise<KvNamespace> {
     return (await this.request<KvNamespace>("POST", `/accounts/${accountId}/storage/kv/namespaces`, { title })).result;
+  }
+
+  async deleteKv(accountId: string, namespaceId: string): Promise<void> {
+    await this.request("DELETE", `/accounts/${accountId}/storage/kv/namespaces/${encodeURIComponent(namespaceId)}`);
+  }
+
+  /** Fails when the bucket still holds objects (Cloudflare refuses to delete a non-empty bucket). */
+  async deleteR2(accountId: string, name: string): Promise<void> {
+    await this.request("DELETE", `/accounts/${accountId}/r2/buckets/${encodeURIComponent(name)}`);
+  }
+
+  /** Deletes a Worker script, without `force`: Cloudflare refuses when another Worker references it. */
+  async deleteWorker(accountId: string, scriptName: string): Promise<void> {
+    await this.request("DELETE", `/accounts/${accountId}/workers/scripts/${encodeURIComponent(scriptName)}`);
   }
 
   async listR2(accountId: string, nameContains?: string): Promise<R2Bucket[]> {
