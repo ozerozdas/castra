@@ -2,6 +2,20 @@
 
 All `@castra-kit/*` packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## Unreleased
+
+## 0.3.0 (prepared; not published)
+
+### Changed
+- MCP audit arguments now store structure with masked values, including write attempts and rejected calls.
+  Historical rows are unchanged; prune them explicitly. Optional `audit.redactKeys` hides entire subtrees.
+
+### Added
+- `castra rollback` checks marked Worker versions against live D1 schema and Wrangler config, supports dry-run
+  and explicit targets, and requires Worker-name confirmation. Deploy records compatibility metadata (ADR 0085, #17).
+- Opt-in `audit.retentionDays` runs one bounded prune batch after remote MCP auditing. Packaged apps configure
+  it with `mcp: { audit: { retentionDays: 30 } }`. Cleanup errors do not change tool results (ADR 0084, #21).
+
 ## 0.2.1 (2026-10-12)
 
 Bump the `@castra-kit/*` packages; no template changes. Coming from 0.1.x, follow

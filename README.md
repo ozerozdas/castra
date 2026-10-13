@@ -17,7 +17,8 @@ agents inspect exactly what production enforces.
 - **Agent-safe MCP.** Read and write tools on the same engine and write path as REST, with scoped tokens and an audit log.
 
 > **Status: v0.2.1** ([changelog](CHANGELOG.md)). Early, but deployed
-> and working. Read [Status and limits](docs/limits.md) before using it for anything important.
+> and working. v0.3.0 is prepared locally; see the [upgrade guide](docs/upgrading/0.3.0.md).
+> Read [Status and limits](docs/limits.md) before using it for anything important.
 
 ## Quick start
 

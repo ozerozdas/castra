@@ -1,6 +1,19 @@
 # Progress
 
-## Status (2026-10-11)
+## Current status (2026-10-13)
+
+v0.2.1 is released. v0.2 delivery includes MCP writes, migration create/status, local policy proposals and
+deployment checks, packaged Worker wiring, auth rate limits, destroy and upgrade notes/tests (ADRs 0076–0083).
+CI at `a80f280` passes all required checks, including upgrade tests. See [current-state.md](../current-state.md)
+for current counts and real-account verification boundaries. The historical sign-offs below describe v0.1.
+
+## Unreleased audit hardening (2026-10-13)
+
+ADR 0084 / #21: argument values masked before truncation (including attempt rows and denied/invalid calls),
+configurable subtree masking and opt-in one-batch retention. No schema migration; audit inserts still fail closed.
+Full validation and upgrade tests passed. MCP: 132 tests; app: 7. Not published or deployed.
+
+## v0.1 sign-off (2026-10-11)
 v0.1 is complete in this repository. Milestones M1-M6 are signed off:
 
 | Milestone | Signed off by |
@@ -292,9 +305,38 @@ Other decisions:
   `hiddenFields`, and `explain_query` shows them in the planned SELECT. Their values are never shown. This is by
   design (ARCHITECTURE §3, "which fields were hidden"), and pinned in `packages/mcp/test/review4.test.ts`.
 - `_castra_audit` growth: a request with a known MCP token id and a wrong secret writes one audit row per request
-  (ADR 0063). `/mcp` is rate limited per IP (ADR 0072, 0.1.2), which slows but does not stop this. Retention is manual: `castra mcp audit prune
-  --older-than <days>` (ADR 0070, 0.1.1).
-- `_castra_audit.arguments` stores tool arguments verbatim, up to 4 KB. Filters, paths and `check_access` rows can
-  contain PII, so operators should treat the table as sensitive and prune it.
+  (ADR 0063). `/mcp` is rate limited per IP (ADR 0072, 0.1.2), which slows but does not stop this. Retention defaults to manual `castra mcp audit prune
+  --older-than <days>`; v0.3.0 adds opt-in bounded request-driven retention (ADR 0084).
+- `_castra_audit.arguments` masks scalar values before truncation (ADR 0084, unreleased). Historical rows
+  can contain PII; treat the table as sensitive and prune them explicitly.
 - Writes (sign-in, sign-up, `/mcp`, table writes) are rate limited per IP by the Workers binding (ADR 0072, 0.1.2).
   Reads are not; `docs/rate-limiting.md` has a WAF rule for custom domains.
+
+
+## Unreleased safe rollback (2026-10-13)
+
+Issue #17 implemented locally per ADR 0085. Deploy stamps immutable version metadata with live schema/config
+fingerprints. CLI rollback checks compatibility, requires confirmation, rechecks state, changes Worker traffic
+without restoring D1, and refuses provider errors without forcing. Fake Cloudflare tests exercise compatible,
+unmarked/incompatible, split-traffic, concurrent-change, confirmation and failed-verification paths. All CI
+checks passed. Live Cloudflare verification is recorded below; publication remains pending.
+
+
+Live integration validation (2026-10-13), Worker `castra-blog`, isolated example D1
+`cc006c2e-6c9f-4f74-9c65-fde20f127f75` (not the consumer API database):
+- Operator verified successful dry-run and rollback from `c9f7f6bd-8954-4c08-8c78-4cb173db0079`
+  to `8a214569-700f-4e6d-8f52-b2adf04a2b73`; CLI verified target activation.
+- Operator changed compatibility_date: config mismatch refused; restoring it made dry-run pass.
+- Agent created a uniquely named empty probe table and ran dry-run: exit 1 with
+  `target schema does not match live D1`. Table removed in finally; complete SQLite DDL compared identical
+  before/after. Final dry-run exited 0. Active deployment id and version remained unchanged throughout.
+No D1 row data was changed; no schema restore or Worker deployment was submitted by the schema test.
+OpenAPI title verification was suggested but its result has not been reported. Concurrent mutations and
+provider changed-secret refusals are covered by automated tests, not live integration exercises.
+
+
+## v0.3.0 prepared (2026-10-13)
+
+All six package versions and MCP server version set to 0.3.0. Scaffold/example rollback scripts,
+generated 0.2.1 upgrade guide and release notes prepared. Required local CI checks and package archive
+validation passed; publication and production consumer upgrade remain pending. See releases/0.3.0.md.

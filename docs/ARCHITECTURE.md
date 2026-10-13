@@ -134,9 +134,14 @@ only as the token's own user (ADR 0081).
 - **Local:** `npx castra mcp` (stdio), uses `wrangler dev` bindings or the Cloudflare API token.
 - **Remote:** `/mcp` on the Worker. Separate MCP tokens with scopes `schema:read`, `access:check`,
   `data:read`, `data:write`; no scope grants admin. Reading as another user needs its own scope. Every call is
-  written to `_castra_audit`.
+  written to `_castra_audit`. Argument values are masked before storage; configurable subtree redaction and
+  opt-in bounded age retention are defined in ADR 0084. Attempt-before-write auditing remains mandatory.
 
 ## 6. CLI & provisioning
+
+Unreleased `castra rollback` (ADR 0085) changes Worker traffic only. Immutable deploy messages record full D1
+schema and config hashes. Compatible single-D1 versions require explicit confirmation; unmarked versions,
+schema/config mismatch and split traffic fail closed. Provider refusals are never forced.
 
 Idempotent: re-running never duplicates resources. State lives in `wrangler.jsonc` bindings. Deploy uses Wrangler.
 

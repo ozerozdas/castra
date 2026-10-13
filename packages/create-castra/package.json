@@ -1,9 +1,9 @@
 {
   "name": "@castra-kit/create",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Scaffold a new Castra app: npm create @castra-kit@latest <name>.",
   "license": "MIT",
-  "author": "Mehmet Özer Özdaş",
+  "author": "Mehmet \u00d6zer \u00d6zda\u015f",
   "homepage": "https://github.com/ozerozdas/castra#readme",
   "repository": {
     "type": "git",

@@ -159,12 +159,13 @@ Each item names where it is enforced and which tests cover it. Test paths are re
   update answers differently (success or 409) depending on whether the unreadable parent row exists. A foreign key
   into a table with an open `read` policy is checked under that policy, and a missing or unreadable parent is the
   same 400 `invalid_reference`.
-- **Audit table growth.** A request with a known MCP token id and a wrong secret writes one `_castra_audit` row per
-  request. Anyone who learns a token id (it is part of the token and appears in `_castra_mcp_tokens`) can grow the
-  table. There is no automatic retention; prune with `castra mcp audit prune --older-than <days>`
-  ([ADR 0070](adr/0070-audit-prune-command.md)).
-- **Audit rows may contain PII.** `_castra_audit.arguments` stores tool arguments verbatim up to 4 KB (filters,
-  paths, `check_access` rows). Treat the table as sensitive and prune it regularly.
+- **Audit table growth.** Known-token failures also create audit rows. Optional `audit.retentionDays` runs at
+  most one 5000-row prune batch per known-token request; it is disabled by default and does not cap table size.
+  Use manual `castra mcp audit prune --older-than <days>` or Cron for idle apps/backlogs (ADR 0084).
+- **Historical audit rows may contain PII.** New rows mask all scalar argument values before truncation, including
+  write attempts and denied/invalid calls. Object keys, token/user ids and tool names remain visible; treat the
+  table as sensitive. Old rows are unchanged and must be pruned explicitly. `audit.redactKeys` can hide whole
+  matching subtrees. See [MCP](mcp.md) and ADR 0084.
 - **Rate limiting covers writes only.** Sign-in, sign-up, `/mcp` and table writes are limited per IP (60 per minute by
   default, per Cloudflare location, approximate). Reads are not; use a WAF rule on a custom domain
   ([rate limiting](rate-limiting.md), [ADR 0072](adr/0072-rate-limit-binding.md)).
@@ -196,7 +197,7 @@ Out of scope until v1.0 and therefore not protected by anything here: PostgreSQL
 operations, multi-level include, R2 storage, multi-tenancy, plugin SDK and custom hooks, admin UI. MCP writes are
 single-row only.
 
-Also not done: stdio MCP against the remote D1 via the API token, automatic audit retention, a `castra mcp token list`
+Also not done: stdio MCP against the remote D1 via the API token, a `castra mcp token list`
 command, HTTP endpoints for API key management, and `castra init` (the CLI prints "not implemented yet",
 [ADR 0038](adr/0038-castra-init-deferred.md)).
 
@@ -224,3 +225,7 @@ Please do not open a public issue. Open a private security advisory on the GitHu
 "Report a vulnerability"). Include the affected version or commit, a reproduction (config, request, expected and
 actual result), and the impact. This is an early-stage project maintained without a service level; reports are
 handled as time allows.
+
+Unreleased rollback (ADR 0085) requires matching live D1 schema and version/config fingerprints. It does not
+restore data, bypass changed-secret checks, or establish business-level data compatibility. Serialize schema
+and Worker deployments; final rechecks reduce but cannot eliminate races across Cloudflare services.
