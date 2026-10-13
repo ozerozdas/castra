@@ -1,9 +1,9 @@
 {
   "name": "@castra-kit/auth",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Better Auth wiring, roles and request identity for Castra.",
   "license": "MIT",
-  "author": "Mehmet Özer Özdaş",
+  "author": "Mehmet \u00d6zer \u00d6zda\u015f",
   "homepage": "https://github.com/ozerozdas/castra#readme",
   "repository": {
     "type": "git",

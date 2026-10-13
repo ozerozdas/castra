@@ -60,3 +60,6 @@ export type { D1Binding, D1Target, KvBinding, R2Binding, WranglerConfig } from "
 export { openLocalD1 } from "./local-d1.js";
 export type { OpenDatabase, OpenDatabaseFn } from "./local-d1.js";
 export { remoteD1Opener } from "./remote-d1.js";
+
+export { rollback } from "./commands/rollback.js";
+export type { RollbackOptions, RollbackDeps } from "./commands/rollback.js";

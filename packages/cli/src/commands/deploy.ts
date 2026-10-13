@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import { captureRollbackMetadata, rollbackMessage } from "../rollback-metadata.js";
+import { readWranglerConfig } from "../wrangler-config.js";
 import { randomBytes } from "node:crypto";
 import { dirname } from "node:path";
 import type { ExecFn } from "../exec.js";
@@ -111,6 +114,10 @@ export async function deploy(options: DeployOptions, deps: DeployDeps): Promise<
     return { code: 1, failedStep: "drift" };
   }
 
+  const config = readWranglerConfig(await readFile(configPath, "utf8"));
+  const message = config.d1.length === 1 ? rollbackMessage(await captureRollbackMetadata(configPath, open)) : undefined;
+  if (!message) deps.log("Multiple D1 bindings: this deployment will not support Castra rollback.");
+
   // 4. BETTER_AUTH_SECRET, only if missing.
   let secrets: string[] | null;
   try {
@@ -137,7 +144,7 @@ export async function deploy(options: DeployOptions, deps: DeployDeps): Promise<
   }
 
   // 5. Deploy.
-  const deployed = await deps.exec("wrangler", ["deploy", "--config", configPath], { cwd, env });
+  const deployed = await deps.exec("wrangler", ["deploy", "--config", configPath, ...(message ? ["--message", message] : [])], { cwd, env });
   if (deployed.code !== 0) {
     deps.error(`wrangler deploy exited with code ${deployed.code}.`);
     return { code: deployed.code, failedStep: "deploy" };

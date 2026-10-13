@@ -14,7 +14,8 @@
     "doctor": "castra doctor",
     "migrate": "castra migrate --remote",
     "deploy": "castra deploy",
-    "destroy": "castra destroy"
+    "destroy": "castra destroy",
+    "rollback": "castra rollback"
   },
   "dependencies": {
     "@castra-kit/app": "workspace:*",

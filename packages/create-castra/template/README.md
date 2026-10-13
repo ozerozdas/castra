@@ -1,7 +1,7 @@
 # castra-app
 
 A [Castra](https://github.com/ozerozdas/castra) backend on Cloudflare Workers + D1: REST API with
-row-level policies, Better Auth, OpenAPI at `/openapi.json` and read-only MCP tools at `/mcp`.
+row-level policies, Better Auth, OpenAPI at `/openapi.json` and scoped MCP read/write tools at `/mcp`.
 
 ## Run locally
 
@@ -31,6 +31,18 @@ curl https://castra-app.<your-subdomain>.workers.dev/health
 `pnpm run deploy`, not `pnpm deploy`: `pnpm deploy` is a built-in pnpm command. `castra deploy` is idempotent
 and sets `BETTER_AUTH_SECRET` as a Worker secret the first time. It prints the API, `/openapi.json` and `/mcp`
 URLs. Commit `wrangler.jsonc` after the first provision.
+
+## Roll back Worker code
+
+```sh
+pnpm run rollback --dry-run       # checks the previous deployment against live D1 schema and config
+pnpm run rollback                # asks for the Worker name before changing traffic
+```
+
+Both versions must have compatibility metadata from `castra deploy`; deploy two compatible versions first.
+Secret-only versions and older unmarked deployments are refused. Rollback never restores D1 data or reverses
+migrations. Schema/config mismatch, split traffic and multiple D1 bindings are refused; serialize deploys and
+migrations while checking and rolling back. Source files stay at their current revision.
 
 ## Remove the deployment
 

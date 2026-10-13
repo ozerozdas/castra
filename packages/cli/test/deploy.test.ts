@@ -123,6 +123,9 @@ describe("castra deploy", () => {
       "exec:deploy --config",
     ]);
 
+    const deployed = execCalls.find((call) => call.args[0] === "deploy")!;
+    const marker = deployed.args[deployed.args.indexOf("--message") + 1];
+    expect(marker).toMatch(/^castra:rollback:v1:[a-f0-9]{64}:[a-f0-9]{64}$/);
     const migrate = execCalls[0]!;
     expect(migrate.command).toBe("wrangler");
     expect(migrate.args).toEqual(["d1", "migrations", "apply", "castra-blog", "--remote", "--config", join(dir, "wrangler.jsonc")]);

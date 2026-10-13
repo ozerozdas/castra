@@ -1,7 +1,7 @@
 import { getRoles, type AuthDbInput } from "@castra-kit/auth";
 import { ApiError, type CastraConfig, type CastraContext, type ContextVia } from "@castra-kit/core";
 import { z } from "zod";
-import { auditArguments, writeAudit } from "./audit.js";
+import { auditArguments, writeAudit, type AuditArgumentOptions } from "./audit.js";
 import type { McpDb } from "./db.js";
 import { ANY_USER_SCOPE, TOOL_SCOPES, WRITE_TOOLS, type McpScope, type ToolName } from "./scopes.js";
 
@@ -119,7 +119,7 @@ export interface TokenIdentity {
  * - Write tools (`data:write`, ADR 0081) run only as the token's own user: any other `as` is a 403
  *   `write_as_other_user`, whatever the scopes.
  */
-export function remoteAccess(db: McpDb, config: CastraConfig, token: TokenIdentity): ToolAccess {
+export function remoteAccess(db: McpDb, config: CastraConfig, token: TokenIdentity, audit: AuditArgumentOptions = {}): ToolAccess {
   return {
     async authorize(tool, as) {
       const needed = TOOL_SCOPES[tool];
@@ -137,7 +137,7 @@ export function remoteAccess(db: McpDb, config: CastraConfig, token: TokenIdenti
       return contextFor(db, config, as?.userId ?? token.userId, undefined, "mcpToken", true);
     },
     async beforeWrite(tool, args) {
-      await writeAudit(db, [{ token_id: token.tokenId, user_id: token.userId, tool, arguments: auditArguments(args), outcome: "attempt", status: 0 }]);
+      await writeAudit(db, [{ token_id: token.tokenId, user_id: token.userId, tool, arguments: auditArguments(args, audit), outcome: "attempt", status: 0 }]);
     },
   };
 }

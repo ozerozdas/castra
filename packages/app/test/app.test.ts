@@ -18,6 +18,10 @@ beforeAll(async () => {
 const post = { method: "POST", headers: { "cf-connecting-ip": "1.1.1.1" } };
 
 describe("createCastraApp (ADR 0077)", () => {
+  it("validates forwarded MCP audit settings during construction", () => {
+    expect(() => createCastraApp({ ...options, mcp: { audit: { retentionDays: 0 } } })).toThrow(/retentionDays/);
+    expect(() => createCastraApp({ ...options, mcp: { audit: { retentionDays: 30 } } })).not.toThrow();
+  });
   it("serves /health, problem+json fallbacks, /openapi.json and the table routes", async () => {
     const app = createCastraApp(options);
     expect(await (await app.request("/health", {}, env)).json()).toEqual({ ok: true });

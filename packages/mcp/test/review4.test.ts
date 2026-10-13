@@ -121,11 +121,11 @@ describe("review4: audit integrity", () => {
     expect(rows.map((r) => r.status)).toEqual([405, 405, 405, 405, 413, 400, 400]);
   });
 
-  it("held: multibyte arguments are truncated to valid JSON within the limit (split surrogates included)", async () => {
+  it("multibyte values are redacted before serialization", async () => {
     for (const unit of ["\u{1F600}", "é", "\u{1F600}a", '"\\\u{1F600}']) {
       const text = auditArguments({ path: "/api/notes", query: unit.repeat(5000) })!;
       expect(text.length).toBeLessThanOrEqual(AUDIT_ARGUMENTS_MAX);
-      expect(JSON.parse(text)).toMatchObject({ truncated: true });
+      expect(JSON.parse(text)).toEqual({ path: "[REDACTED]", query: "[REDACTED]" });
     }
     const t = await createMcpToken(env.DB, { userId: USERS.alice, scopes: "data:read" });
     await tool(t.token, "query_data", { path: "/api/notes", query: { q: "\u{1F600}".repeat(4000) } });

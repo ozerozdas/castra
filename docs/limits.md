@@ -2,15 +2,23 @@
 
 ## What works and what does not
 
-Works (locally, covered by tests): policy engine, REST, OpenAPI, Better Auth, roles, API keys, read-only MCP (stdio and
-`/mcp`), `generate`, `migrate`, `test policies`, and scaffolding with `npm create @castra-kit` (checked against the
-published 0.1.0 packages).
+Current release: **v0.2.1**. Unreleased audit hardening (ADR 0084) masks argument values and adds opt-in
+bounded retention; it has passed local checks but is not published or deployed. Locally tested: policy engine, REST, OpenAPI, Better Auth, roles, API keys,
+MCP reads and writes (stdio and `/mcp`), schema generation, migration create/apply/status, scaffolding,
+`createCastraApp`, doctor checks, destroy, local `propose_policy` and `deploy_status`, and upgrades.
+The current CI runs lint, build, typecheck, tests, policy tests, generated upgrade-note checks and an upgrade test.
+The full scaffolder end-to-end suite remains opt-in.
 
-Verified on a real account (2026-10-11): `castra deploy` of a scaffolded project (provision D1 + KV,
-`migrate --remote`, secret, deploy to `workers.dev`); the live `/health`, `/api/notes`, `/openapi.json` and `/mcp`
-answered as documented. Otherwise `provision`, `doctor`, `deploy` and `migrate --remote` are tested against a fake
-Cloudflare API and fake wrangler; `doctor` and `--storage` (R2) have not run against a real account. GitHub sign-in is
-only unit-tested (no network). The scaffolder's end-to-end test is opt-in and not in CI. Known issues are listed in [SECURITY.md](SECURITY.md) section 3.
+Verified on a real account (2026-10-11): scaffolded deployment, D1 + KV provisioning, remote migrations,
+secret setup and live health/API/OpenAPI/MCP responses. On 2026-10-13, `api.mehmetozer.dev/health` returned
+`{"ok":true}`; the owner reports a working local blog integration that is not yet published. The consumer
+was subsequently upgraded to 0.2.1 and deployed on 2026-10-13. Remote migrations had no pending files and
+schema drift checks passed. Live posts/OpenAPI reads, blog CORS, anonymous write denial, tokenless MCP denial
+and reserved-table isolation passed. Authenticated MCP writes have not been smoke-tested in production.
+`castra doctor --remote` passed on the real account after deployment, including both rate-limit bindings,
+package consistency and remote schema drift. R2 storage provisioning and GitHub sign-in still lack
+recorded real-account verification.
+Cloudflare management tests otherwise use a fake API/wrangler. Known issues: [SECURITY.md](SECURITY.md) section 3.
 
 ## What Castra is not
 
@@ -34,12 +42,12 @@ only unit-tested (no network). The scaffolder's end-to-end test is opt-in and no
   Castra does not configure or test replication; a revoked session or role could be read from a lagging replica.
 - Statements are limited by the 100 bound parameters, so very wide tables or huge rules can fail.
 - No tenant isolation: one Worker and one D1 per deployment ([ADR 0002](adr/0002-no-multitenancy-v0.1.md)).
-- Writes are rate limited per IP with the Workers Rate Limiting binding; reads are not. Counters are per location
+- Writes use the Workers Rate Limiting binding, with a separate auth bucket and an optional user/context key; reads are not. Counters are per location
   and approximate ([rate limiting](rate-limiting.md), [ADR 0072](adr/0072-rate-limit-binding.md)).
 
 **Out of scope** ([ARCHITECTURE.md](ARCHITECTURE.md) section 8):
 - Until v1.0: PostgreSQL/MySQL/Hyperdrive, realtime (Durable Objects), queues, Redis/S3/OIDC adapters, a hosted or
   managed offering.
-- Not in v0.1 (later roadmap): MCP write tools, migrations via MCP, `propose_policy`, `deploy_status` (v0.2); R2
-  storage routes, multi-level include, bulk operations, multi-tenancy (v0.3); plugin SDK, custom hooks, admin UI,
-  stable config API (v1.0).
+- Still pending: migrations via MCP; safe Worker rollback is implemented locally (ADR 0085), live-verified, publication pending; expansion candidates include R2 storage routes,
+  multi-level includes, bulk operations and multi-tenancy (open).
+- v1.0: plugin SDK, custom hooks, admin UI and stable config API.

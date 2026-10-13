@@ -12,6 +12,7 @@ Exit codes: 0 success, 1 check or runtime failure, 2 usage error or not implemen
 | `castra migrate status` | List each migration file as applied / pending / unknown, from wrangler's `d1_migrations` table | `--local` (default), `--remote`, `--config`, `--binding`, `--account-id` |
 | `castra doctor` | Verify token, permissions, bindings (D1, KV, rate limits), `@castra-kit/*` versions and schema drift (local D1, or the deployed one with `--remote`); read-only. Same checks as the MCP tool `deploy_status` | `--config`, `--account-id`, `--storage`, `--remote`, `--out` |
 | `castra deploy` | provision -> migrate --remote -> drift check -> `BETTER_AUTH_SECRET` if missing -> `wrangler deploy` | `--config`, `--account-id`, `--storage`, `--binding`, `--out` |
+| `castra rollback` | Return Worker traffic to a compatible marked version; live D1 schema/config checked, no data restore ([ADR 0085](adr/0085-safe-worker-rollback.md)) | `--config`, `--account-id`, `--version <UUID>`, `--dry-run`, `--confirm <worker>` |
 | `castra destroy` | Delete the Worker, D1 (exported first), KV `CACHE` and R2 recorded in `wrangler.jsonc`, after typing the Worker name; resets the ids to placeholders; idempotent ([ADR 0076](adr/0076-castra-destroy.md)) | `--config`, `--account-id`, `--dry-run`, `--confirm <worker>`, `--backup-dir <dir>`, `--skip-backup` |
 | `castra test policies` | Run the project's `vitest run policies` (files whose path contains `policies`); no matching file fails ([ADR 0037](adr/0037-castra-test-policies.md)) | extra vitest args after `--` |
 | `castra mcp` | Local stdio MCP server | `--config <castra.config.ts>`, `--wrangler <path>`, `--binding`, `--out` |
@@ -21,3 +22,18 @@ Exit codes: 0 success, 1 check or runtime failure, 2 usage error or not implemen
 
 Environment: `CLOUDFLARE_API_TOKEN` (provision, doctor, deploy, destroy, `migrate --remote`, `mcp token --remote`),
 `CLOUDFLARE_ACCOUNT_ID` (optional when the token sees one account).
+
+## Safe Worker rollback (v0.3.0; publication pending)
+
+Run `castra rollback --dry-run` to check the previous deployment, or select `--version <UUID>`.
+Execute the checked plan with `castra rollback --confirm <worker-name>` (or type the name at the prompt).
+New single-D1 `castra deploy` versions carry immutable schema/config fingerprints in their version message.
+Deploy two compatible versions before the first rollback; secret-only versions cannot be targets.
+Both current and target versions must have these markers; old unmarked versions are refused. The local config
+must match both, and the target must match live D1, including index/trigger DDL. Split traffic and multiple D1
+bindings are unsupported. Cloudflare permission/resource/secret errors stop the command without force or retry.
+
+This changes Worker code, not D1 contents. It cannot undo migration side effects or prove business-level data
+compatibility. Serialize deploy/migration/rollback operations; no cross-service atomic lock exists. A successful
+API submission followed by failed activation verification needs inspection before retrying. No local journal is
+required: version messages survive a terminated CLI after upload. Source files remain at their current revision.
