@@ -224,7 +224,7 @@ describe("audit", () => {
     await tool(t.token, "query_data", { path: "/api/logs" });
     const row = await lastAudit();
     expect(row).toMatchObject({ token_id: t.id, user_id: USERS.alice, tool: "query_data", outcome: "error", status: 404 });
-    expect(JSON.parse(row!.arguments as string)).toEqual({ path: "/api/logs" });
+    expect(JSON.parse(row!.arguments as string)).toEqual({ path: "[REDACTED]" });
   });
   it("invalid arguments are audited as invalid", async () => {
     const t = await createMcpToken(env.DB, { userId: USERS.alice, scopes: "access:check" });
@@ -235,7 +235,7 @@ describe("audit", () => {
   it("large arguments are truncated to valid JSON within the limit", async () => {
     const big = auditArguments({ path: "/api/notes", query: "x".repeat(10_000) + '"\\'.repeat(500) })!;
     expect(big.length).toBeLessThanOrEqual(AUDIT_ARGUMENTS_MAX);
-    expect(JSON.parse(big)).toMatchObject({ truncated: true });
+    expect(JSON.parse(big)).toEqual({ path: "[REDACTED]", query: "[REDACTED]" });
     const t = await createMcpToken(env.DB, { userId: USERS.alice, scopes: "data:read" });
     await tool(t.token, "query_data", { path: "/api/notes", query: "a=" + "y".repeat(6000) });
     expect(((await lastAudit())!.arguments as string).length).toBeLessThanOrEqual(AUDIT_ARGUMENTS_MAX);

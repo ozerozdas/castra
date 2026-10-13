@@ -1,7 +1,7 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createPolicyEngine, problemBody, type CastraConfig, type D1DatabaseLike, type PolicyEngine, type SchemaSnapshot } from "@castra-kit/core";
 import { Hono, type Context, type Env } from "hono";
-import { auditArguments, writeAudit, type AuditEntry } from "./audit.js";
+import { auditArguments, retainAudit, validateAuditOptions, writeAudit, type AuditEntry, type AuditOptions } from "./audit.js";
 import { mcpDb, type D1Like } from "./db.js";
 import { remoteAccess } from "./identity.js";
 import { createCastraMcpServer, type ToolCallRecord } from "./server.js";
@@ -20,6 +20,8 @@ export interface McpHandlerOptions {
   engine?: PolicyEngine;
   /** REST base path for `path` arguments. Default `/api`. */
   basePath?: string;
+  /** Redaction controls and opt-in bounded retention (ADR 0084). */
+  audit?: AuditOptions;
   /** Clock override for tests. */
   now?: () => Date;
 }
@@ -111,6 +113,7 @@ function auditEntriesFor(
   response: Response,
   who: { tokenId: string; userId: string },
   rejectAll: boolean,
+  audit: AuditOptions = {},
 ): AuditEntry[] {
   if (messages.length === 0) {
     return [{ token_id: who.tokenId, user_id: who.userId, tool: null, arguments: null, outcome: "rejected", status: response.status }];
@@ -149,7 +152,7 @@ function auditEntriesFor(
       token_id: who.tokenId,
       user_id: who.userId,
       tool: tool === null ? null : tool.slice(0, 128),
-      arguments: auditArguments(isCall ? params?.arguments : m.params),
+      arguments: auditArguments(isCall ? params?.arguments : m.params, audit),
       outcome,
       status,
     };
@@ -177,6 +180,7 @@ function declaredLength(request: Request): number | undefined {
  *    If the audit write fails, the response is replaced by a 500: no call is served without its audit row.
  */
 export async function handleMcpRequest(request: Request, d1: D1Like, options: McpHandlerOptions): Promise<Response> {
+  validateAuditOptions(options.audit);
   const db = mcpDb(d1);
   const now = options.now?.() ?? new Date();
   const header = request.headers.get("authorization") ?? "";
@@ -186,6 +190,7 @@ export async function handleMcpRequest(request: Request, d1: D1Like, options: Mc
     if (verified.tokenId !== null) {
       try {
         await writeAudit(db, [{ token_id: verified.tokenId, user_id: verified.userId, tool: null, arguments: null, outcome: `unauthorized:${verified.reason}`, status: 401 }], now);
+        await retainAudit(db, options.audit, now);
       } catch (err) {
         console.error("castra mcp: audit write failed", err);
       }
@@ -244,7 +249,7 @@ export async function handleMcpRequest(request: Request, d1: D1Like, options: Mc
           db,
           d1: d1 as unknown as D1DatabaseLike,
           basePath: options.basePath,
-          access: remoteAccess(db, options.config, { tokenId: token.id, userId: token.userId, scopes: token.scopes }),
+          access: remoteAccess(db, options.config, { tokenId: token.id, userId: token.userId, scopes: token.scopes }, options.audit),
           onToolResult: (r) => recordsById.set(r.requestId, r),
         });
         const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
@@ -266,7 +271,8 @@ export async function handleMcpRequest(request: Request, d1: D1Like, options: Mc
         return id === undefined ? undefined : recordsById.get(id);
       });
       const rpcErrors = rejectAll ? new Map<RpcId, { code?: unknown }>() : await rpcErrorsById(response);
-      await writeAudit(db, auditEntriesFor(messages, records, rpcErrors, response, who, rejectAll), now);
+      await writeAudit(db, auditEntriesFor(messages, records, rpcErrors, response, who, rejectAll, options.audit), now);
+      await retainAudit(db, options.audit, now);
     } catch (err) {
       console.error("castra mcp: audit write failed", err);
       response = problem(500, "The call could not be audited and was not served.", "audit_failed");
@@ -284,6 +290,7 @@ export async function handleMcpRequest(request: Request, d1: D1Like, options: Mc
  * ```
  */
 export function createMcpRoute<E extends Env = Env>(options: McpRouteOptions<E>): Hono<E> {
+  validateAuditOptions(options.audit);
   const app = new Hono<E>();
   const engine = options.engine ?? createPolicyEngine({ config: options.config, snapshot: options.snapshot });
   app.all(options.path ?? "/mcp", (c) => handleMcpRequest(c.req.raw, options.getD1(c), { ...options, engine }));

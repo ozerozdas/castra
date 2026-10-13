@@ -13,7 +13,7 @@ import {
   type RateLimiterLike,
   type SchemaSnapshot,
 } from "@castra-kit/core";
-import { createMcpRoute } from "@castra-kit/mcp";
+import { createMcpRoute, type AuditOptions } from "@castra-kit/mcp";
 import { Hono, type Context } from "hono";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
@@ -54,8 +54,8 @@ export interface CastraAppOptions<B extends CastraBindings = CastraBindings> {
    * the IP. Auth routes and `/mcp` are always keyed by IP.
    */
   rateLimit?: false | { retryAfterSeconds?: number; key?: (c: Context<CastraAppEnv<B>>) => string | undefined };
-  /** `false` does not mount `/mcp`. */
-  mcp?: false;
+  /** `false` disables `/mcp`; otherwise configure audit redaction and opt-in retention. */
+  mcp?: false | { audit?: AuditOptions };
   /** Runs right after the problem handlers, before everything else (CORS, logging). */
   before?: (app: Hono<CastraAppEnv<B>>) => void;
   /** Custom routes. Mounted after the request context (so `c.get("ctx")` is set) and before the table routes. */
@@ -103,7 +103,7 @@ export function createCastraApp<B extends CastraBindings = CastraBindings>(optio
   app.get("/health", (c) => c.json({ ok: true }));
 
   // Remote MCP (MCP tokens only, every call audited). Before the session / API-key middleware: /mcp never accepts them.
-  if (options.mcp !== false) app.route("/", createMcpRoute<E>({ config, snapshot, engine, getD1: (c) => c.env.DB }));
+  if (options.mcp !== false) app.route("/", createMcpRoute<E>({ config, snapshot, engine, audit: options.mcp?.audit, getD1: (c) => c.env.DB }));
 
   authRoutes(app, auth);
   app.use("*", castraContext<E>(auth));

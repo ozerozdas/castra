@@ -34,10 +34,23 @@ policies, field rules and the write guard apply unchanged. There are no admin to
   `as` on `/mcp` is the token's user by default; `"anonymous"` or `{ userId }` of an existing user need
   `data:read:any_user`. Explicit roles are rejected: roles always come from `_castra_roles`. MCP tokens are accepted only
   on `/mcp`, and sessions or API keys are not. Writes never take another `as` (403 `write_as_other_user`). Every call
-  writes a `_castra_audit` row; a write also writes an `attempt` row first and does not run if that fails. Written
-  values are part of the stored arguments. Nothing deletes them
-  automatically; prune old rows with `castra mcp audit prune --older-than <days> [--local|--remote]`
-  ([ADR 0070](adr/0070-audit-prune-command.md)), or call `pruneAuditQuery` from a Cron Trigger. `/mcp` calls count
+  writes a `_castra_audit` row; a write also writes an `attempt` row first and does not run if that fails. Argument values are
+  masked as `[REDACTED]` before storage; keys and array structure remain visible. Identity, tool, outcome and
+  status remain available. Existing rows are unchanged: prune them explicitly with
+  `castra mcp audit prune --older-than <days> [--local|--remote]`.
+
+  Optional retention runs one batch (at most 5000 old rows) after each known-token request. It is disabled by
+  default, does not run while the app is idle, and cleanup failure does not fail a served call. Use a Cron Trigger
+  with `pruneAuditQuery` for idle apps or backlog catch-up. Configure the packaged app with:
+
+  ```ts
+  createCastraApp({ config, snapshot, mcp: { audit: { retentionDays: 30, redactKeys: ["body", "row"] } } });
+  ```
+
+  `createMcpRoute` / `handleMcpRequest` take the same `audit` option. `retentionDays` must be an integer from 1 to
+  36500. `redactKeys` hides whole matching subtrees case-insensitively; all remaining scalar values are still
+  masked. Do not put PII in object keys. Audit inserts continue to fail closed and pre-write attempts remain
+  mandatory ([ADR 0084](adr/0084-audit-redaction-and-retention.md)). `/mcp` calls count
   against the per-IP write limit ([rate limiting](rate-limiting.md)).
 
 Details: [ADR 0060](adr/0060-mcp-shared-tools.md), [0061](adr/0061-mcp-tokens-and-scopes.md),

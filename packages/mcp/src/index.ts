@@ -1,6 +1,5 @@
 /**
- * `@castra-kit/mcp`: the read-only MCP tools (`describe_schema`, `check_access`, `explain_query`,
- * `query_data`), the remote `/mcp` route with scoped tokens and audit log, and token management.
+ * `@castra-kit/mcp`: the shared MCP read/write tools, the remote `/mcp` route with scoped tokens and audit log, and token management.
  * The stdio server lives in `@castra-kit/mcp/stdio` (Node only). See docs/ARCHITECTURE.md §5, ADRs 0060-0064.
  * @packageDocumentation
  */
@@ -31,7 +30,7 @@ export { parseRuleExpression, proposePolicy, unifiedDiff } from "./propose.js";
 export type { ProposePolicyInput } from "./propose.js";
 export { createMcpRoute, handleMcpRequest, MCP_MAX_BODY_BYTES, MCP_MAX_MESSAGES } from "./remote.js";
 export type { McpHandlerOptions, McpRouteOptions } from "./remote.js";
-export { AUDIT_PRUNE_BATCH, auditArguments, pruneAuditQuery, writeAudit } from "./audit.js";
-export type { AuditEntry } from "./audit.js";
+export { AUDIT_PRUNE_BATCH, auditArguments, pruneAuditQuery, retainAudit, validateAuditOptions, writeAudit } from "./audit.js";
+export type { AuditArgumentOptions, AuditOptions, AuditEntry } from "./audit.js";
 export { AUDIT_ARGUMENTS_MAX, compileOnly, mcpDb } from "./db.js";
 export type { AuditTable, D1Like, McpDatabase, McpDb, McpDbInput, McpTokensTable } from "./db.js";

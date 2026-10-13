@@ -217,7 +217,10 @@ describe("write tools: field rules and audit", () => {
     expect((await call("alice", "create_data", { path: "/api/w_auth", body: { title: "aud1" } })).status).toBe(201);
     const audit = await env.DB.prepare("SELECT * FROM _castra_audit ORDER BY rowid DESC LIMIT 1").first<Record<string, unknown>>();
     expect(audit).toMatchObject({ tool: "create_data", user_id: USERS.alice, outcome: "ok", status: 201 });
-    expect(JSON.parse(audit!.arguments as string)).toEqual({ path: "/api/w_auth", body: { title: "aud1" } });
+    expect(JSON.parse(audit!.arguments as string)).toEqual({ path: "[REDACTED]", body: { title: "[REDACTED]" } });
+    const attempt = await env.DB.prepare("SELECT * FROM _castra_audit WHERE user_id = ? AND tool = 'create_data' AND outcome = 'attempt' ORDER BY rowid DESC LIMIT 1").bind(USERS.alice).first<Record<string, unknown>>();
+    expect(JSON.parse(attempt!.arguments as string)).toEqual({ path: "[REDACTED]", body: { title: "[REDACTED]" } });
+    expect(attempt!.status).toBe(0);
   });
   it("remote: the attempt row is stored before the write; if it cannot be, nothing is written", async () => {
     const t = await createMcpToken(env.DB, { userId: USERS.alice, scopes: "data:write" });
@@ -232,7 +235,7 @@ describe("write tools: field rules and audit", () => {
         { config, snapshot },
       );
     expect((await send(env.DB, "att1")).status).toBe(200);
-    const rows = await env.DB.prepare("SELECT outcome, status FROM _castra_audit WHERE tool = 'create_data' AND arguments LIKE '%att1%' ORDER BY rowid").all();
+    const rows = await env.DB.prepare("SELECT outcome, status FROM _castra_audit WHERE tool = 'create_data' AND token_id = ? ORDER BY rowid").bind(t.id).all();
     expect(rows.results).toEqual([{ outcome: "attempt", status: 0 }, { outcome: "ok", status: 201 }]);
 
     const noAudit = {
