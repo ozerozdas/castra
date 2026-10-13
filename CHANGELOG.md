@@ -4,7 +4,9 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 
 ## Unreleased
 
-## 0.3.0 (prepared; not published)
+## 0.3.0 (2026-10-13)
+
+Upgrade from 0.2.1: [upgrade guide](docs/upgrading/0.3.0.md). No database migration is required.
 
 ### Changed
 - MCP audit arguments now store structure with masked values, including write attempts and rejected calls.

@@ -1,4 +1,4 @@
-# Next steps after v0.2.1
+# Next steps after v0.3.0
 
 Date: 2026-10-13. The consumer API at `api.mehmetozer.dev` is deployed on Castra 0.2.1;
 local validation and production smoke checks are recorded in `../current-state.md`.
@@ -7,7 +7,7 @@ The consumer blog frontend has worked locally but has not been published.
 ## 1. Audit hardening
 
 Issue: [#21](https://github.com/ozerozdas/castra/issues/21).
-Status: implemented locally with ADR 0084; all required checks passed. Pending review/release, not deployed.
+Status: released in 0.3.0 with ADR 0084; all required checks passed. Consumer production upgrade pending.
 
 Original acceptance plan: first write an ADR defining which arguments are recorded, redaction defaults, compatibility and retention.
 Then implement nested argument redaction for all tools and bounded automatic pruning using the existing prune
@@ -18,9 +18,9 @@ explain defaults and configuration. Avoid requiring a migration unless the exist
 ## 2. Safe rollback
 
 Issue: [#17](https://github.com/ozerozdas/castra/issues/17).
-Status: implemented locally with ADR 0085; Worker-only, single-D1 compatibility markers, dry-run and confirmation.
+Status: released in 0.3.0 with ADR 0085; Worker-only, single-D1 compatibility markers, dry-run and confirmation.
 Successful live rollback and config/schema mismatch rejection verified on the isolated example Worker/D1.
-Schema probe cleaned up and unchanged deployment verified; see PROGRESS.md. Pending review/release.
+Schema probe cleaned up and unchanged deployment verified; see PROGRESS.md. Released in 0.3.0.
 
 Original acceptance plan: first decide Worker-only rollback versus coordinated D1 restore in an ADR. Prefer the smallest safe initial
 scope: record deploy/schema compatibility and refuse rollback when compatibility cannot be established.
@@ -51,4 +51,5 @@ Blog frontend publication is a separate deployment task. Do not add it to this b
 
 Audit hardening and safe rollback are prepared together on `codex/release-v0.3.0`. All required local CI gates,
 0.2.1 upgrade tests and six-package tarball checks passed; release notes are in `releases/0.3.0.md`.
-Review/merge and publication are next. MCP migrations remain a subsequent development task.
+PR #22 merged, CI/CodeQL passed and six npm packages published at 0.3.0. MCP migrations and
+the consumer production upgrade remain subsequent work.

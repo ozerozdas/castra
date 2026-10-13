@@ -226,6 +226,6 @@ Please do not open a public issue. Open a private security advisory on the GitHu
 actual result), and the impact. This is an early-stage project maintained without a service level; reports are
 handled as time allows.
 
-Unreleased rollback (ADR 0085) requires matching live D1 schema and version/config fingerprints. It does not
+v0.3.0 rollback (ADR 0085) requires matching live D1 schema and version/config fingerprints. It does not
 restore data, bypass changed-secret checks, or establish business-level data compatibility. Serialize schema
 and Worker deployments; final rechecks reduce but cannot eliminate races across Cloudflare services.

@@ -16,8 +16,8 @@ agents inspect exactly what production enforces.
 - **Auth included.** Better Auth (email, GitHub), roles and API keys.
 - **Agent-safe MCP.** Read and write tools on the same engine and write path as REST, with scoped tokens and an audit log.
 
-> **Status: v0.2.1** ([changelog](CHANGELOG.md)). Early, but deployed
-> and working. v0.3.0 is prepared locally; see the [upgrade guide](docs/upgrading/0.3.0.md).
+> **Status: v0.3.0** ([changelog](CHANGELOG.md)). Early, but deployed
+> and working. Upgrading from 0.2.1? See the [upgrade guide](docs/upgrading/0.3.0.md).
 > Read [Status and limits](docs/limits.md) before using it for anything important.
 
 ## Quick start

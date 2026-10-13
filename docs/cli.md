@@ -20,10 +20,10 @@ Exit codes: 0 success, 1 check or runtime failure, 2 usage error or not implemen
 | `castra mcp audit prune` | Delete `_castra_audit` rows older than N days ([ADR 0070](adr/0070-audit-prune-command.md)) | `--older-than <days>` (required), `--local`, `--remote`, `--config`, `--binding`, `--account-id` |
 | `castra init` | Add Castra to an existing project | Deferred, prints "not implemented yet" and exits 2 ([ADR 0038](adr/0038-castra-init-deferred.md)). Copy the migrations, config and `src/index.ts` wiring from a scaffold by hand. |
 
-Environment: `CLOUDFLARE_API_TOKEN` (provision, doctor, deploy, destroy, `migrate --remote`, `mcp token --remote`),
+Environment: `CLOUDFLARE_API_TOKEN` (provision, doctor, deploy, rollback, destroy, `migrate --remote`, `mcp token --remote`),
 `CLOUDFLARE_ACCOUNT_ID` (optional when the token sees one account).
 
-## Safe Worker rollback (v0.3.0; publication pending)
+## Safe Worker rollback (v0.3.0)
 
 Run `castra rollback --dry-run` to check the previous deployment, or select `--version <UUID>`.
 Execute the checked plan with `castra rollback --confirm <worker-name>` (or type the name at the prompt).

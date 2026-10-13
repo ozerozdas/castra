@@ -319,7 +319,7 @@ Issue #17 implemented locally per ADR 0085. Deploy stamps immutable version meta
 fingerprints. CLI rollback checks compatibility, requires confirmation, rechecks state, changes Worker traffic
 without restoring D1, and refuses provider errors without forcing. Fake Cloudflare tests exercise compatible,
 unmarked/incompatible, split-traffic, concurrent-change, confirmation and failed-verification paths. All CI
-checks passed. Live Cloudflare verification is recorded below; publication remains pending.
+checks passed. Live Cloudflare verification is recorded below; publication completed in 0.3.0.
 
 
 Live integration validation (2026-10-13), Worker `castra-blog`, isolated example D1
@@ -340,3 +340,10 @@ provider changed-secret refusals are covered by automated tests, not live integr
 All six package versions and MCP server version set to 0.3.0. Scaffold/example rollback scripts,
 generated 0.2.1 upgrade guide and release notes prepared. Required local CI checks and package archive
 validation passed; publication and production consumer upgrade remain pending. See releases/0.3.0.md.
+
+
+## v0.3.0 published (2026-10-13)
+
+PR #22 merged (`ef894e7`); PR/master CI and CodeQL passed. Six npm packages published as 0.3.0,
+with tag/release `v0.3.0`. Issues #17 and #21 closed. Registry versions, latest tags and tarball integrity
+verified against the inspected archives. Consumer production API remains at 0.2.1.

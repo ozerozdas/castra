@@ -139,7 +139,7 @@ only as the token's own user (ADR 0081).
 
 ## 6. CLI & provisioning
 
-Unreleased `castra rollback` (ADR 0085) changes Worker traffic only. Immutable deploy messages record full D1
+v0.3.0 `castra rollback` (ADR 0085) changes Worker traffic only. Immutable deploy messages record full D1
 schema and config hashes. Compatible single-D1 versions require explicit confirmation; unmarked versions,
 schema/config mismatch and split traffic fail closed. Provider refusals are never forced.
 
