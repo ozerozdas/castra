@@ -4,6 +4,7 @@ import type { FetchFn } from "./cloudflare/api.js";
 import type { CloudflareEnv } from "./cloudflare/connect.js";
 import { createInterface } from "node:readline/promises";
 import { deploy } from "./commands/deploy.js";
+import { rollback } from "./commands/rollback.js";
 import { destroy } from "./commands/destroy.js";
 import { doctor } from "./commands/doctor.js";
 import { generate } from "./commands/generate.js";
@@ -34,6 +35,7 @@ Commands:
   migrate    Apply migrations with wrangler (--local by default, or --remote); create <name>; status
   doctor     Check the API token, its permissions, bindings and schema drift
   deploy     provision -> migrate --remote -> drift check -> secrets -> wrangler deploy
+  rollback   Return to a schema-compatible Worker version; D1 data stays unchanged
   destroy    Delete the Worker, D1 (exported first), KV and R2 recorded in wrangler.jsonc
   mcp        Serve the read-only MCP tools over stdio against the local D1; \`mcp token\` and \`mcp audit\` manage /mcp
   test       \`test policies\`: run the project's policy allow/deny tests (vitest, local D1)
@@ -210,6 +212,8 @@ export async function run(argv: string[], overrides: Partial<RunEnv> = {}): Prom
         return await runDoctor(rest, env);
       case "deploy":
         return await runDeploy(rest, env);
+      case "rollback":
+        return await runRollback(rest, env);
       case "destroy":
         return await runDestroy(rest, env);
       case "mcp":
@@ -560,4 +564,19 @@ async function runMcpToken(args: string[], env: RunEnv): Promise<number> {
     },
     deps,
   );
+}
+
+const ROLLBACK_USAGE = `Usage: castra rollback [--version <UUID>] [--dry-run] [--confirm <worker-name>]
+  --config <path>      Wrangler config (default wrangler.jsonc)
+  --account-id <id>    Cloudflare account
+  --version <UUID>     Target version (default previous deployment)
+  --dry-run           Check compatibility without changing traffic
+  --confirm <name>    Confirm the checked plan without a prompt
+  --help, -h          Show help`;
+async function runRollback(args: string[], env: RunEnv): Promise<number> {
+  const values = parse(args, { ...COMMON, "account-id": { type: "string" }, version: { type: "string" },
+    "dry-run": { type: "boolean", default: false }, confirm: { type: "string" } }, ROLLBACK_USAGE);
+  if (values.help) { env.log(ROLLBACK_USAGE); return 0; }
+  return rollback({ cwd: env.cwd, config: values.config, accountId: values["account-id"],
+    version: values.version, dryRun: values["dry-run"], confirm: values.confirm }, env);
 }
