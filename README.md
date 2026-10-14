@@ -8,7 +8,7 @@ A self-hosted backend on Cloudflare: one Worker and one D1 database in **your** 
 your tables. Every endpoint is protected by policies written in TypeScript and compiled to SQL. An MCP server lets AI
 agents inspect exactly what production enforces.
 
-![A policy in castra.config.ts, then curl: anonymous users see only public rows, cannot write or set owner_id, and a table without a policy returns 404](docs/images/demo.gif)
+![Create a backend, apply local migrations, pass policy tests, and start the dev server](docs/images/quickstart.gif)
 
 - **Closed by default.** A table without a policy has no routes.
 - **Policies are SQL.** Rules become `WHERE` clauses, so pagination and counts stay correct.
@@ -31,8 +31,6 @@ cp .dev.vars.example .dev.vars    # set BETTER_AUTH_SECRET: openssl rand -base64
 pnpm db:migrate:local
 pnpm dev                          # http://localhost:8787/health
 ```
-
-![npm create, local migrations, the dev server answering /health and /openapi.json, and the policy tests passing](docs/images/quickstart.gif)
 
 Deploy to your Cloudflare account (token permissions: [docs/cloudflare-token.md](docs/cloudflare-token.md)):
 

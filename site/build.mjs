@@ -123,14 +123,10 @@ production enforces.</p>
 <div class="ctas"><a class="btn primary" href="${doc("getting-started.md")}">Get started</a>
 <a class="btn" href="${REPO}">GitHub</a><a class="btn" href="https://www.npmjs.com/package/@castra-kit/core">npm</a></div>
 </div>
-<figure><img src="/images/demo.gif" width="1400" height="700" alt="A policy in castra.config.ts, then curl: anonymous users see only public rows, cannot write or set owner_id, and a table without a policy returns 404">
-<figcaption>Anonymous reads see only public rows, writes need a session, <code>owner_id</code> is set by the server, and a table without a policy does not exist.</figcaption></figure>
+<figure><img src="/images/quickstart.gif" width="1400" height="700" alt="Create a backend, apply local migrations, pass policy tests, and start the dev server">
+<figcaption>Create a backend, migrate local D1, check policies, and start the API.</figcaption></figure>
 <div class="features">${FEATURES.map(([t, d]) => `<div><b>${t}</b><p>${d}</p></div>`).join("")}</div>
 <section><h2>A policy</h2><pre><code>${esc(POLICY)}</code></pre></section>
-<section><h2>From zero to a running API</h2>
-<figure><img src="/images/quickstart.gif" width="1400" height="700" loading="lazy" alt="npm create, local migrations, the dev server answering /health and /openapi.json, and the policy tests passing">
-<figcaption>Scaffold, migrate a local D1, run <code>pnpm dev</code>, and the allow and deny tests pass. Deploy with
-<code>CLOUDFLARE_API_TOKEN=... pnpm run deploy</code>.</figcaption></figure></section>
 <section><h2>Read before you rely on it</h2>
 <p class="note">Castra is early (v${VERSION}). It is deployed and tested, but only writes are rate limited and D1 has a
 single writer. See <a href="${doc("limits.md")}">status and limits</a> and the <a href="${doc("SECURITY.md")}">security model</a>.</p>
@@ -177,7 +173,7 @@ Clients can branch on it; it does not change between releases.</p>
 writeFileSync(join(out, "problems", "index.html"), index);
 writeFileSync(join(out, "index.html"), landing());
 mkdirSync(join(out, "images"));
-for (const gif of ["demo.gif", "quickstart.gif"]) copyFileSync(join(root, "../docs/images", gif), join(out, "images", gif));
+for (const gif of ["quickstart.gif"]) copyFileSync(join(root, "../docs/images", gif), join(out, "images", gif));
 writeFileSync(join(out, "404.html"), page("Not found · Castra", "Page not found.", `<h1>Not found</h1><p><a href="/problems/">All problem types</a></p>`));
 
 console.log(`site/dist: landing (v${VERSION}) + ${codes.length} problem pages`);
