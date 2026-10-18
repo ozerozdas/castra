@@ -50,7 +50,7 @@
   "dependencies": {
     "hono": "4.13.13",
     "kysely": "0.29.6",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "engines": {
     "node": ">=20"
