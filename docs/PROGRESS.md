@@ -356,3 +356,9 @@ verified against the inspected archives. Consumer production API remains at 0.2.
 - New tests in `packages/mcp/test/migrate.test.ts` (7 cases; 132 → 139 in `@castra-kit/mcp`).
 - CLI wiring: `packages/cli/src/commands/mcp.ts` builds the callbacks from `migrateCreate`, `migrateStatus`, `generate`, `migrate`; uses a `silentExec` wrapper so wrangler stdout does not enter the MCP JSON-RPC stream.
 - No remote `/mcp` registration; no `_castra_audit` change.
+
+## v0.4.0 published (2026-10-19)
+
+PR #28 merged (`7ffd6ef`); PR/master CI and CodeQL passed. Six npm packages published as 0.4.0,
+with tag/release `v0.4.0`. Issue #20 closed. Registry versions and `latest` tags verified at 0.4.0.
+Consumer production API remains at 0.2.1.

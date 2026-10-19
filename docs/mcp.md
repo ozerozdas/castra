@@ -15,6 +15,15 @@ policies, field rules and the write guard apply unchanged. There are no admin to
   (`isPublic()`, `authenticated()`, `role(...)`, `owner(...)`, `.and()`, `.or()`) or removes it (`rule: null`). The rule
   is parsed, never evaluated, and checked against the current roles and schema. Nothing is applied: the file and the
   running policy stay as they are until you apply the diff and add tests ([ADR 0082](adr/0082-propose-policy.md)).
+  And **`generate_migration`** `{ name }` and **`apply_migration`** `{ approve }`: local migration helpers
+  for `castra mcp` stdio. `generate_migration` creates the next numbered file under the migrations dir with a
+  header comment for the SQL body and the rollback comment, then returns the path and a preview of the file;
+  the agent writes the SQL into the file by hand and the tool never accepts SQL. `apply_migration` always
+  lists applied/pending/unknown migrations. Without `approve: true` it returns that dry-run summary and applies
+  nothing; with `approve: true` it runs the snapshot drift check, then `wrangler d1 migrations apply` against the
+  local D1, reporting wrangler's exit code, and a successful apply reminds the developer to run `castra generate`.
+  Wrangler stays the runner. Both tools are local only; the remote `/mcp` route never registers them
+  ([ADR 0086](adr/0086-mcp-migrations.md)).
 - **Remote, `POST /mcp` on the deployed Worker:** needs `Authorization: Bearer castra_mcp_...`.
 
   ```sh

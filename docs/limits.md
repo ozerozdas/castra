@@ -2,8 +2,8 @@
 
 ## What works and what does not
 
-Current release: **v0.3.0**. Audit hardening (ADR 0084) masks argument values and adds opt-in
-bounded retention. The consumer production API still runs 0.2.1. Locally tested: policy engine, REST, OpenAPI, Better Auth, roles, API keys,
+Current release: **v0.4.0**. Local MCP migration tools for `castra mcp` ship with ADR 0086, on top of the
+v0.3.0 audit hardening (ADR 0084) and safe Worker rollback (ADR 0085). The consumer production API still runs 0.2.1. Locally tested: policy engine, REST, OpenAPI, Better Auth, roles, API keys,
 MCP reads and writes (stdio and `/mcp`), schema generation, migration create/apply/status, scaffolding,
 `createCastraApp`, doctor checks, destroy, local `propose_policy` and `deploy_status`, and upgrades.
 The current CI runs lint, build, typecheck, tests, policy tests, generated upgrade-note checks and an upgrade test.
@@ -48,6 +48,6 @@ Cloudflare management tests otherwise use a fake API/wrangler. Known issues: [SE
 **Out of scope** ([ARCHITECTURE.md](ARCHITECTURE.md) section 8):
 - Until v1.0: PostgreSQL/MySQL/Hyperdrive, realtime (Durable Objects), queues, Redis/S3/OIDC adapters, a hosted or
   managed offering.
-- Still pending: migrations via MCP; safe Worker rollback is implemented locally (ADR 0085), live-verified and released in 0.3.0; expansion candidates include R2 storage routes,
+- Migrations via MCP now work locally in 0.4.0 (ADR 0086) but the remote `/mcp` route still does not expose them. Safe Worker rollback is implemented locally (ADR 0085), live-verified and released in 0.3.0; expansion candidates include R2 storage routes,
   multi-level includes, bulk operations and multi-tenancy (open).
 - v1.0: plugin SDK, custom hooks, admin UI and stable config API.

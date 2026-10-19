@@ -1,6 +1,6 @@
 # Castra — Current state
 
-Date: 2026-10-19. **v0.4.0 is prepared on `codex/release-v0.4.0`.** All six packages share version 0.4.0.
+Date: 2026-10-19. **v0.4.0 is released.** All six packages share version 0.4.0.
 The consumer production API (`api.mehmetozer.dev`) remains on 0.2.1; the 0.3.0 upgrade ships before the 0.4.0
 upgrade so the audit and rollback fixes are in place before the new MCP migration tools reach production.
 Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–0086.
@@ -8,7 +8,7 @@ Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–008
 ## Released and verified
 
 - Packages: core, auth, mcp, app, cli and create. Scaffold with `npm create @castra-kit@latest my-app`.
-- GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.3.0
+- GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.4.0
 - v0.4 includes local MCP `generate_migration` and `apply_migration` tools through `castra mcp`, the v0.3.0
   audit hardening and Worker rollback, `createCastraApp`, separate auth rate limits, safe destroy and
   generated upgrade notes/tests. The production consumer API upgrade is pending.
@@ -26,7 +26,7 @@ Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–008
 ## Releasing a new version
 
 Bump all six package versions together, run the full CI pipeline, publish packages, tag and create a release.
-Version 0.3.0 publication completed on 2026-10-13. Existing 0.1.x apps follow
+Version 0.4.0 publication completed on 2026-10-19. Existing 0.1.x apps follow
 `docs/upgrading/0.2.0.md`, using the desired patch version in package commands.
 
 ## v0.3.0 audit hardening
@@ -41,7 +41,7 @@ MCP now has 132 passing tests; app has 7. These changes are published in 0.3.0; 
 1. Consumer upgrade deployed and smoke-tested; see `docs/NEXT-STEPS.md` for the next work.
 2. Audit hardening (#21) released in 0.3.0; historical audit rows need explicit pruning.
 3. Safe Worker rollback implemented locally (#17, ADR 0085); live example Worker rollback and config/schema rejection verified; released in 0.3.0.
-4. Local MCP `generate_migration` / `apply_migration` (#20, subsequent release; approval workflow needs a decision).
+4. Local MCP `generate_migration` / `apply_migration` (#20) released in 0.4.0 with ADR 0086; consumer production upgrade pending.
 
 R2 routes, multi-level includes and bulk operations are v0.3 expansion candidates. Multi-tenancy remains open;
 admin UI, plugin SDK and stable config API belong to v1.0 per ARCHITECTURE §8.
@@ -66,3 +66,16 @@ Release notes and publication steps: `docs/releases/0.3.0.md`.
 
 Publication: six npm packages at 0.3.0, tag `v0.3.0`, GitHub release
 https://github.com/ozerozdas/castra/releases/tag/v0.3.0. Issues #17 and #21 closed via PR #22.
+
+## v0.4.0 release
+
+Release branch merged through PR #28 (`7ffd6ef`); PR/master CI and CodeQL passed. All six npm packages
+and MCP server version are 0.4.0. Local MCP migration tools (`generate_migration`, `apply_migration`), generated
+upgrade guide and release notes are included. The consumer production upgrade remains subsequent work.
+
+Release gate passed: lint/build/typecheck, 1295 full-suite tests (7 opt-in skipped), 529 policy tests,
+generated notes and 2 upgrade tests. Six package tarballs inspected in a publish dry run.
+Release notes and publication steps: `docs/releases/0.4.0.md`.
+
+Publication: six npm packages at 0.4.0, tag `v0.4.0`, GitHub release
+https://github.com/ozerozdas/castra/releases/tag/v0.4.0. Issue #20 closed via PR #28.

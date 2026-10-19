@@ -1,6 +1,6 @@
-# Next steps after v0.3.0
+# Next steps after v0.4.0
 
-Date: 2026-10-13. The consumer API at `api.mehmetozer.dev` is deployed on Castra 0.2.1;
+Date: 2026-10-19. The consumer API at `api.mehmetozer.dev` is deployed on Castra 0.2.1;
 local validation and production smoke checks are recorded in `../current-state.md`.
 The consumer blog frontend has worked locally but has not been published.
 
@@ -56,11 +56,15 @@ Audit hardening and safe rollback are prepared together on `codex/release-v0.3.0
 PR #22 merged, CI/CodeQL passed and six npm packages published at 0.3.0. MCP migrations and
 the consumer production upgrade remain subsequent work.
 
-## v0.4.0 preparation
+## v0.4.0 release
 
-Local MCP migration tools (Issue #20, ADR 0086) prepared on `codex/release-v0.4.0`. The release ships
+Local MCP migration tools (Issue #20, ADR 0086) are released in 0.4.0. The release ships
 `generate_migration` and `apply_migration` for `castra mcp` only; a local-only registration keeps
 remote `/mcp` free of schema mutation. Approval gate is a JSON boolean; unapproved apply returns a
 dry-run. Wrangler remains the runner. Audit is intentionally unchanged (local stdio has no audit
 log today). Snapshot generation is not coupled — a successful apply reminds the developer to run
-`castra generate`. Consumer production upgrade to 0.4.0 remains subsequent work.
+`castra generate`.
+
+PR #28 merged (`7ffd6ef`); PR/master CI and CodeQL passed. Six npm packages published at 0.4.0,
+with tag/release `v0.4.0`. Issue #20 closed. Registry versions and `latest` tags verified at 0.4.0.
+Consumer production upgrade to 0.4.0 remains subsequent work.
