@@ -13,6 +13,8 @@ coverage/
 .serena/
 # Launch CLI runtime state (per-user). Never committed.
 .lnch/
+# Agent handoff scratch (per-user plans and progress notes).
+.handoff/
 
 # castra destroy D1 exports (full data copies)
 castra-backups/
