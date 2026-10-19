@@ -223,12 +223,14 @@ export default defineConfig({
       child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
       const list = await rpc("tools/list");
       expect(list.result.tools.map((t: { name: string }) => t.name).sort()).toEqual([
+        "apply_migration",
         "check_access",
         "create_data",
         "delete_data",
         "deploy_status",
         "describe_schema",
         "explain_query",
+        "generate_migration",
         "propose_policy",
         "query_data",
         "update_data",

@@ -4,6 +4,23 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 
 ## Unreleased
 
+## 0.4.0 (2026-10-19)
+
+Upgrade from 0.3.0: bump the `@castra-kit/*` packages, run `pnpm install`, and restart `castra mcp`. No database migration is required.
+
+### Added
+
+- Local MCP migration tools for `castra mcp` stdio only ([ADR 0086](docs/adr/0086-mcp-migrations.md), #20).
+  - `generate_migration { name }` creates the next numbered file in `migrations_dir` and previews the template.
+  - `apply_migration { approve }` lists pending migrations; with `approve: true` it runs the drift check,
+    then `wrangler d1 migrations apply`, and reports the exit code. Without approval, returns a dry-run summary.
+- CLI `castra mcp` wiring: builds the migrations callback from `migrateCreate`, `migrateStatus`, `generate`,
+  and `migrate`, using a `silentExec` wrapper so wrangler stdout never enters the MCP JSON-RPC stream.
+
+### Security
+
+- These tools are local-only; the remote `/mcp` route never registers them. No new audit code is introduced.
+
 ## 0.3.0 (2026-10-13)
 
 Upgrade from 0.2.1: [upgrade guide](docs/upgrading/0.3.0.md). No database migration is required.

@@ -128,8 +128,11 @@ only as the token's own user (ADR 0081).
 | `query_data` | Policy-bound read as a given identity | yes | scoped token | v0.1 |
 | `create_data` / `update_data` / `delete_data` | Write through the REST write path | yes | `data:write`, own user | v0.2 |
 | `propose_policy` | Config diff proposal, never applied (ADR 0082) | yes | no | v0.2 |
-| `generate_migration` / `apply_migration` | Migration; apply requires approval | yes | no | v0.3 |
+| `generate_migration` / `apply_migration` | Migration; apply requires approval (ADR 0086) | yes (local) | no | v0.4 |
 | `deploy_status` | Provisioning, bindings, schema drift | yes | no | v0.2 |
+
+- `generate_migration { name }` creates an empty `<migrations_dir>/NNNN_<slug>.sql` file with a header comment for the SQL body and the rollback; returns the path and a preview. Local only. Never applied.
+- `apply_migration { approve }` lists pending migrations; with `approve: false` (or absent) it returns the dry-run summary without applying. With `approve: true`, after a successful drift check, runs `wrangler d1 migrations apply` and reports the exit code. Local only.
 
 - **Local:** `npx castra mcp` (stdio), uses `wrangler dev` bindings or the Cloudflare API token.
 - **Remote:** `/mcp` on the Worker. Separate MCP tokens with scopes `schema:read`, `access:check`,

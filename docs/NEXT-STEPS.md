@@ -32,10 +32,12 @@ and tests exercise compatible, incompatible and interrupted deployment cases.
 ## 3. Local MCP migrations
 
 Issue: [#20](https://github.com/ozerozdas/castra/issues/20).
-Define generation output and explicit apply confirmation in an ADR. Reuse the existing CLI migration path;
-start locally and keep remote mutation outside the initial tool scope.
-Done when a proposal is reviewable, unapproved apply cannot execute, and applied migrations integrate with
-snapshot generation/drift checks. Test rejection and error paths as well as successful apply.
+Status: implemented in v0.4.0 with ADR 0086. Two local-only tools registered when `castra mcp` provides a
+migrations callback: `generate_migration` creates the file (`<migrations_dir>/NNNN_<slug>.sql`) and previews it;
+`apply_migration { approve }` runs `migrateStatus` always; with `approve: true` it runs the drift check
+before invoking `wrangler d1 migrations apply` and reports the exit code. Wrangler stays the runner.
+Approval gate: only `approve: true` runs; everything else is a dry-run summary. The remote `/mcp` route
+never registers these tools. No new audit code; remote scope is deferred to a future change.
 
 ## Release gate and scope
 
@@ -53,3 +55,12 @@ Audit hardening and safe rollback are prepared together on `codex/release-v0.3.0
 0.2.1 upgrade tests and six-package tarball checks passed; release notes are in `releases/0.3.0.md`.
 PR #22 merged, CI/CodeQL passed and six npm packages published at 0.3.0. MCP migrations and
 the consumer production upgrade remain subsequent work.
+
+## v0.4.0 preparation
+
+Local MCP migration tools (Issue #20, ADR 0086) prepared on `codex/release-v0.4.0`. The release ships
+`generate_migration` and `apply_migration` for `castra mcp` only; a local-only registration keeps
+remote `/mcp` free of schema mutation. Approval gate is a JSON boolean; unapproved apply returns a
+dry-run. Wrangler remains the runner. Audit is intentionally unchanged (local stdio has no audit
+log today). Snapshot generation is not coupled — a successful apply reminds the developer to run
+`castra generate`. Consumer production upgrade to 0.4.0 remains subsequent work.

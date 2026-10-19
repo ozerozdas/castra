@@ -28,6 +28,8 @@ export { createCastraMcpServer, SERVER_VERSION } from "./server.js";
 export type { CastraMcpServerOptions, ConfigSourceFn, DeployStatusFn, ToolCallRecord } from "./server.js";
 export { parseRuleExpression, proposePolicy, unifiedDiff } from "./propose.js";
 export type { ProposePolicyInput } from "./propose.js";
+export { registerMigrations } from "./migrate.js";
+export type { MigrationCallbacks } from "./migrate.js";
 export { createMcpRoute, handleMcpRequest, MCP_MAX_BODY_BYTES, MCP_MAX_MESSAGES } from "./remote.js";
 export type { McpHandlerOptions, McpRouteOptions } from "./remote.js";
 export { AUDIT_PRUNE_BATCH, auditArguments, pruneAuditQuery, retainAudit, validateAuditOptions, writeAudit } from "./audit.js";
