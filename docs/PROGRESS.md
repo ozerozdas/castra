@@ -347,3 +347,12 @@ validation passed; publication and production consumer upgrade remain pending. S
 PR #22 merged (`ef894e7`); PR/master CI and CodeQL passed. Six npm packages published as 0.3.0,
 with tag/release `v0.3.0`. Issues #17 and #21 closed. Registry versions, latest tags and tarball integrity
 verified against the inspected archives. Consumer production API remains at 0.2.1.
+
+
+## v0.4.0 — Local MCP migrations (2026-10-19)
+
+- Implemented ADR 0086: `generate_migration`, `apply_migration` for `castra mcp` stdio only.
+- Approval gate: `apply_migration { approve: true }` runs the drift check, then `wrangler d1 migrations apply`; without approval, only `migrateStatus` runs.
+- New tests in `packages/mcp/test/migrate.test.ts` (7 cases; 132 → 139 in `@castra-kit/mcp`).
+- CLI wiring: `packages/cli/src/commands/mcp.ts` builds the callbacks from `migrateCreate`, `migrateStatus`, `generate`, `migrate`; uses a `silentExec` wrapper so wrangler stdout does not enter the MCP JSON-RPC stream.
+- No remote `/mcp` registration; no `_castra_audit` change.

@@ -6,10 +6,11 @@ import { toProblem } from "@castra-kit/core";
 import type { ToolAccess } from "./identity.js";
 import type { ToolName } from "./scopes.js";
 import { proposePolicy } from "./propose.js";
+import { registerMigrations, type MigrationCallbacks } from "./migrate.js";
 import { castraTools, type CastraToolsOptions, type ToolOutcome } from "./tools.js";
 
 /** Package version reported in the MCP `initialize` result. */
-export const SERVER_VERSION = "0.3.0";
+export const SERVER_VERSION = "0.4.0";
 
 /** A finished tool call, reported to {@link CastraMcpServerOptions.onToolResult} (the audit log uses it). */
 export interface ToolCallRecord {
@@ -37,6 +38,11 @@ export interface CastraMcpServerOptions extends CastraToolsOptions {
    * `/mcp` route never sets it.
    */
   configSource?: ConfigSourceFn;
+  /**
+   * Registers `generate_migration` / `apply_migration` (local only, ADR 0086): delegates to `castra migrate`. The remote
+   * `/mcp` route never sets it.
+   */
+  migrations?: MigrationCallbacks;
 }
 
 /** Reads the project's config file for `propose_policy`: its path (as shown in the diff) and text. */
@@ -142,6 +148,10 @@ export function createCastraMcpServer(options: CastraMcpServerOptions): McpServe
         }
       },
     );
+  }
+  const migrations = options.migrations;
+  if (migrations) {
+    registerMigrations(server, migrations);
   }
   return server;
 }

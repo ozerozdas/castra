@@ -58,6 +58,7 @@ in `castra-backups/` are full copies of your data; the folder is gitignored, so 
 ## Change the schema
 
 1. `pnpm exec castra migrate create add_tags` writes `migrations/000N_add_tags.sql`; put the SQL in it.
+   `castra mcp` also exposes local-only `generate_migration` and `apply_migration` tools (v0.4.0).
 2. `pnpm db:migrate:local && pnpm generate`. This updates `castra/schema.json` and `castra/db.d.ts`. Commit both.
    `pnpm exec castra migrate status` shows what is applied.
 3. Add a policy for the table in `castra.config.ts`. Tables without a policy have no routes.

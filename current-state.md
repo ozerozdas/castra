@@ -1,16 +1,19 @@
 # Castra — Current state
 
-Date: 2026-10-13. **v0.3.0 is released.** All six packages share version 0.3.0. The consumer production API remains on 0.2.1.
-Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–0085.
+Date: 2026-10-19. **v0.4.0 is prepared on `codex/release-v0.4.0`.** All six packages share version 0.4.0.
+The consumer production API (`api.mehmetozer.dev`) remains on 0.2.1; the 0.3.0 upgrade ships before the 0.4.0
+upgrade so the audit and rollback fixes are in place before the new MCP migration tools reach production.
+Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–0086.
 
 ## Released and verified
 
 - Packages: core, auth, mcp, app, cli and create. Scaffold with `npm create @castra-kit@latest my-app`.
 - GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.3.0
-- v0.2 includes MCP writes through REST, migration create/status, local `propose_policy` and `deploy_status`,
-  `createCastraApp`, separate auth rate limits, safe destroy and generated upgrade notes/tests.
-- CI at `a80f280`: lint, build, typecheck, tests, policy tests, upgrade-note check and upgrade test passed.
-  Core 805 · auth 25 · MCP 123 · app 6 · CLI 123 (1 skipped) · create 43 (7 skipped) · template 28 · blog 105.
+- v0.4 includes local MCP `generate_migration` and `apply_migration` tools through `castra mcp`, the v0.3.0
+  audit hardening and Worker rollback, `createCastraApp`, separate auth rate limits, safe destroy and
+  generated upgrade notes/tests. The production consumer API upgrade is pending.
+- CI at `7103906`: lint, build, typecheck, tests, policy tests, upgrade-note check and upgrade test passed.
+  Core 805 · auth 25 · MCP 139 · app 7 · CLI 143 · create 43 (7 skipped) · template 28 · blog 105.
   The separate policy run passes 529 tests; it overlaps the core suite. Upgrade tests: 2 passed.
 - Real deployment: `api.mehmetozer.dev` runs a Castra backend. Read-only check on 2026-10-13:
   `/health` returned `{"ok":true}`. The owner's blog integration worked locally and is not yet published.

@@ -9,6 +9,7 @@ import type { CastraConfig, D1DatabaseLike, PolicyEngine, SchemaSnapshot } from 
 import { mcpDb, type D1Like } from "./db.js";
 import { localAccess } from "./identity.js";
 import { createCastraMcpServer, type ConfigSourceFn, type DeployStatusFn } from "./server.js";
+import type { MigrationCallbacks } from "./migrate.js";
 
 /** Options of {@link serveStdio}. */
 export interface ServeStdioOptions {
@@ -25,6 +26,8 @@ export interface ServeStdioOptions {
   deployStatus?: DeployStatusFn;
   /** Registers `propose_policy` (ADR 0082). */
   configSource?: ConfigSourceFn;
+  /** Registers `generate_migration` / `apply_migration` (ADR 0086). */
+  migrations?: MigrationCallbacks;
 }
 
 /**
@@ -45,6 +48,7 @@ export async function serveStdio(options: ServeStdioOptions): Promise<McpServer>
     name: "castra-local",
     deployStatus: options.deployStatus,
     configSource: options.configSource,
+    migrations: options.migrations,
   });
   await server.connect(new StdioServerTransport(options.stdin, options.stdout));
   return server;
