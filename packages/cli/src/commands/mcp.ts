@@ -7,7 +7,7 @@ import type { MigrationCallbacks } from "@castra-kit/mcp";
 import { CliError, readD1Target } from "../wrangler-config.js";
 import type { ExecFn } from "../exec.js";
 import { generate } from "./generate.js";
-import { migrate, migrateCreate, migrateStatus, type MigrateStatus } from "./migrate.js";
+import { migrate, migrateCreate, migrateStatus } from "./migrate.js";
 import { doctor, type DoctorDeps } from "./doctor.js";
 
 /** Options of {@link mcp}. */
