@@ -11,6 +11,8 @@ dist/
 coverage/
 .claude/worktrees/
 .serena/
+# Launch CLI runtime state (per-user). Never committed.
+.lnch/
 
 # castra destroy D1 exports (full data copies)
 castra-backups/

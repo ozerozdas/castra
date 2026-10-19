@@ -1,0 +1,4 @@
+# Rollback validation artifacts (ADR 0085 live integration probes).
+castra.rollback-test/
+src/rollback-test.ts
+wrangler.rollback-test.jsonc
