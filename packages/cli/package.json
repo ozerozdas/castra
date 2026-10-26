@@ -1,6 +1,6 @@
 {
   "name": "@castra-kit/cli",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "The castra CLI: provision, generate, migrate, deploy, test, mcp and doctor for Castra apps.",
   "license": "MIT",
   "author": "Mehmet \u00d6zer \u00d6zda\u015f",

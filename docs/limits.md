@@ -2,7 +2,7 @@
 
 ## What works and what does not
 
-Current release: **v0.4.0**. Local MCP migration tools for `castra mcp` ship with ADR 0086, on top of the
+Current release: **v0.4.1** (dependency patch release). Local MCP migration tools for `castra mcp` ship with ADR 0086, on top of the
 v0.3.0 audit hardening (ADR 0084) and safe Worker rollback (ADR 0085). The consumer production API still runs 0.2.1. Locally tested: policy engine, REST, OpenAPI, Better Auth, roles, API keys,
 MCP reads and writes (stdio and `/mcp`), schema generation, migration create/apply/status, scaffolding,
 `createCastraApp`, doctor checks, destroy, local `propose_policy` and `deploy_status`, and upgrades.

@@ -1,6 +1,6 @@
 {
   "name": "@castra-kit/create",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Scaffold a new Castra app: npm create @castra-kit@latest <name>.",
   "license": "MIT",
   "author": "Mehmet \u00d6zer \u00d6zda\u015f",

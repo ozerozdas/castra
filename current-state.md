@@ -1,6 +1,7 @@
 # Castra — Current state
 
-Date: 2026-10-19. **v0.4.0 is released.** All six packages share version 0.4.0.
+Date: 2026-10-26. **v0.4.1 is prepared on `release/v0.4.1`** (dependency patch release on top of v0.4.0).
+All six packages share version 0.4.1.
 The consumer production API (`api.mehmetozer.dev`) remains on 0.2.1; the 0.3.0 upgrade ships before the 0.4.0
 upgrade so the audit and rollback fixes are in place before the new MCP migration tools reach production.
 Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–0086.
