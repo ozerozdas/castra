@@ -1,6 +1,6 @@
 # Castra — Current state
 
-Date: 2026-10-26. **v0.4.1 is prepared on `release/v0.4.1`** (dependency patch release on top of v0.4.0).
+Date: 2026-10-26. **v0.4.1 is released** (dependency patch release on top of v0.4.0).
 All six packages share version 0.4.1.
 The consumer production API (`api.mehmetozer.dev`) remains on 0.2.1; the 0.3.0 upgrade ships before the 0.4.0
 upgrade so the audit and rollback fixes are in place before the new MCP migration tools reach production.
@@ -9,7 +9,7 @@ Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–008
 ## Released and verified
 
 - Packages: core, auth, mcp, app, cli and create. Scaffold with `npm create @castra-kit@latest my-app`.
-- GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.4.0
+- GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.4.1
 - v0.4 includes local MCP `generate_migration` and `apply_migration` tools through `castra mcp`, the v0.3.0
   audit hardening and Worker rollback, `createCastraApp`, separate auth rate limits, safe destroy and
   generated upgrade notes/tests. The production consumer API upgrade is pending.
@@ -80,3 +80,9 @@ Release notes and publication steps: `docs/releases/0.4.0.md`.
 
 Publication: six npm packages at 0.4.0, tag `v0.4.0`, GitHub release
 https://github.com/ozerozdas/castra/releases/tag/v0.4.0. Issue #20 closed via PR #28.
+
+## v0.4.1 release
+
+Dependency patch release through PR #34 (`00c801c`): better-auth 1.7.12, kysely 0.29.7 and dev tooling
+(Dependabot #29, #31–#33). `@types/node` stays on 22 (#30 declined; majors ignored by Dependabot).
+Six npm packages and MCP server version at 0.4.1, tag `v0.4.1`. Release notes: `docs/releases/0.4.1.md`.
