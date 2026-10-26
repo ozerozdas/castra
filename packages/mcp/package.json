@@ -45,7 +45,7 @@
     "@modelcontextprotocol/sdk": "1.32.1",
     "@castra-kit/core": "workspace:*",
     "hono": "4.13.13",
-    "kysely": "0.29.6",
+    "kysely": "0.29.7",
     "kysely-d1": "0.4.0",
     "zod": "4.6.7"
   },
