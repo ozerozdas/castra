@@ -15,8 +15,8 @@ importers:
         specifier: 10.0.1
         version: 10.0.1(eslint@10.13.0)
       '@types/node':
-        specifier: 22.20.5
-        version: 22.20.5
+        specifier: 25.9.9
+        version: 25.9.9
       eslint:
         specifier: 10.13.0
         version: 10.13.0
@@ -27,8 +27,8 @@ importers:
         specifier: 8.72.0
         version: 8.72.0(eslint@10.13.0)(typescript@6.0.3)
       wrangler:
-        specifier: 4.151.3
-        version: 4.151.3(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)
+        specifier: 4.151.1
+        version: 4.151.1(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)
 
   examples/blog:
     dependencies:
@@ -58,8 +58,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@cloudflare/vitest-plugin':
-        specifier: 1.4.6
-        version: 1.4.6(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)(vitest@5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
+        specifier: 1.4.4
+        version: 1.4.4(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)(vitest@5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)))
       '@cloudflare/workers-types':
         specifier: 5.20261022.1
         version: 5.20261022.1
@@ -68,10 +68,10 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
       wrangler:
-        specifier: 4.151.3
-        version: 4.151.3(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)
+        specifier: 4.151.1
+        version: 4.151.1(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)
 
   packages/app:
     dependencies:
@@ -95,8 +95,8 @@ importers:
         version: 0.4.0(kysely@0.29.7)
     devDependencies:
       '@cloudflare/vitest-plugin':
-        specifier: 1.4.6
-        version: 1.4.6(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)(vitest@5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
+        specifier: 1.4.4
+        version: 1.4.4(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)(vitest@5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)))
       '@cloudflare/workers-types':
         specifier: 5.20261022.1
         version: 5.20261022.1
@@ -108,7 +108,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
 
   packages/auth:
     dependencies:
@@ -116,8 +116,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       better-auth:
-        specifier: 1.7.12
-        version: 1.7.12(vitest@5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
+        specifier: 1.7.9
+        version: 1.7.9(vitest@5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)))
       hono:
         specifier: 4.13.13
         version: 4.13.13
@@ -139,7 +139,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
 
   packages/cli:
     dependencies:
@@ -164,10 +164,10 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
       wrangler:
-        specifier: 4.151.3
-        version: 4.151.3(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)
+        specifier: 4.151.1
+        version: 4.151.1(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)
 
   packages/core:
     dependencies:
@@ -182,8 +182,8 @@ importers:
         version: 4.6.7
     devDependencies:
       '@cloudflare/vitest-plugin':
-        specifier: 1.4.6
-        version: 1.4.6(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)(vitest@5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
+        specifier: 1.4.4
+        version: 1.4.4(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)(vitest@5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)))
       '@cloudflare/workers-types':
         specifier: 5.20261022.1
         version: 5.20261022.1
@@ -204,7 +204,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
 
   packages/create-castra:
     devDependencies:
@@ -224,8 +224,8 @@ importers:
         specifier: workspace:*
         version: link:../mcp
       '@cloudflare/vitest-plugin':
-        specifier: 1.4.6
-        version: 1.4.6(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)(vitest@5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
+        specifier: 1.4.4
+        version: 1.4.4(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)(vitest@5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)))
       '@cloudflare/workers-types':
         specifier: 5.20261022.1
         version: 5.20261022.1
@@ -246,10 +246,10 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
       wrangler:
-        specifier: 4.151.3
-        version: 4.151.3(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)
+        specifier: 4.151.1
+        version: 4.151.1(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)
 
   packages/mcp:
     dependencies:
@@ -276,8 +276,8 @@ importers:
         version: 4.6.7
     devDependencies:
       '@cloudflare/vitest-plugin':
-        specifier: 1.4.6
-        version: 1.4.6(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)(vitest@5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))
+        specifier: 1.4.4
+        version: 1.4.4(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)(vitest@5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)))
       '@cloudflare/workers-types':
         specifier: 5.20261022.1
         version: 5.20261022.1
@@ -289,7 +289,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+        version: 5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
 
 packages:
 
@@ -888,6 +888,10 @@ packages:
     resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
     engines: {node: '>= 20.19.0'}
 
+  '@opentelemetry/semantic-conventions@1.43.0':
+    resolution: {integrity: sha512-eSYWTm620tTk45EKSedaUL8MFYI8hW164hIXsgIHyxu3VobUB3fFCu5t0hQby6OoWRPsG1KkKUG2M5UadiLiVg==}
+    engines: {node: '>=14'}
+
   '@oxc-project/types@0.155.0':
     resolution: {integrity: sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==}
 
@@ -1178,8 +1182,8 @@ packages:
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
-  '@types/node@22.20.5':
-    resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
+  '@types/node@25.9.9':
+    resolution: {integrity: sha512-b4e2xxj/yMeT2hNlD6x7zNFiQK2Dlmkb9CQ6v3/1G2RezKN4YS2lcEv8lzGm1mhs4f2lM4yNAMI/zUDBZBBt7w==}
 
   '@typescript-eslint/eslint-plugin@8.72.0':
     resolution: {integrity: sha512-aysKgysPX9XOv/dk95UkvUDe++Q3n3dJPG9CEWT3RUccxfkPJ+Qn6nhKPDhZXU6Ofo9kgwGWwKyQCnZIXTgngg==}
@@ -2266,8 +2270,8 @@ packages:
   ufo@1.6.4:
     resolution: {integrity: sha512-JFNbkD1Svwe0KvGi8GOeLcP4kAWQ609twvCdcHxq1oSL8svv39ZuSvajcD8B+5D0eL4+s1Is2D/O6KN3qcTeRA==}
 
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+  undici-types@7.24.6:
+    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
   undici@6.29.1:
     resolution: {integrity: sha512-EvRlUt/QqAEvXdQeRMYUfwOQsfzpDztykrG2owGEE/rBOBoYv9uF39ZzsNDh4lTFHhTr2XOZjKkYgueD12ZmGA==}
@@ -2528,13 +2532,13 @@ snapshots:
     optionalDependencies:
       workerd: 1.20261019.1
 
-  '@cloudflare/vitest-plugin@1.4.6(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)(vitest@5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)))':
+  '@cloudflare/vitest-plugin@1.4.4(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)(vitest@5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)))':
     dependencies:
       cjs-module-lexer: 1.2.3
       esbuild: 0.28.2
-      miniflare: 5.20261019.1-beta(@types/node@22.20.5)
-      vitest: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
-      wrangler: 4.151.3(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5)
+      miniflare: 5.20261012.1-beta(@types/node@25.9.9)
+      vitest: 5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
+      wrangler: 4.151.1(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9)
       zod: 4.6.5
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
@@ -2864,6 +2868,8 @@ snapshots:
 
   '@noble/hashes@2.4.0': {}
 
+  '@opentelemetry/semantic-conventions@1.43.0': {}
+
   '@oxc-project/types@0.155.0': {}
 
   '@poppinss/colors@4.1.6':
@@ -3043,9 +3049,9 @@ snapshots:
 
   '@types/json-schema@7.0.15': {}
 
-  '@types/node@22.20.5':
+  '@types/node@25.9.9':
     dependencies:
-      undici-types: 6.21.0
+      undici-types: 7.24.6
 
   '@typescript-eslint/eslint-plugin@8.72.0(@typescript-eslint/parser@8.72.0(eslint@10.13.0)(typescript@6.0.3))(eslint@10.13.0)(typescript@6.0.3)':
     dependencies:
@@ -3138,14 +3144,14 @@ snapshots:
       '@typescript-eslint/types': 8.72.0
       eslint-visitor-keys: 5.0.1
 
-  '@vitest/mocker@5.0.5(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))':
+  '@vitest/mocker@5.0.5(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.5
       estree-walker: 3.0.3
       magic-string: 1.4.3
     optionalDependencies:
-      vite: 8.3.4(@types/node@22.20.5)(esbuild@0.28.2)
+      vite: 8.3.4(@types/node@25.9.9)(esbuild@0.28.2)
 
   '@vitest/spy@5.0.5': {}
 
@@ -3190,7 +3196,7 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  better-auth@1.7.12(vitest@5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))):
+  better-auth@1.7.9(vitest@5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))):
     dependencies:
       '@better-auth/core': 1.7.12(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-call@1.4.4(zod@4.6.7))(jose@6.2.13)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/drizzle-adapter': 1.7.12(@better-auth/core@1.7.12(@better-auth/utils@0.5.0)(@better-fetch/fetch@1.3.2)(better-call@1.4.4(zod@4.6.7))(jose@6.2.13)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.5.0)
@@ -3210,7 +3216,7 @@ snapshots:
       nanostores: 1.5.5
       zod: 4.6.7
     optionalDependencies:
-      vitest: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+      vitest: 5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
     transitivePeerDependencies:
       - '@opentelemetry/api'
 
@@ -3748,10 +3754,10 @@ snapshots:
     dependencies:
       mime-db: 1.54.0
 
-  miniflare@5.20261019.1-beta(@types/node@22.20.5):
+  miniflare@5.20261012.1-beta(@types/node@25.9.9):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
-      sharp: 0.35.5(@types/node@22.20.5)
+      sharp: 0.35.5(@types/node@25.9.9)
       undici: 7.29.1
       workerd: 1.20261019.1
       ws: 8.21.0
@@ -3994,7 +4000,7 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
-  sharp@0.35.5(@types/node@22.20.5):
+  sharp@0.35.5(@types/node@25.9.9):
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
@@ -4025,7 +4031,7 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.5
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
-      '@types/node': 22.20.5
+      '@types/node': 25.9.9
 
   shebang-command@2.0.0:
     dependencies:
@@ -4166,7 +4172,7 @@ snapshots:
 
   ufo@1.6.4: {}
 
-  undici-types@6.21.0: {}
+  undici-types@7.24.6: {}
 
   undici@6.29.1: {}
 
@@ -4184,7 +4190,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2):
+  vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -4192,14 +4198,14 @@ snapshots:
       rolldown: 1.2.15
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 22.20.5
+      '@types/node': 25.9.9
       esbuild: 0.28.2
       fsevents: 2.3.3
 
-  vitest@5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)):
+  vitest@5.0.5(@types/node@25.9.9)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.5(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2))
+      '@vitest/mocker': 5.0.5(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -4210,10 +4216,10 @@ snapshots:
       tinybench: 6.2.2
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.4(@types/node@22.20.5)(esbuild@0.28.2)
+      vite: 8.3.4(@types/node@25.9.9)(esbuild@0.28.2)
       why-is-node-running: 3.2.1
     optionalDependencies:
-      '@types/node': 22.20.5
+      '@types/node': 25.9.9
     transitivePeerDependencies:
       - msw
 
@@ -4233,13 +4239,13 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20261019.1
       '@cloudflare/workerd-windows-64': 1.20261019.1
 
-  wrangler@4.151.3(@cloudflare/workers-types@5.20261022.1)(@types/node@22.20.5):
+  wrangler@4.151.1(@cloudflare/workers-types@5.20261016.1)(@types/node@25.9.9):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261019.1)
       blake3-wasm: 2.1.5
       esbuild: 0.28.2
-      miniflare: 5.20261019.1-beta(@types/node@22.20.5)
+      miniflare: 5.20261012.1-beta(@types/node@25.9.9)
       path-to-regexp: 6.3.0
       unenv: 2.0.0-rc.24
       workerd: 1.20261019.1
