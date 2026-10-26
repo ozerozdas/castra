@@ -38,7 +38,7 @@
     "auth:schema": "node scripts/generate-auth-schema.mjs"
   },
   "dependencies": {
-    "better-auth": "1.7.9",
+    "better-auth": "1.7.12",
     "@castra-kit/core": "workspace:*",
     "hono": "4.13.13",
     "kysely": "0.29.7",
