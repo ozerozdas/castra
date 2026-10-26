@@ -1,6 +1,6 @@
 {
   "name": "@castra-kit/app",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "The Castra Worker app in one call: auth, REST, MCP, rate limiting and problem+json, wired in order.",
   "license": "MIT",
   "author": "Mehmet \u00d6zer \u00d6zda\u015f",
@@ -41,12 +41,12 @@
     "@castra-kit/core": "workspace:*",
     "@castra-kit/mcp": "workspace:*",
     "hono": "4.13.13",
-    "kysely": "0.29.6",
+    "kysely": "0.29.7",
     "kysely-d1": "0.4.0"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "1.4.4",
-    "@cloudflare/workers-types": "5.20261016.1",
+    "@cloudflare/vitest-plugin": "1.4.6",
+    "@cloudflare/workers-types": "5.20261022.1",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "vitest": "5.0.5"

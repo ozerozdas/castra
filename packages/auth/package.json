@@ -1,6 +1,6 @@
 {
   "name": "@castra-kit/auth",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Better Auth wiring, roles and request identity for Castra.",
   "license": "MIT",
   "author": "Mehmet \u00d6zer \u00d6zda\u015f",
@@ -38,14 +38,14 @@
     "auth:schema": "node scripts/generate-auth-schema.mjs"
   },
   "dependencies": {
-    "better-auth": "1.7.9",
+    "better-auth": "1.7.12",
     "@castra-kit/core": "workspace:*",
     "hono": "4.13.13",
-    "kysely": "0.29.6",
+    "kysely": "0.29.7",
     "kysely-d1": "0.4.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20261016.1",
+    "@cloudflare/workers-types": "5.20261022.1",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "vitest": "5.0.5"

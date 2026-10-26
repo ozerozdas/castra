@@ -1,6 +1,6 @@
 {
   "name": "@castra-kit/core",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Policy engine, schema snapshot and REST router for Castra, a Cloudflare-native BaaS on Workers and D1.",
   "license": "MIT",
   "author": "Mehmet \u00d6zer \u00d6zda\u015f",
@@ -40,7 +40,7 @@
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.4.4",
     "@cloudflare/workers-types": "5.20261016.1",
-    "@readme/openapi-parser": "9.1.0",
+    "@readme/openapi-parser": "10.0.0",
     "fast-check": "4.10.2",
     "kysely-d1": "0.4.0",
     "tsup": "8.5.1",
@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "hono": "4.13.13",
-    "kysely": "0.29.6",
+    "kysely": "0.29.7",
     "zod": "4.6.7"
   },
   "engines": {

@@ -4,6 +4,20 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 
 ## Unreleased
 
+## 0.4.1 (2026-10-26)
+
+Dependency patch release. Upgrade from 0.4.0: bump the `@castra-kit/*` packages and run `pnpm install`.
+No database migration, binding or API change.
+
+### Changed
+
+- `better-auth` 1.7.9 → 1.7.12 (`@castra-kit/auth`).
+- `kysely` 0.29.6 → 0.29.7 (core, auth, mcp, app, create).
+- Dev tooling: `wrangler` 4.151.3, `@cloudflare/workers-types` 5.20261022.1, `@cloudflare/vitest-plugin` 1.4.6,
+  `eslint` 10.13.0, `typescript-eslint` 8.72.0, `@readme/openapi-parser` 10.0.0.
+- `@types/node` stays on 22 to match the supported runtime (`engines: node >=20`); Dependabot now skips its
+  major updates.
+
 ## 0.4.0 (2026-10-19)
 
 Upgrade from 0.3.0: bump the `@castra-kit/*` packages, run `pnpm install`, and restart `castra mcp`. No database migration is required.

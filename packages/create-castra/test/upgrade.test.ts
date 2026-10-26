@@ -91,8 +91,12 @@ describe.skipIf(!E2E)("upgrade from the previous release", () => {
 
     const { specs } = await localPackageSpecs(REPO, "pnpm");
     await writeFile(join(app, "package.json"), applyPackageChanges(await readFile(join(app, "package.json"), "utf8"), note, specs));
-    await writeFile(join(root, "upgrade.patch"), blocks(note, "diff").map((d) => `${d}\n`).join(""));
-    await expectOk("git", ["apply", "--verbose", join(root, "upgrade.patch")], app);
+    // A release that leaves the template's files alone (a dependency patch) has no diff blocks to apply.
+    const diffs = blocks(note, "diff");
+    if (diffs.length > 0) {
+      await writeFile(join(root, "upgrade.patch"), diffs.map((d) => `${d}\n`).join(""));
+      await expectOk("git", ["apply", "--verbose", join(root, "upgrade.patch")], app);
+    }
   }, 60_000);
   afterAll(async () => {
     if (root) await rm(root, { recursive: true, force: true });
