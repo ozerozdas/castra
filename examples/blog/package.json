@@ -22,7 +22,7 @@
     "@castra-kit/auth": "workspace:*",
     "@castra-kit/core": "workspace:*",
     "@castra-kit/mcp": "workspace:*",
-    "hono": "4.13.13",
+    "hono": "4.13.14",
     "kysely": "0.29.7",
     "kysely-d1": "0.4.0"
   },

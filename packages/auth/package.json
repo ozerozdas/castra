@@ -40,7 +40,7 @@
   "dependencies": {
     "better-auth": "1.7.12",
     "@castra-kit/core": "workspace:*",
-    "hono": "4.13.13",
+    "hono": "4.13.14",
     "kysely": "0.29.7",
     "kysely-d1": "0.4.0"
   },
