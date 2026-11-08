@@ -362,3 +362,9 @@ verified against the inspected archives. Consumer production API remains at 0.2.
 PR #28 merged (`7ffd6ef`); PR/master CI and CodeQL passed. Six npm packages published as 0.4.0,
 with tag/release `v0.4.0`. Issue #20 closed. Registry versions and `latest` tags verified at 0.4.0.
 Consumer production API remains at 0.2.1.
+
+## v0.4.2 published (2026-11-08)
+
+PR #55 merged (`6b4fc7b`); PR/master CI and CodeQL passed. Six npm packages published as 0.4.2,
+with tag/release `v0.4.2`. Dependabot security alerts #2–#21 closed; #22 (`minimatch`, eslint, dev-only) open.
+Registry versions and `latest` tags verified at 0.4.2. Consumer production API remains at 0.2.1.

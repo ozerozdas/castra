@@ -1,6 +1,6 @@
 # Castra — Current state
 
-Date: 2026-11-08. **v0.4.2 is prepared on `release/v0.4.2`** (dependency security patch release on top of v0.4.1).
+Date: 2026-11-08. **v0.4.2 is released** (dependency security patch release on top of v0.4.1).
 All six packages share version 0.4.2.
 The consumer production API (`api.mehmetozer.dev`) remains on 0.2.1; the 0.3.0 upgrade ships before the 0.4.0
 upgrade so the audit and rollback fixes are in place before the new MCP migration tools reach production.
@@ -9,7 +9,7 @@ Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–008
 ## Released and verified
 
 - Packages: core, auth, mcp, app, cli and create. Scaffold with `npm create @castra-kit@latest my-app`.
-- GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.4.1
+- GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.4.2
 - v0.4 includes local MCP `generate_migration` and `apply_migration` tools through `castra mcp`, the v0.3.0
   audit hardening and Worker rollback, `createCastraApp`, separate auth rate limits, safe destroy and
   generated upgrade notes/tests. The production consumer API upgrade is pending.
@@ -92,4 +92,5 @@ Six npm packages and MCP server version at 0.4.1, tag `v0.4.1`. Release notes: `
 Dependency security patch release on `release/v0.4.2`: closes Dependabot #2–#21 (transitive undici, zod, fast-uri,
 body-parser, ip-address) plus `qs` via wrangler 4.158.0, vitest-plugin 1.6.0 and `pnpm-workspace.yaml` overrides.
 Template dev tooling bumped to match. `minimatch` (eslint, dev-only) stays open until eslint accepts v11.
-Release notes: `docs/releases/0.4.2.md`. Publication pending.
+PR #55 (`6b4fc7b`). Six npm packages and MCP server version at 0.4.2, tag `v0.4.2`.
+Release notes: `docs/releases/0.4.2.md`.
