@@ -38,14 +38,14 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "1.4.4",
-    "@cloudflare/workers-types": "5.20261016.1",
+    "@cloudflare/vitest-plugin": "1.5.1",
+    "@cloudflare/workers-types": "5.20261104.1",
     "@readme/openapi-parser": "10.0.0",
     "fast-check": "4.10.2",
     "kysely-d1": "0.4.0",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   },
   "dependencies": {
     "hono": "4.13.13",
