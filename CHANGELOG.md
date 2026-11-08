@@ -4,6 +4,22 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 
 ## Unreleased
 
+## 0.4.2 (2026-11-08)
+
+Security patch release for dependencies. Upgrade from 0.4.1: [upgrade guide](docs/upgrading/0.4.2.md).
+No database migration, binding or API change.
+
+### Security
+
+- Closes Dependabot alerts #2–#21 (all transitive): `undici` 6.29.1 / 7.30.1, `zod` 4.6.6, `fast-uri` 3.1.9,
+  `body-parser` 2.4.0, `ip-address` 10.7.4; plus `qs` 6.16.1 found by `pnpm audit`.
+
+### Changed
+
+- Dev tooling and template: `wrangler` 4.158.0, `@cloudflare/vitest-plugin` 1.6.0,
+  `@cloudflare/workers-types` 5.20261108.1. New projects no longer start with the vulnerable `undici`/`zod`.
+- Workspace `pnpm.overrides` pin the patched transitive versions until upstream ranges pick them up.
+
 ## 0.4.1 (2026-10-26)
 
 Dependency patch release. Upgrade from 0.4.0: bump the `@castra-kit/*` packages and run `pnpm install`.
