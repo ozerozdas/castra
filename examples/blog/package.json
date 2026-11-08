@@ -28,10 +28,10 @@
   },
   "devDependencies": {
     "@castra-kit/cli": "workspace:*",
-    "@cloudflare/vitest-plugin": "1.4.6",
-    "@cloudflare/workers-types": "5.20261022.1",
+    "@cloudflare/vitest-plugin": "1.6.0",
+    "@cloudflare/workers-types": "5.20261108.1",
     "typescript": "6.0.3",
     "vitest": "5.0.5",
-    "wrangler": "4.151.3"
+    "wrangler": "4.158.0"
   }
 }

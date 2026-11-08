@@ -9,3 +9,10 @@ onlyBuiltDependencies:
 # GHSA esbuild < 0.28.1 (dev server file read on Windows); tsup and vite pinned 0.27.x.
 overrides:
   esbuild@<0.28.1: 0.28.2
+  # Dependabot #2–#21 (transitive via @modelcontextprotocol/sdk, @readme/openapi-parser).
+  # ponytail: drop each once upstream ranges resolve to a patched version on their own.
+  undici@>=6 <6.29.1: ^6.29.1
+  fast-uri@>=3 <3.1.9: ^3.1.9
+  body-parser@>=2 <2.4.0: ^2.4.0
+  ip-address@<10.7.4: ^10.7.4
+  qs@>=6.7.0 <6.16.1: ^6.16.1
