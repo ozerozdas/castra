@@ -204,7 +204,7 @@ describe("--local-packages", () => {
       expect(pkg.dependencies[name]).toBe(`link:${join(REPO, rel)}`);
     }
     // Third-party dependencies keep their registry versions.
-    expect(pkg.dependencies.hono).toBe("4.13.13");
+    expect(pkg.dependencies.hono).toBe("4.13.18");
   });
 
   it("uses file: paths for npm", async () => {
