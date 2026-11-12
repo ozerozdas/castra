@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,4 +45,30 @@ describe("template snapshot", () => {
     expect(code).toBe(0);
     expect(out.join("\n")).toContain("Schema snapshot is up to date");
   }, 120_000);
+
+  it("third-party template dependencies match the workspace", async () => {
+    type Manifest = { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+    const repo = fileURLToPath(new URL("../../../", import.meta.url));
+    const deps = async (path: string) => {
+      const { dependencies, devDependencies } = JSON.parse(await readFile(path, "utf8")) as Manifest;
+      return { ...dependencies, ...devDependencies };
+    };
+    const template = await deps(join(repo, "packages/create-castra/template/package.json"));
+    const manifests = [join(repo, "package.json")];
+    for (const entry of await readdir(join(repo, "packages"), { withFileTypes: true })) {
+      if (entry.isDirectory()) manifests.push(join(repo, "packages", entry.name, "package.json"));
+    }
+    manifests.push(join(repo, "examples/blog/package.json"));
+    // One version per package across the workspace manifests.
+    const workspace: Record<string, string[]> = {};
+    for (const path of manifests) {
+      for (const [name, version] of Object.entries(await deps(path))) (workspace[name] ??= []).push(version);
+    }
+    for (const [name, version] of Object.entries(template)) {
+      const versions = workspace[name];
+      if (name.startsWith("@castra-kit/") || !versions) continue;
+      expect(new Set(versions).size, `workspace manifests disagree on ${name}: ${versions.join(", ")}`).toBe(1);
+      expect(version, `${name} in packages/create-castra/template/package.json`).toBe(versions[0]);
+    }
+  });
 });
