@@ -221,7 +221,9 @@ function edit(src: string, table: string, op: Operation, rule: string | null, ne
       out = `${src.slice(0, open + 1)}\n${indent}${op}: ${rule},${src.slice(open + 1)}`;
     }
   }
-  const imp = /import\s*\{([^}]*)\}\s*from\s*["']@castra-kit\/core["']/.exec(out);
+  // ponytail: `[^{}]` (not `[^}]`) stops each candidate at the next brace, so an unclosed `import {` cannot make the
+  // scan quadratic (CodeQL js/polynomial-redos). Import braces never contain `{` in valid TS.
+  const imp = /import\s*\{([^{}]*)\}\s*from\s*["']@castra-kit\/core["']/.exec(out);
   if (imp && needed.size > 0) {
     const names = imp[1]!.split(",").map((s) => s.trim()).filter(Boolean);
     const missing = [...needed].filter((n) => !names.includes(n));
