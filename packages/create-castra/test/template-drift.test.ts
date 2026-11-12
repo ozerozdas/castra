@@ -49,11 +49,11 @@ describe("template snapshot", () => {
   it("third-party template dependencies match the workspace", async () => {
     type Manifest = { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
     const repo = fileURLToPath(new URL("../../../", import.meta.url));
-    const deps = async (path: string) => {
+    const manifestDeps = async (path: string) => {
       const { dependencies, devDependencies } = JSON.parse(await readFile(path, "utf8")) as Manifest;
       return { ...dependencies, ...devDependencies };
     };
-    const template = await deps(join(repo, "packages/create-castra/template/package.json"));
+    const template = await manifestDeps(join(repo, "packages/create-castra/template/package.json"));
     const manifests = [join(repo, "package.json")];
     for (const entry of await readdir(join(repo, "packages"), { withFileTypes: true })) {
       if (entry.isDirectory()) manifests.push(join(repo, "packages", entry.name, "package.json"));
@@ -62,7 +62,7 @@ describe("template snapshot", () => {
     // One version per package across the workspace manifests.
     const workspace: Record<string, string[]> = {};
     for (const path of manifests) {
-      for (const [name, version] of Object.entries(await deps(path))) (workspace[name] ??= []).push(version);
+      for (const [name, version] of Object.entries(await manifestDeps(path))) (workspace[name] ??= []).push(version);
     }
     for (const [name, version] of Object.entries(template)) {
       const versions = workspace[name];

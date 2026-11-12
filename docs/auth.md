@@ -1,6 +1,6 @@
 # Auth
 
-- **Better Auth** 1.7.7 on D1: email + password, and GitHub when both `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are
+- **Better Auth** 1.7.22 on D1: email + password, and GitHub when both `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are
   set. Endpoints are under `/api/auth/*` (for example `POST /api/auth/sign-up/email`, `/sign-in/email`). The `bearer`
   plugin returns the session token in the `set-auth-token` header. A `GET /me` route shows the resolved context.
 - **Sessions are checked against D1 on every request.** There is no KV or cookie cache, so a signed-out, deleted or
