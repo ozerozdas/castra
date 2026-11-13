@@ -4,9 +4,9 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 
 ## Unreleased
 
-## 0.4.3 (2026-11-12)
+## 0.4.3 (2026-11-13)
 
-Dependency patch release. Upgrade from 0.4.2: [upgrade guide](docs/upgrading/0.4.3.md).
+Security patch release for dependencies. Upgrade from 0.4.2: [upgrade guide](docs/upgrading/0.4.3.md).
 No database migration, binding or API change.
 
 ### Fixed
@@ -17,6 +17,13 @@ No database migration, binding or API change.
 
 ### Security
 
+- `hono` 4.13.18 fixes CVE-2026-126355, -126356, -126357, -126358 and -126359 (all `< 4.13.16`). CVE-2026-126358
+  (RegExpRouter can skip wildcard middleware) is the relevant one: `createCastraApp` registers the request context
+  and rate limiters with `app.use("*")`. The `@castra-kit/*` packages pin `hono` exactly, so upgrading them is
+  the fix.
+- `@hono/node-server` 2.1.8 in the lockfile (CVE-2026-126210, CVE-2026-126343; Dependabot #23, #24). It comes in
+  through `@modelcontextprotocol/sdk` and is not used by Castra; the SDK's range already allows the fix, so
+  consumers get it from `pnpm install` / `pnpm update`.
 - `propose_policy` (local stdio MCP only) scans core imports in linear time; the previous regex could go
   polynomial on adversarial input (CodeQL `js/polynomial-redos`).
 - Workspace `pnpm.overrides` for `undici`, `fast-uri`, `body-parser`, `ip-address` and `qs` are removed because

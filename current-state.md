@@ -1,6 +1,6 @@
 # Castra — Current state
 
-Date: 2026-11-12. **v0.4.3 is prepared on `release/v0.4.3`** (dependency patch release on top of v0.4.2).
+Date: 2026-11-13. **v0.4.3 is prepared on `release/v0.4.3`** (dependency security patch release on top of v0.4.2: hono and @hono/node-server advisories).
 All six packages share version 0.4.3.
 The consumer production API (`api.mehmetozer.dev`) remains on 0.2.1; the 0.3.0 upgrade ships before the 0.4.0
 upgrade so the audit and rollback fixes are in place before the new MCP migration tools reach production.
