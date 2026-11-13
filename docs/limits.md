@@ -48,6 +48,7 @@ Cloudflare management tests otherwise use a fake API/wrangler. Known issues: [SE
 **Out of scope** ([ARCHITECTURE.md](ARCHITECTURE.md) section 8):
 - Until v1.0: PostgreSQL/MySQL/Hyperdrive, realtime (Durable Objects), queues, Redis/S3/OIDC adapters, a hosted or
   managed offering.
-- Migrations via MCP now work locally in 0.4.0 (ADR 0086) but the remote `/mcp` route still does not expose them. Safe Worker rollback is implemented locally (ADR 0085), live-verified and released in 0.3.0; expansion candidates include R2 storage routes,
-  multi-level includes, bulk operations and multi-tenancy (open).
+- Migrations via MCP now work locally in 0.4.0 (ADR 0086) but the remote `/mcp` route still does not expose them. Safe Worker rollback is implemented locally (ADR 0085), live-verified and released in 0.3.0. The v0.5
+  expansion milestone ([ARCHITECTURE.md](ARCHITECTURE.md) section 8) covers R2 storage, multi-level includes, bulk
+  operations, backup/restore, read rate limits and the multi-tenancy ADR.
 - v1.0: plugin SDK, custom hooks, admin UI and stable config API.
