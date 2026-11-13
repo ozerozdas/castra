@@ -211,7 +211,9 @@ export default defineConfig({
 
 - **v0.1 — MVP:** CLI provision + deploy · Better Auth + roles · policy engine · auto CRUD + OpenAPI · read-only MCP
 - **v0.2 — Agents write:** MCP write tools · migrations · `propose_policy` · `deploy_status` / `doctor`
-- **v0.3 — Expansion:** R2 storage · multi-level include · bulk operations · multi-tenancy (open)
+- **v0.3 — Audit and rollback:** masked MCP audit arguments and opt-in `audit.retentionDays` ([ADR 0084](adr/0084-audit-redaction-and-retention.md)) · `castra rollback` ([ADR 0085](adr/0085-safe-worker-rollback.md))
+- **v0.4 — Local MCP migrations:** `generate_migration` · `apply_migration` for `castra mcp` ([ADR 0086](adr/0086-mcp-migrations.md))
+- **v0.5 — Expansion (planned):** R2 storage · multi-level include · bulk operations · backup/restore · read rate limits · multi-tenancy ADR (open)
 - **v1.0 — Stable:** plugin SDK · custom hooks · admin UI · stable config API
 
 **Out of scope until v1:** PostgreSQL/MySQL/Hyperdrive · realtime (Durable Objects) · queues ·

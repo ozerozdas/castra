@@ -1,7 +1,7 @@
 # Castra security model
 
 Castra is a policy engine and a REST/MCP surface in front of a Cloudflare D1 database. This document says what it
-protects, what it relies on, and what it does not do. Status: v0.1.0, released, not externally audited. Design
+protects, what it relies on, and what it does not do. Status: not externally audited. Design
 background: [ARCHITECTURE.md](ARCHITECTURE.md). Decisions: [docs/adr](adr/).
 
 ## 1. Scope and trust boundaries
@@ -139,7 +139,7 @@ Each item names where it is enforced and which tests cover it. Test paths are re
 
 ## 3. What Castra does not guarantee
 
-### Known issues (from [PROGRESS.md](PROGRESS.md), "Open issues")
+### Known issues
 
 - **`custom()` and `where()` rules are the developer's responsibility.** The engine validates the table and column
   names it can walk, but cannot see inside raw `sql` fragments. A predicate can contain a subquery that reads Better
@@ -176,6 +176,13 @@ Each item names where it is enforced and which tests cover it. Test paths are re
   plugin, which adds none.
 - **Very deep rule nesting** (thousands of levels) overflows the stack at startup. It fails when the config is
   built, never at request time.
+- **`ON CONFLICT REPLACE` tables refuse writes.** A table whose `UNIQUE` or `PRIMARY KEY` constraint carries that
+  clause answers every create and update with 403 `unsafe_schema`, for every caller; read and delete keep their
+  policies (guarantee 18, [ADR 0066](adr/0066-on-conflict-replace-tables.md)). Not a leak, but a table like that
+  is not writable through Castra.
+- **Keyset pagination always appends the primary key** to the sort, even when the key is not in the table's
+  `filterable` columns, so page boundaries stay stable. A cursor is refused (400) unless every primary-key column
+  is visible to the caller, so the trailing comparison reveals nothing.
 - **The example config is intentionally permissive in places:** `comments` is public, including comments on draft posts.
 
 ### Platform limits

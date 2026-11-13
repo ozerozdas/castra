@@ -1,7 +1,7 @@
 # 0086. MCP migration tools: `generate_migration` / `apply_migration`
 
 ## Status
-Accepted (2026-10-19, pending release). Issue [#20](https://github.com/ozerozdas/castra/issues/20).
+Accepted (2026-10-19, released in 0.4.0). Issue [#20](https://github.com/ozerozdas/castra/issues/20).
 
 ## Context
 ARCHITECTURE §5 lists MCP tools for `generate_migration` and `apply_migration`; v0.3 deferred them.
