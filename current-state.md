@@ -1,6 +1,6 @@
 # Castra — Current state
 
-Date: 2026-11-13. **v0.4.3 is prepared on `release/v0.4.3`** (dependency security patch release on top of v0.4.2: hono and @hono/node-server advisories).
+Date: 2026-11-13. **v0.4.3 is released** (dependency security patch release on top of v0.4.2: hono and @hono/node-server advisories).
 All six packages share version 0.4.3.
 The consumer production API (`api.mehmetozer.dev`) remains on 0.2.1; the 0.3.0 upgrade ships before the 0.4.0
 upgrade so the audit and rollback fixes are in place before the new MCP migration tools reach production.
@@ -9,7 +9,7 @@ Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–008
 ## Released and verified
 
 - Packages: core, auth, mcp, app, cli and create. Scaffold with `npm create @castra-kit@latest my-app`.
-- GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.4.2
+- GitHub release: https://github.com/ozerozdas/castra/releases/tag/v0.4.3
 - v0.4 includes local MCP `generate_migration` and `apply_migration` tools through `castra mcp`, the v0.3.0
   audit hardening and Worker rollback, `createCastraApp`, separate auth rate limits, safe destroy and
   generated upgrade notes/tests. The production consumer API upgrade is pending.
@@ -97,9 +97,11 @@ Release notes: `docs/releases/0.4.2.md`.
 
 ## v0.4.3 release
 
-Dependency patch release on `release/v0.4.3`: hono 4.13.18, better-auth 1.7.22, MCP SDK 1.32.2, kysely 0.29.8 and
+Dependency security patch release: hono 4.13.18 (CVE-2026-126355…126359), `@hono/node-server` 2.1.8
+(CVE-2026-126210, -126343),, better-auth 1.7.22, MCP SDK 1.32.2, kysely 0.29.8 and
 dev tooling (`eslint` 10.14.0, `typescript-eslint` 8.72.2, `wrangler` 4.161.0, `vitest` 5.1.0, vitest-plugin 1.8.1,
 workers-types 5.20261112.1). The `create` template's `better-auth` and `vitest` pins now match the workspace, guarded
 by a drift test; `propose_policy`'s import scan is linear-time (CodeQL); the undici/fast-uri/body-parser/ip-address/qs
 overrides are dropped now that upstream resolves the patches. `minimatch` (eslint, dev-only) stays open.
-Six npm packages and MCP server version at 0.4.3. Release notes: `docs/releases/0.4.3.md`. Publication pending.
+PR #56 (`b4334a6`). Six npm packages and MCP server version at 0.4.3, tag `v0.4.3`.
+Release notes: `docs/releases/0.4.3.md`.
