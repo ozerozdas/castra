@@ -2,7 +2,7 @@
 
 Castra is a Cloudflare-native, self-hosted, agent-safe BaaS starter kit.
 The full design lives in `docs/ARCHITECTURE.md`. Read it before any change; it wins over this file
-on design questions. The v0.1 work plan lives in `GOAL.md`.
+on design questions.
 
 ## Repo layout (pnpm workspaces, TypeScript, ESM)
 
