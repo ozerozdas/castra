@@ -1,7 +1,7 @@
 # Castra security model
 
 Castra is a policy engine and a REST/MCP surface in front of a Cloudflare D1 database. This document says what it
-protects, what it relies on, and what it does not do. Status: v0.1.0, released, not externally audited. Design
+protects, what it relies on, and what it does not do. Status: not externally audited. Design
 background: [ARCHITECTURE.md](ARCHITECTURE.md). Decisions: [docs/adr](adr/).
 
 ## 1. Scope and trust boundaries
