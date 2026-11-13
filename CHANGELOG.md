@@ -4,6 +4,41 @@ All `@castra-kit/*` packages share one version. The format follows [Keep a Chang
 
 ## Unreleased
 
+## 0.4.3 (2026-11-13)
+
+Security patch release for dependencies. Upgrade from 0.4.2: [upgrade guide](docs/upgrading/0.4.3.md).
+No database migration, binding or API change.
+
+### Fixed
+
+- The `create` template pinned `better-auth` 1.7.7 and `vitest` 5.0.3 behind the workspace, so a new project
+  installed a second, older `better-auth` next to `@castra-kit/auth`'s. The template now matches the workspace and
+  a drift test fails when the two diverge.
+
+### Security
+
+- `hono` 4.13.18 fixes CVE-2026-126355, -126356, -126357, -126358 and -126359 (all `< 4.13.16`). CVE-2026-126358
+  (RegExpRouter can skip wildcard middleware) is the relevant one: `createCastraApp` registers the request context
+  and rate limiters with `app.use("*")`. The `@castra-kit/*` packages pin `hono` exactly, so upgrading them is
+  the fix.
+- `@hono/node-server` 2.1.8 in the lockfile (CVE-2026-126210, CVE-2026-126343; Dependabot #23, #24). It comes in
+  through `@modelcontextprotocol/sdk` and is not used by Castra; the SDK's range already allows the fix, so
+  consumers get it from `pnpm install` / `pnpm update`.
+- `propose_policy` (local stdio MCP only) scans core imports in linear time; the previous regex could go
+  polynomial on adversarial input (CodeQL `js/polynomial-redos`).
+- Workspace `pnpm.overrides` for `undici`, `fast-uri`, `body-parser`, `ip-address` and `qs` are removed because
+  upstream now resolves the patched versions on its own. The `esbuild` override stays for `tsup`.
+
+### Changed
+
+- `hono` 4.13.18, `better-auth` 1.7.22, `@modelcontextprotocol/sdk` 1.32.2, `kysely` 0.29.8.
+- Dev tooling: `eslint` 10.14.0, `typescript-eslint` 8.72.2, `wrangler` 4.161.0, `vitest` 5.1.0,
+  `@cloudflare/vitest-plugin` 1.8.1, `@cloudflare/workers-types` 5.20261112.1.
+
+### Known
+
+- `minimatch` < 11.0.1 via `eslint` (dev-only), unchanged from 0.4.2.
+
 ## 0.4.2 (2026-11-08)
 
 Security patch release for dependencies. Upgrade from 0.4.1: [upgrade guide](docs/upgrading/0.4.2.md).

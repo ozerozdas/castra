@@ -26,7 +26,7 @@ A MCP token is not a REST credential (it resolves to anonymous there), and an AP
 - Worker secrets (`BETTER_AUTH_SECRET`, OAuth client secrets).
 - Cloudflare itself: Workers runtime, D1, the network edge.
 - The developer's configuration, including `custom()` and `where()` rules (see section 3).
-- The Better Auth library, pinned at 1.7.7 for the auth flows. Castra does not re-audit it.
+- The Better Auth library, pinned at 1.7.22 for the auth flows. Castra does not re-audit it.
 
 Out of the model: a compromised Cloudflare account, a malicious dependency, a compromised developer machine, and
 denial of service (writes are rate limited per IP; see "Rate limiting" below).

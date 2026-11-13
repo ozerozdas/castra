@@ -1,7 +1,7 @@
 # Castra — Current state
 
-Date: 2026-11-08. **v0.4.2 is released** (dependency security patch release on top of v0.4.1).
-All six packages share version 0.4.2.
+Date: 2026-11-13. **v0.4.3 is prepared on `release/v0.4.3`** (dependency security patch release on top of v0.4.2: hono and @hono/node-server advisories).
+All six packages share version 0.4.3.
 The consumer production API (`api.mehmetozer.dev`) remains on 0.2.1; the 0.3.0 upgrade ships before the 0.4.0
 upgrade so the audit and rollback fixes are in place before the new MCP migration tools reach production.
 Details: `CHANGELOG.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`, ADRs 0001–0086.
@@ -94,3 +94,12 @@ body-parser, ip-address) plus `qs` via wrangler 4.158.0, vitest-plugin 1.6.0 and
 Template dev tooling bumped to match. `minimatch` (eslint, dev-only) stays open until eslint accepts v11.
 PR #55 (`6b4fc7b`). Six npm packages and MCP server version at 0.4.2, tag `v0.4.2`.
 Release notes: `docs/releases/0.4.2.md`.
+
+## v0.4.3 release
+
+Dependency patch release on `release/v0.4.3`: hono 4.13.18, better-auth 1.7.22, MCP SDK 1.32.2, kysely 0.29.8 and
+dev tooling (`eslint` 10.14.0, `typescript-eslint` 8.72.2, `wrangler` 4.161.0, `vitest` 5.1.0, vitest-plugin 1.8.1,
+workers-types 5.20261112.1). The `create` template's `better-auth` and `vitest` pins now match the workspace, guarded
+by a drift test; `propose_policy`'s import scan is linear-time (CodeQL); the undici/fast-uri/body-parser/ip-address/qs
+overrides are dropped now that upstream resolves the patches. `minimatch` (eslint, dev-only) stays open.
+Six npm packages and MCP server version at 0.4.3. Release notes: `docs/releases/0.4.3.md`. Publication pending.
